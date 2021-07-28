@@ -10,4 +10,11 @@ Ensure you have installed Pandas, NumPy, and matplotlib
    py -3 -mpip install pandas
    py -3 -mpip install numpy
    py -3 -mpip install matplotlib
+   py -3 -mpip install openpyxl
+```
+
+to run:
+
+```
+  py -3 report.py
 ```
