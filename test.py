@@ -3,14 +3,40 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
+
+def gracefulCrash(err):
+    print(err)
+    input("\nPress enter to exit")
+    exit(1)
+
+
+# set up scope for fire and ems files
+fire, ems = "", ""
+
 try:
-    droppedFile = sys.argv[1]
+    for i in range(1, 3):
+        print
+        if "fire" in sys.argv[i].lower():
+            fire = sys.argv[i]
+        if "ems" in sys.argv[i].lower():
+            ems = sys.argv[i]
 except IndexError:
-    print("Incorrect Files")
+    pass
+except Exception as ex:
+    gracefulCrash(ex)
 
 
-df_1s = pd.read_excel(droppedFile, sheet_name="first")
+if fire == "":
+    gracefulCrash("A file was not found for Fire Data")
+# if ems == "":
+#     gracefulCrash("A file was not found for EMS Data")
+
+
+df_1s = pd.read_excel(fire)
 print(df_1s)
 
+# plt.savefig('saved_figure.png')
+
 # wait for close command
-input("Press enter to exit ;)")
+input("\nPress enter to exit")
+exit(0)
