@@ -1,7 +1,49 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from tabulate import tabulate
 import sys
+
+
+# reorder columns
+def set_column_sequence(dataframe, seq, front=True):
+    cols = seq[:]  # copy so we don't mutate seq
+    for x in dataframe.columns:
+        if x not in cols:
+            if front:  # we want "seq" to be in the front
+                # so append current column to the end of the list
+                cols.append(x)
+            else:
+                # we want "seq" to be last, so insert this
+                # column in the front of the new column list
+                # "cols" we are building:
+                cols.insert(0, x)
+    return dataframe[cols]
+
+
+def putColAt(dataframe, seq, loc):
+    # account for loc being too large
+    if loc >= (len(dataframe.columns) - len(seq)):
+        loc = len(dataframe.columns) - len(seq)
+    if loc < 0:
+        loc = 0
+    cols = []
+    curLoc = 0
+    # account of it being 0
+    if loc == 0:
+        cols = seq[:]
+    for x in dataframe.columns:
+        if x not in cols + seq:
+            cols.append(x)
+            curLoc += 1
+            # print(x, " : ", curLoc, "!=", loc)
+            if curLoc == loc:
+                cols += seq
+    return dataframe[cols]
+
+
+def pprint(dframe):
+    print(tabulate(dframe, headers="keys", tablefmt="psql", showindex=False))
 
 
 def gracefulCrash(err):
@@ -30,12 +72,15 @@ def getCRF(incident):
         gracefulCrash(ex)
 
 
+# ##############################################################################################################################################
+#     Main Code
+# ##############################################################################################################################################
+
 # # set up scope for fire and ems files
 fire, ems = "", ""
 
 try:
     for i in range(1, 3):
-        print
         if "fire" in sys.argv[i].lower():
             fire = sys.argv[i]
         if "ems" in sys.argv[i].lower():
@@ -62,7 +107,6 @@ except Exception as ex:
     print(ex)
     input("\nPress enter to exit")
     exit(1)
-# print(fireDF)
 
 # =================================================================
 #     get Complete Response Force for each Structure Fire
@@ -78,11 +122,10 @@ except Exception as ex:
 # =================================================================
 
 # fireDF.rename(columns={"Master Incident Number": "Incident Number"})
-# print(fireDF)
 
 
 # order fire data by time : - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
-fireDF.sort_values(
+fireDF = fireDF.sort_values(
     by=[
         "Master Incident Number",
         "Unit Time Arrived At Scene",
@@ -91,7 +134,7 @@ fireDF.sort_values(
         "Unit Time Assigned",
     ]
 )
-print(fireDF)
+fireDF = fireDF.reset_index(drop=True)
 
 
 # ##############################################################################################################################################
@@ -105,11 +148,17 @@ print(fireDF)
 # If any case where 'Earliest Time Phone Pickup AFD or EMS' is blank, Either pull updated information from visinet, or copy time from 'Incident Time Call Entered in Queue'
 c0 = fireDF[(fireDF["Earliest Time Phone Pickup AFD or EMS"].isnull())]
 if c0.size > 0:
+    # limit the rows that will show in the error output
+    limit = [
+        "Master Incident Number",
+        "Earliest Time Phone Pickup AFD or EMS",
+        "Incident Time Call Entered in Queue",
+    ]
     c0.to_excel("debug.xlsx")
     print(
-        "Warning: Please check on the following incidents:\n 'Earliest Time Phone Pickup AFD or EMS' is blank \n 'Earliest Time Phone Pickup AFD or EMS' field must have a value to continue\n Either pull updated information from visinet, or copy time from 'Incident Time Call Entered in Queue' field \n\n",
-        c0,
+        "Warning: Please check on the following incidents:\n 'Earliest Time Phone Pickup AFD or EMS' is blank \n 'Earliest Time Phone Pickup AFD or EMS' field must have a value to continue\n Either pull updated information from visinet, or copy time from 'Incident Time Call Entered in Queue' field \n\n"
     )
+    pprint(c0[limit])
     input("\nPress enter to exit")
     exit(1)
 c0 = ""
@@ -118,31 +167,34 @@ c0 = ""
 # =================================================================
 #     Check # 1 -  Checking for misssing first arrived status
 # =================================================================
-# Check for first arrived Fire Data
 # its a problem if there is no FirstArrived
-
 # check each incident in visinet - find Phone Pickup Time
 c1 = fireDF[(fireDF["FirstArrived"].isnull())]
-# and there is
 c1 = c1[(c1["Unit Time Arrived At Scene"].notnull())]
 # and it is not an
-# alarm test - ALARMT
-# burn notification - CNTRL02
-# test - TEST'
+#     alarm test - ALARMT
+#     burn notification - CNTRL02
+#     test - TEST'
 
 c1 = c1[(~c1["Radio_Name"].isin(["ALARMT", "CNTRL02", "TEST"]))]
-# Unit Time Assigned	Unit Time Enroute	Unit Time Staged	Unit Time Arrived At Scene	Unit Time Call Cleared
-
+# would like to display as: Unit Time Assigned,	Unit Time Enroute	Unit Time Staged,	Unit Time Arrived At Scene,	Unit Time Call Cleared
 
 #  ---------------
 # Solution here is to set first arrived of incident to Yes, and all others to -
 # ----------------
 if c1.size > 0:
+    limit = [
+        "Master Incident Number",
+        "Unit Time Assigned",
+        "Unit Time Enroute	Unit Time Staged",
+        "Unit Time Arrived At Scene",
+        "Unit Time Call Cleared",
+    ]
     c1.to_excel("debug.xlsx")
     print(
-        "Warning: Please check on the following incidents:\n We arrived on scene, but first arrived is blank \n 'Earliest Time Phone Pickup AFD or EMS' field must have a value to continue \n\n",
-        c1,
+        "Warning: Please check on the following incidents:\n We arrived on scene, but first arrived is blank \n 'Earliest Time Phone Pickup AFD or EMS' field must have a value to continue \n\n"
     )
+    pprint(c1[limit])
     input("\nPress enter to exit")
     exit(1)
 c1 = ""
@@ -170,7 +222,7 @@ c2 = ""
 #     Check #3 -  PhonePickupTime is  unknown*
 # =================================================================
 c3 = fireDF[(fireDF["Earliest Time Phone Pickup AFD or EMS"] == "Unknown")]
-###  more than likely TCSO or APD.  Confirm, print error if not
+###  more than likely TCSO or APD, but still has to be filled
 c3 = c3[(~c3["Calltaker Agency"].isin(["TCSO", "APD"]))]
 if c3.size > 0:
     print(
@@ -219,13 +271,35 @@ c4 = ""
 # C - Incident Canceled Prior to unit arrival (no 'Unit Time Arrived At Scene')
 # X - all other rows in a set of identical 'Master Incident Number' with no 'Unit Time Arrived At Scene'
 
+# Set canceled, 1, or 0
+conditions = [
+    (fireDF["Master Incident Number"] != fireDF.shift(1)["Master Incident Number"])
+    & (fireDF["Unit Time Arrived At Scene"].isnull()),
+    (fireDF["Master Incident Number"] == fireDF.shift(1)["Master Incident Number"]),
+]
+choices = ["C", "0"]
+fireDF["Status"] = np.select(conditions, choices, default="1")
+
+# Overwrite 0 with X on canceled calls
+# get array of indexes with 0
+res0 = fireDF.index[fireDF["Status"] == "0"].tolist()
+# this is going to be really slow...
+for i in res0:
+    fireDF.loc[i, "Status"] = (
+        "X" if ((fireDF.loc[i - 1, "Status"] in (["X", "C"]))) else "0"
+    )
+
+# move Status col to front
+fireDF = putColAt(fireDF, ["Status"], 0)
+fireDF = putColAt(fireDF, ["Master Incident Without First Two Digits"], 66)
+
 # Add a new Stations Column
 # look up radio name and department
 # S01, S02, S03, S04, S05, ADMIN, AFD, OTHER
 
 
 # print to files
-# firstArrivedArray.to_excel("test.xlsx")
+fireDF.to_excel("test.xlsx")
 # plt.savefig('saved_figure.png')
 
 
