@@ -186,7 +186,8 @@ if c1.size > 0:
     limit = [
         "Master Incident Number",
         "Unit Time Assigned",
-        "Unit Time Enroute	Unit Time Staged",
+        "Unit Time Enroute",
+        "Unit Time Staged",
         "Unit Time Arrived At Scene",
         "Unit Time Call Cleared",
     ]
@@ -221,14 +222,26 @@ c2 = ""
 # =================================================================
 #     Check #3 -  PhonePickupTime is  unknown*
 # =================================================================
-c3 = fireDF[(fireDF["Earliest Time Phone Pickup AFD or EMS"] == "Unknown")]
+c3 = fireDF[
+    (fireDF["Earliest Time Phone Pickup AFD or EMS"] == "Unknown")
+    | (fireDF["Earliest Time Phone Pickup AFD or EMS"].isnull())
+]
 ###  more than likely TCSO or APD, but still has to be filled
-c3 = c3[(~c3["Calltaker Agency"].isin(["TCSO", "APD"]))]
+# c3 = c3[(~c3["Calltaker Agency"].isin(["TCSO", "APD"]))]
 if c3.size > 0:
+    limit = [
+        "Master Incident Number",
+        "Earliest Time Phone Pickup AFD or EMS",
+        "Unit Time Assigned",
+        "Unit Time Enroute",
+        "Unit Time Staged",
+        "Unit Time Arrived At Scene",
+        "Unit Time Call Cleared",
+    ]
     print(
-        "Warning: Please check on the following incidents:\n'Earliest Time Phone Pickup AFD or EMS' is 'unknown', but 'Calltaker Agency' is not TCSO or APD:\n",
-        c3,
+        "Warning: Please check on the following incidents:\n'Earliest Time Phone Pickup AFD or EMS' is blank or 'unknown':\n"
     )
+    pprint(c3[limit])
     input("\nPress enter to exit")
     exit(1)
 
@@ -238,25 +251,6 @@ c3 = ""
 # c3 = fireDF[(fireDF["Earliest Time Phone Pickup AFD or EMS"] == "Unknown")]
 # overwrite Unkown with time from - "Incident Time Call Entered in Queue"
 ## < -----------------------------------------------------------------------------------  look into how to overwrite data with pandas and run this!
-
-
-# =================================================================
-#     Check #4 -  PhonePickupTime is null
-# =================================================================
-c4 = fireDF[(fireDF["Earliest Time Phone Pickup AFD or EMS"].isnull())]
-
-# To automate solution here
-# get first 'Earliest Time Phone Pickup AFD or EMS' of same 'Master Incident Number'
-# copy this in
-
-if c4.size > 0:
-    print(
-        "Warning: Please check on the following incidents:/n'Earliest Time Phone Pickup AFD or EMS' is Null:\n",
-        c4,
-    )
-    input("\nPress enter to exit")
-    exit(1)
-c4 = ""
 
 # ##############################################################################################################################################
 #     After checks are preformed...
@@ -271,7 +265,7 @@ c4 = ""
 # C - Incident Canceled Prior to unit arrival (no 'Unit Time Arrived At Scene')
 # X - all other rows in a set of identical 'Master Incident Number' with no 'Unit Time Arrived At Scene'
 
-# Set canceled, 1, or 0
+# Set Canceled, 1(first arrived), or 0(multi incident)
 conditions = [
     (fireDF["Master Incident Number"] != fireDF.shift(1)["Master Incident Number"])
     & (fireDF["Unit Time Arrived At Scene"].isnull()),
