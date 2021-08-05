@@ -5,6 +5,11 @@ from tabulate import tabulate
 import sys
 
 
+def fmtStation(name):
+    num = name
+    return "S0" + num
+
+
 # reorder columns
 def set_column_sequence(dataframe, seq, front=True):
     cols = seq[:]  # copy so we don't mutate seq
@@ -227,7 +232,7 @@ c3 = fireDF[
     | (fireDF["Earliest Time Phone Pickup AFD or EMS"].isnull())
 ]
 ###  more than likely TCSO or APD, but still has to be filled
-# c3 = c3[(~c3["Calltaker Agency"].isin(["TCSO", "APD"]))]
+c3 = c3[(~c3["Calltaker Agency"].isin(["TCSO", "APD"]))]
 if c3.size > 0:
     limit = [
         "Master Incident Number",
@@ -259,6 +264,7 @@ c3 = ""
 
 # After the checks, add 2 extra columns -
 #   'Sequence' -
+
 #   'Status'   - 1, 0, x, c
 # 1 - is the earliest arrived of a set of identical 'Master Incident Number'
 # 0 - all other rows in a set of identical 'Master Incident Number' - multi unit Response
@@ -283,14 +289,39 @@ for i in res0:
         "X" if ((fireDF.loc[i - 1, "Status"] in (["X", "C"]))) else "0"
     )
 
-# move Status col to front
-fireDF = putColAt(fireDF, ["Status"], 0)
-fireDF = putColAt(fireDF, ["Master Incident Without First Two Digits"], 66)
-
 # Add a new Stations Column
 # look up radio name and department
 # S01, S02, S03, S04, S05, ADMIN, AFD, OTHER
 
+# pulled from fire data xlsx
+# =IF(AND(AZ1="ESD02 - Pflugerville",BA1="Frontline"),RIGHT(Fire_Table[@[Radio Name]],3),"ADMIN ESD02")
+az = "Department"
+ba = "Frontline_Status"
+
+
+conditions = [
+    (fireDF[az] == "AFD") & (fireDF[ba] == "Other"),
+    (fireDF[az] == "AFD"),
+    (fireDF[az] == "ESD12 - Manor") & (fireDF[ba] == "Other"),
+    (fireDF[az] == "ESD12 - Manor"),
+    (fireDF[az] == "ESD02 - Pflugerville") & (fireDF[ba] == "Other"),
+    (fireDF[az] == "ESD02 - Pflugerville"),
+]
+choices = [
+    "AFD Other",
+    "AFD",
+    "ESD12 - Manor Other",
+    "ESD12 - Manor",
+    "ADMIN ESD02",
+    "S0" + fireDF["Radio_Name"].str[-2],
+]
+
+fireDF["Station"] = np.select(conditions, choices, default=fireDF["Radio_Name"])
+
+
+# move Status col to front
+fireDF = putColAt(fireDF, ["Station", "Status"], 0)
+fireDF = putColAt(fireDF, ["Master Incident Without First Two Digits"], 100)
 
 # print to files
 fireDF.to_excel("test.xlsx")
