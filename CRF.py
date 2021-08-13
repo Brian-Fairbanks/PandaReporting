@@ -83,12 +83,6 @@ def getCRF(incident):
         res0 = incDF.index[incDF["Unit Time Arrived At Scene"].notnull()].tolist()
         # print(res0)
 
-        # Get Start Time
-        try:
-            sTime = incDF.loc[res0[0], "Unit Time Arrived At Scene"]
-        except:
-            sTime = "No Units Arrived"
-
         # this is going to be really slow...
         for i in res0:
             vehicle = incDF.loc[i, "Radio_Name"]
@@ -173,31 +167,6 @@ structureFiresArray = getStructureFires()
 print(structureFiresArray)
 for f in structureFiresArray:
     print(f, ": ", getCRF(f))
-
-
-# =================================================================
-#     Formatting and Renaming of DataFrames
-# =================================================================
-
-# fireDF.rename(columns={"Master Incident Number": "Incident Number"})
-
-
-# order fire data by time : - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
-fireDF = fireDF.sort_values(
-    by=[
-        "Master Incident Number",
-        "Unit Time Arrived At Scene",
-        "Unit Time Staged",
-        "Unit Time Enroute",
-        "Unit Time Assigned",
-    ]
-)
-fireDF = fireDF.reset_index(drop=True)
-
-
-# print to files
-fireDF.to_excel("test.xlsx")
-# plt.savefig('saved_figure.png')
 
 
 # wait for close command
