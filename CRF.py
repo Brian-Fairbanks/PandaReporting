@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tabulate import tabulate
 import sys
+import traceback
 
 
 def fmtStation(name):
@@ -51,8 +52,9 @@ def pprint(dframe):
     print(tabulate(dframe, headers="keys", tablefmt="psql", showindex=False))
 
 
-def gracefulCrash(err):
+def gracefulCrash(err, trace):
     print("ERROR:", err)
+    traceback.print_exception(*trace)
     input("\nPress enter to exit")
     exit(1)
 
@@ -65,7 +67,7 @@ def getStructureFires():
         # remove duplicates
         return list(set(incnums))
     except Exception as ex:
-        gracefulCrash(ex)
+        gracefulCrash(ex, sys.exc_info())
 
 
 def getCRF(incident):
@@ -77,8 +79,7 @@ def getCRF(incident):
         # print(ret)
 
         # instanciate a force count
-        force = 0
-        time = "CRF never reached"
+        objDict = {"time": "CRF never reached", "force": 0}
 
         res0 = incDF.index[incDF["Unit Time Arrived At Scene"].notnull()].tolist()
         # print(res0)
@@ -95,7 +96,7 @@ def getCRF(incident):
                     ],
                 )
             ):
-                force += 4
+                objDict["force"] += 4
             elif any(
                 map(
                     vehicle.__contains__,
@@ -105,23 +106,22 @@ def getCRF(incident):
                     ],
                 )
             ):
-                force += 3
+                objDict["force"] += 3
             else:
-                force += 2
+                objDict["force"] += 2
 
             # print(force, "/16")
-            if force > 15:
-                return incDF.loc[
+            if objDict["force"] > 15:
+                objDict["time"] = incDF.loc[
                     i,
                     "Incident First Unitresponse - 1st Real Unit assigned to 1st Real Unit Arrived",
                 ]
-
                 break
 
-        return time
+        return objDict
 
     except Exception as ex:
-        gracefulCrash(ex)
+        gracefulCrash(ex, sys.exc_info())
 
 
 # ##############################################################################################################################################
@@ -140,7 +140,7 @@ try:
 except IndexError:
     pass
 except Exception as ex:
-    gracefulCrash(ex)
+    gracefulCrash(ex, sys.exc_info())
 
 
 if fire == "":
@@ -166,7 +166,8 @@ except Exception as ex:
 structureFiresArray = getStructureFires()
 print(structureFiresArray)
 for f in structureFiresArray:
-    print(f, ": ", getCRF(f))
+    crf = getCRF(f)
+    print(f, ": ", crf)
 
 
 # wait for close command
