@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from tabulate import tabulate
 import sys
 from utils import gracefulCrash
+from comrf import getCRF
 
 # reorder columns
 def set_column_sequence(dataframe, seq, front=True):
@@ -87,6 +88,8 @@ except Exception as ex:
 # =================================================================
 #     get Complete Response Force for each Structure Fire
 # =================================================================
+crfDF = getCRF(fireDF)
+pprint(crfDF)
 
 
 # =================================================================

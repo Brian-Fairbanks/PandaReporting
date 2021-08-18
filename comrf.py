@@ -22,7 +22,7 @@ def getCRF(df):
 # Sort through list, check for structure fires, and grab a list of unique IDs
 def getStructureFires(df):
     try:
-        sfDF = fireDF[(df["Problem"].str.contains("Structure Fire"))]
+        sfDF = df[(df["Problem"].str.contains("Structure Fire"))]
         incnums = sfDF["Master Incident Number"].values.tolist()
         # remove duplicates
         return list(set(incnums))
@@ -88,42 +88,45 @@ def getIncidentCRF(incident, df):
 # ##############################################################################################################################################
 #     Main Code
 # ##############################################################################################################################################
+def main():
+    # # set up scope for fire and ems files
+    fire, ems = "", ""
 
-# # set up scope for fire and ems files
-fire, ems = "", ""
+    try:
+        for i in range(1, 3):
+            if "fire" in sys.argv[i].lower():
+                fire = sys.argv[i]
+            if "ems" in sys.argv[i].lower():
+                ems = sys.argv[i]
+    except IndexError:
+        pass
+    except Exception as ex:
+        gracefulCrash(ex, sys.exc_info())
 
-try:
-    for i in range(1, 3):
-        if "fire" in sys.argv[i].lower():
-            fire = sys.argv[i]
-        if "ems" in sys.argv[i].lower():
-            ems = sys.argv[i]
-except IndexError:
-    pass
-except Exception as ex:
-    gracefulCrash(ex, sys.exc_info())
+    if fire == "":
+        fire = "fire 06 2021 Raw QV Data.xlsx"
+        # gracefulCrash("A file was not found for Fire Data")
+    # if ems == "":
+    #     gracefulCrash("A file was not found for EMS Data")
 
+    fireDF = pd.read_excel(fire)
+    # save an OG copy
+    try:
+        # check if file_original exists, and only write to it if it does not.
+        fireDF.to_excel(fire.split(".")[0] + "_Original.xlsx")
+    except Exception as ex:
+        print(ex)
+        input("\nPress enter to exit")
+        exit(1)
 
-if fire == "":
-    fire = "fire 06 2021 Raw QV Data.xlsx"
-    # gracefulCrash("A file was not found for Fire Data")
-# if ems == "":
-#     gracefulCrash("A file was not found for EMS Data")
+    crfdf = getCRF(fireDF)
+    print(crfdf)
 
-
-fireDF = pd.read_excel(fire)
-# save an OG copy
-try:
-    # check if file_original exists, and only write to it if it does not.
-    fireDF.to_excel(fire.split(".")[0] + "_Original.xlsx")
-except Exception as ex:
-    print(ex)
+    # wait for close command
     input("\nPress enter to exit")
-    exit(1)
+    exit(0)
 
-crfdf = getCRF(fireDF)
-print(crfdf)
 
-# wait for close command
-input("\nPress enter to exit")
-exit(0)
+if __name__ == "__main__":
+    # stuff only to run when not called via 'import' here
+    main()
