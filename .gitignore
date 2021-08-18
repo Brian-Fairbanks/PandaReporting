@@ -1,5 +1,9 @@
 output.xlsx
 ~$output.xlsx
+
 .vscode
+__pycache__/
+*.pyc
+*.pyo
 
 *.xlsx

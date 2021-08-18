@@ -3,12 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tabulate import tabulate
 import sys
-
-
-def fmtStation(name):
-    num = name
-    return "S0" + num
-
+from utils import gracefulCrash
 
 # reorder columns
 def set_column_sequence(dataframe, seq, front=True):
@@ -51,37 +46,11 @@ def pprint(dframe):
     print(tabulate(dframe, headers="keys", tablefmt="psql", showindex=False))
 
 
-def gracefulCrash(err):
-    print("ERROR:", err)
-    input("\nPress enter to exit")
-    exit(1)
-
-
-# Sort through list, check for structure fires, and grab a list of unique IDs
-def getStructureFires():
-    try:
-        sfDF = fireDF[(fireDF["Problem"].str.contains("Structure Fire"))]
-        incnums = sfDF["Incident Number"].values.tolist()
-        # remove duplicates
-        return list(set(incnums))
-    except Exception as ex:
-        gracefulCrash(ex)
-
-
-def getCRF(incident):
-    try:
-        incDF = fireDF[(fireDF["Incident Number"] == incident)]
-        incDF.sort_values(by=["Ph PU to UnitArrive in seconds"])
-        print(incDF, "\n\n")
-    except Exception as ex:
-        gracefulCrash(ex)
-
-
 # ##############################################################################################################################################
 #     Main Code
 # ##############################################################################################################################################
 
-# # set up scope for fire and ems files
+# set up scope for fire and ems files
 fire, ems = "", ""
 
 try:
@@ -91,11 +60,13 @@ try:
         if "ems" in sys.argv[i].lower():
             ems = sys.argv[i]
 except IndexError:
+    # just means that we dont need to check all 3 files
     pass
 except Exception as ex:
-    gracefulCrash(ex)
+    gracefulCrash(ex, sys.exc_info())
 
-
+#   Handle file input errors
+# ------------------------------------------------------------
 if fire == "":
     fire = "fire 06 2021 Raw QV Data.xlsx"
     # gracefulCrash("A file was not found for Fire Data")
@@ -116,10 +87,6 @@ except Exception as ex:
 # =================================================================
 #     get Complete Response Force for each Structure Fire
 # =================================================================
-# structureFiresArray = getStructureFires()
-# print(structureFiresArray)
-# for f in structureFiresArray:
-#     getCRF(f)
 
 
 # =================================================================

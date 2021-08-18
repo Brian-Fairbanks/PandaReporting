@@ -1,68 +1,28 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from tabulate import tabulate
 import sys
-import traceback
+from utils import gracefulCrash
 
 
-def fmtStation(name):
-    num = name
-    return "S0" + num
+# =================================================================
+#     get Complete Response Force for each Structure Fire
+# =================================================================
 
+# Input a single DF, and get a table containing all the relevant information for the Complete Response Force
+def getCRF(df):
+    structureFiresArray = getStructureFires(df)
+    crf = []
+    for f in structureFiresArray:
+        crf.append(getIncidentCRF(f, df))
 
-# reorder columns
-def set_column_sequence(dataframe, seq, front=True):
-    cols = seq[:]  # copy so we don't mutate seq
-    for x in dataframe.columns:
-        if x not in cols:
-            if front:  # we want "seq" to be in the front
-                # so append current column to the end of the list
-                cols.append(x)
-            else:
-                # we want "seq" to be last, so insert this
-                # column in the front of the new column list
-                # "cols" we are building:
-                cols.insert(0, x)
-    return dataframe[cols]
-
-
-def putColAt(dataframe, seq, loc):
-    # account for loc being too large
-    if loc >= (len(dataframe.columns) - len(seq)):
-        loc = len(dataframe.columns) - len(seq)
-    if loc < 0:
-        loc = 0
-    cols = []
-    curLoc = 0
-    # account of it being 0
-    if loc == 0:
-        cols = seq[:]
-    for x in dataframe.columns:
-        if x not in cols + seq:
-            cols.append(x)
-            curLoc += 1
-            # print(x, " : ", curLoc, "!=", loc)
-            if curLoc == loc:
-                cols += seq
-    return dataframe[cols]
-
-
-def pprint(dframe):
-    print(tabulate(dframe, headers="keys", tablefmt="psql", showindex=False))
-
-
-def gracefulCrash(err, trace):
-    print("ERROR:", err)
-    traceback.print_exception(*trace)
-    input("\nPress enter to exit")
-    exit(1)
+    return pd.DataFrame(crf)
 
 
 # Sort through list, check for structure fires, and grab a list of unique IDs
-def getStructureFires():
+def getStructureFires(df):
     try:
-        sfDF = fireDF[(fireDF["Problem"].str.contains("Structure Fire"))]
+        sfDF = fireDF[(df["Problem"].str.contains("Structure Fire"))]
         incnums = sfDF["Master Incident Number"].values.tolist()
         # remove duplicates
         return list(set(incnums))
@@ -70,16 +30,17 @@ def getStructureFires():
         gracefulCrash(ex, sys.exc_info())
 
 
-def getCRF(incident):
+# Take a single incident, return the analyzed CRF data for said incident
+def getIncidentCRF(incident, df):
     try:
-        incDF = fireDF[(fireDF["Master Incident Number"] == incident)]
+        incDF = df[(df["Master Incident Number"] == incident)]
         incDF = incDF.sort_values(by=["Unit Time Arrived At Scene"])
 
         # ret = incDF[["Unit Time Arrived At Scene", "Radio_Name"]]
         # print(ret)
 
         # instanciate a force count
-        objDict = {"time": "CRF never reached", "force": 0}
+        objDict = {"incident": incident, "time": "CRF never reached", "force": 0}
 
         res0 = incDF.index[incDF["Unit Time Arrived At Scene"].notnull()].tolist()
         # print(res0)
@@ -160,15 +121,8 @@ except Exception as ex:
     input("\nPress enter to exit")
     exit(1)
 
-# =================================================================
-#     get Complete Response Force for each Structure Fire
-# =================================================================
-structureFiresArray = getStructureFires()
-print(structureFiresArray)
-for f in structureFiresArray:
-    crf = getCRF(f)
-    print(f, ": ", crf)
-
+crfdf = getCRF(fireDF)
+print(crfdf)
 
 # wait for close command
 input("\nPress enter to exit")
