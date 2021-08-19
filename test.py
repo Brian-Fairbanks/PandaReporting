@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 from utils import gracefulCrash
-from comrf import getCRF
+from cfr import getCRF
 import utils
 
 
