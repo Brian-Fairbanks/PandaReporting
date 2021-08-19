@@ -8,8 +8,16 @@ import pandas as pd
 
 def addFiles():
     files = askopenfilenames(parent=ws, title="Choose Files")
+
+    # ensure unique items in list
     for file in files:
-        fileList.insert(0, file)
+        if not file in fileArray:
+            fileArray.append(file)
+
+    # remove and re-add
+    fileList.delete(0, "end")
+    for file in fileArray:
+        fileList.insert("end", file)
 
 
 def clearData():
@@ -22,10 +30,10 @@ def loadFile():
         excel_filename = r"{}".format(fileName)
         df = pd.read_excel(excel_filename)
     except ValueError:
-        messagebox.showerror("The loaded file is invalid")
+        messagebox.showerror("Invalid File", "The loaded file is invalid")
         return None
     except FileNotFoundError:
-        messagebox.showerror("No such file as {excel_filename}")
+        messagebox.showerror("Invalid File", "No such file as {excel_filename}")
         return None
 
     clearData()
@@ -53,6 +61,8 @@ def loadFile():
 #     Label(ws, text="File Uploaded Successfully!", foreground="green").grid(
 #         row=4, columnspan=3, pady=10
 #     )
+
+fileArray = []
 
 
 ws = Tk()
