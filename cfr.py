@@ -43,7 +43,8 @@ def getIncidentCRF(incident, df):
         objDict = {"incident": incident, "time": "CRF never reached", "force": 0}
 
         res0 = incDF.index[incDF["Unit Time Arrived At Scene"].notnull()].tolist()
-        # print(res0)
+
+        print(res0)
 
         # this is going to be really slow...
         for i in res0:
@@ -62,7 +63,6 @@ def getIncidentCRF(incident, df):
                 map(
                     vehicle.__contains__,
                     [
-                        "BAT",
                         "BT",
                     ],
                 )
@@ -71,11 +71,18 @@ def getIncidentCRF(incident, df):
             else:
                 objDict["force"] += 2
 
-            # print(force, "/16")
+            print(
+                objDict["force"],
+                "/16 at ",
+                incDF.loc[
+                    i,
+                    "Unit Dispatch to Onscene",
+                ],
+            )
             if objDict["force"] > 15:
                 objDict["time"] = incDF.loc[
                     i,
-                    "Incident First Unitresponse - 1st Real Unit assigned to 1st Real Unit Arrived",
+                    "Unit Dispatch to Onscene",
                 ]
                 break
 
@@ -118,6 +125,18 @@ def main():
         print(ex)
         input("\nPress enter to exit")
         exit(1)
+
+    # order fire data by time : - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
+    fireDF = fireDF.sort_values(
+        by=[
+            "Master Incident Number",
+            "Unit Time Arrived At Scene",
+            "Unit Time Staged",
+            "Unit Time Enroute",
+            "Unit Time Assigned",
+        ]
+    )
+    fireDF = fireDF.reset_index(drop=True)
 
     crfdf = getCRF(fireDF)
     print(crfdf)

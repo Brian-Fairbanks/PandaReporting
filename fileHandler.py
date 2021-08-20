@@ -2,22 +2,54 @@ from tkinter import *
 from tkinter import messagebox
 from tkinter import ttk
 from tkinter.filedialog import askopenfile, askopenfilenames
+import FireCheck as fc
 
 import pandas as pd
 
 
+def checkFile(df):
+    print("checkfile running", df)
+    c0 = fc.check0(df)
+    print("'Earliest Time Phone Pickup AFD or EMS' is blank: ", end="")
+    if c0 is not None:
+        messagebox.showwarning(
+            "Errors in data",
+            "There seem to be some errors in your data.  Please correct the following:",
+        )
+    else:
+        print("No Instances found")
+
+
 def addFiles():
     files = askopenfilenames(parent=ws, title="Choose Files")
-
     # ensure unique items in list
     for file in files:
-        if not file in fileArray:
-            fileArray.append(file)
+        # temporarily add to file list to show that things are running
+        fileList.insert("end", file)
+
+        # then check if file is valid, read it, and hold onto its DF
+        if not file in fileArray.keys():
+            try:
+                excel_filename = r"{}".format(file)
+                # read the file
+                fileArray[file] = pd.read_excel(excel_filename)
+                # sort the array
+                fileArray[file] = fc.sort(fileArray[file])
+
+            except ValueError:
+                messagebox.showerror("Invalid File", "The loaded file is invalid")
+                return None
+            except FileNotFoundError:
+                messagebox.showerror("Invalid File", "No such file as {excel_filename}")
+                return None
 
     # remove and re-add
     fileList.delete(0, "end")
-    for file in fileArray:
+    for file in fileArray.keys():
         fileList.insert("end", file)
+
+    for df in fileArray:
+        checkFile(fileArray[df])
 
 
 def clearData():
@@ -26,15 +58,7 @@ def clearData():
 
 def loadFile():
     fileName = fileList.get(fileList.curselection())
-    try:
-        excel_filename = r"{}".format(fileName)
-        df = pd.read_excel(excel_filename)
-    except ValueError:
-        messagebox.showerror("Invalid File", "The loaded file is invalid")
-        return None
-    except FileNotFoundError:
-        messagebox.showerror("Invalid File", "No such file as {excel_filename}")
-        return None
+    df = fileArray[fileName]
 
     clearData()
     tv1["column"] = list(df.columns)
@@ -62,7 +86,7 @@ def loadFile():
 #         row=4, columnspan=3, pady=10
 #     )
 
-fileArray = []
+fileArray = {}
 
 
 ws = Tk()

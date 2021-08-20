@@ -48,8 +48,8 @@ except Exception as ex:
 # =================================================================
 #     get Complete Response Force for each Structure Fire
 # =================================================================
-crfDF = getCRF(fireDF)
-utils.pprint(crfDF)
+# crfDF = getCRF(fireDF)
+# utils.pprint(crfDF)
 
 
 # =================================================================
@@ -93,7 +93,7 @@ if c0.size > 0:
     print(
         "Warning: Please check on the following incidents:\n 'Earliest Time Phone Pickup AFD or EMS' is blank \n 'Earliest Time Phone Pickup AFD or EMS' field must have a value to continue\n Either pull updated information from visinet, or copy time from 'Incident Time Call Entered in Queue' field \n\n"
     )
-    pprint(c0[limit])
+    utils.pprint(c0[limit])
     input("\nPress enter to exit")
     exit(1)
 c0 = ""
@@ -130,7 +130,7 @@ if c1.size > 0:
     print(
         "Warning: Please check on the following incidents:\n We arrived on scene, but first arrived is blank \n 'Earliest Time Phone Pickup AFD or EMS' field must have a value to continue \n\n"
     )
-    pprint(c1[limit])
+    utils.pprint(c1[limit])
     input("\nPress enter to exit")
     exit(1)
 c1 = ""
@@ -176,7 +176,7 @@ if c3.size > 0:
     print(
         "Warning: Please check on the following incidents:\n'Earliest Time Phone Pickup AFD or EMS' is blank or 'unknown':\n"
     )
-    pprint(c3[limit])
+    utils.pprint(c3[limit])
     input("\nPress enter to exit")
     exit(1)
 
@@ -235,6 +235,9 @@ conditions = [
     (fireDF[az] == "ESD12 - Manor") & (fireDF[ba] == "Other"),
     (fireDF[az] == "ESD12 - Manor"),
     (fireDF[az] == "ESD02 - Pflugerville") & (fireDF[ba] == "Other"),
+    (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"] == "QNT261"),
+    # account for instances where vehicle is filling in for another.  We will need to deterimine which station it is filling in for based on the location at time of assignment
+    (fireDF[az] == "ESD02 - Pflugerville") & fireDF["Radio_Name"] == "BT235",
     (fireDF[az] == "ESD02 - Pflugerville"),
 ]
 choices = [
@@ -243,6 +246,9 @@ choices = [
     "ESD12 - Manor Other",
     "ESD12 - Manor",
     "ADMIN ESD02",
+    "S05",
+    # determination of the above cases
+    "",
     "S0" + fireDF["Radio_Name"].str[-2],
 ]
 
@@ -259,5 +265,5 @@ fireDF.to_excel("test.xlsx")
 
 
 # wait for close command
-input("\nPress enter to exit")
+# input("\nPress enter to exit")
 exit(0)
