@@ -12,6 +12,7 @@ Ensure you have installed Pandas, NumPy, and matplotlib
    py -3 -mpip install matplotlib
    py -3 -mpip install openpyxl
    py -3 -mpip install tabulate
+   py -3 -mpip install xlsxwriter
 ```
 
 to run:
