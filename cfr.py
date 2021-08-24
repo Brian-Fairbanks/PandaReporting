@@ -79,6 +79,7 @@ def getIncidentCRF(incident, df):
                     "Unit Dispatch to Onscene",
                 ],
             )
+            # TODO:  over 16.  over 17 if if a quint is assigned at all.
             if objDict["force"] > 15:
                 objDict["time"] = incDF.loc[
                     i,
