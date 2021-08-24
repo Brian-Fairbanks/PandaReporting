@@ -5,6 +5,29 @@ import sys
 from utils import gracefulCrash
 from cfr import getCRF
 import utils
+from datetime import datetime
+
+# Create a Pandas Excel writer using XlsxWriter as the engine.
+# Also set the default datetime and date formats.
+
+# writer = pd.ExcelWriter(
+#     "Output.xlsx",
+#     engine="xlsxwriter",
+#     datetime_format="mmm d yyyy hh:mm:ss",
+#     date_format="mmmm dd yyyy",
+# )
+
+
+reserveUnits = ["ENG280", "ENG290", "BT235"]
+
+locations = {
+    "BRATTON": "S02",
+    "WREN": "S01",
+    "KELLY": "S03",
+    "PICADILLY": "S04",
+    "NIMBUS": "S05",
+    # "DEFAULT": "ALERT to user in gui to determine location"
+}
 
 
 # ##############################################################################################################################################
@@ -29,7 +52,8 @@ except Exception as ex:
 #   Handle file input errors
 # ------------------------------------------------------------
 if fire == "":
-    fire = "fire 06 2021 Raw QV Data.xlsx"
+    fire = "2021 Jan-March Fire Data.xlsx"
+    # fire = "fire 06 2021 Raw QV Data.xlsx"
     # gracefulCrash("A file was not found for Fire Data")
 # if ems == "":
 #     gracefulCrash("A file was not found for EMS Data")
@@ -237,7 +261,7 @@ conditions = [
     (fireDF[az] == "ESD02 - Pflugerville") & (fireDF[ba] == "Other"),
     (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"] == "QNT261"),
     # account for instances where vehicle is filling in for another.  We will need to deterimine which station it is filling in for based on the location at time of assignment
-    (fireDF[az] == "ESD02 - Pflugerville") & fireDF["Radio_Name"] == "BT235",
+    (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].isin(reserveUnits)),
     (fireDF[az] == "ESD02 - Pflugerville"),
 ]
 choices = [
@@ -248,19 +272,69 @@ choices = [
     "ADMIN ESD02",
     "S05",
     # determination of the above cases
-    "",
+    "RESERVE",
     "S0" + fireDF["Radio_Name"].str[-2],
 ]
 
 fireDF["Station"] = np.select(conditions, choices, default=fireDF["Radio_Name"])
 
-
 # move Status col to front
 fireDF = utils.putColAt(fireDF, ["Station", "Status"], 0)
 fireDF = utils.putColAt(fireDF, ["Master Incident Without First Two Digits"], 100)
 
+
+# ----------------
+# Time Data Extra Colulmn Creation
+# ----------------
+
+nc1 = "Incident 1st Enroute to 1stArrived Time"
+nc2 = "Incident Duration - Ph PU  to Clear"
+nc3 = "Unit  Ph PU to UnitArrived"
+
+fireDF[nc1] = (
+    (fireDF["Time First Real Unit Arrived"] - fireDF["Time First Real Unit Enroute"])
+    .astype(str)
+    .str.split("0 days ")
+    .str[-1]
+)
+
+fireDF[nc2] = (
+    (
+        fireDF["Last Real Unit Clear Incident"]
+        - pd.to_datetime(
+            fireDF["Earliest Time Phone Pickup AFD or EMS"],
+            # format="%m/%d/%Y %H:%M:%S",
+            infer_datetime_format=True,
+            errors="coerce",
+        )
+    )
+    .astype(str)
+    .str.split("0 days ")
+    .str[-1]
+)
+
+# fireDF[nc3] = (
+#     fireDF["Time First Real Unit Arrived"]
+#     - fireDF["Earliest Time Phone Pickup AFD or EMS"]
+# )
+
+
+#   right after "Incident Turnout - 1st Real Unit Assigned to 1st Real Unit Enroute", AD
+fireDF = utils.putColAt(fireDF, [nc1], 29)
+#   right after "Incident First Unitresponse - 1st Real Unit assigned to 1st Real Unit Arrived", AD
+fireDF = utils.putColAt(fireDF, [nc2], 31)
+#   right after "Unit Assign to Clear Call", AD
+# fireDF = utils.putColAt(fireDF, [nc3], 33)
+
+# ----------------
+# Exporting and completion
+# ----------------
 # print to files
+
+# using builtin function vs using ExcelWriter class
 fireDF.to_excel("test.xlsx")
+# fireDF.to_excel(writer)
+# writer.save()
 # plt.savefig('saved_figure.png')
 
 
