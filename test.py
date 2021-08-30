@@ -93,13 +93,13 @@ fireDF["Earliest Time Phone Pickup AFD or EMS"] = pd.to_datetime(
 #    "Last Real Unit Clear Incident"
 #    "Earliest Time Phone Pickup AFD or EMS"
 
-# confirm time values are recognized as time values
-fireDF["Last Real Unit Clear Incident"] = pd.to_datetime(
-    fireDF["Last Real Unit Clear Incident"],
-    # format="%m/%d/%Y %H:%M:%S",
-    infer_datetime_format=True,
-    errors="ignore",
-)
+# # confirm time values are recognized as time values
+# fireDF["Last Real Unit Clear Incident"] = pd.to_datetime(
+#     fireDF["Last Real Unit Clear Incident"],
+#     # format="%m/%d/%Y %H:%M:%S",
+#     infer_datetime_format=True,
+#     errors="ignore",
+# )
 
 
 # order fire data by time : - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
@@ -205,7 +205,8 @@ c3 = fireDF[
     | (fireDF["Earliest Time Phone Pickup AFD or EMS"].isnull())
 ]
 ###  more than likely TCSO or APD, but still has to be filled
-c3 = c3[(~c3["Calltaker Agency"].isin(["TCSO", "APD"]))]
+# c3 = c3[(~c3["Calltaker Agency"].isin(["TCSO", "APD"]))]
+
 if c3.size > 0:
     limit = [
         "Master Incident Number",
@@ -382,17 +383,9 @@ nc1 = "Incident 1st Enroute to 1stArrived Time"
 nc2 = "Incident Duration - Ph PU  to Clear"
 nc3 = "Unit  Ph PU to UnitArrived"
 
-# fireDF[nc1] = getTimeDiff(
-#     fireDF["Time First Real Unit Arrived"], fireDF["Time First Real Unit Enroute"]
-# )
 fireDF = addTimeDiff(
     fireDF, nc1, "Time First Real Unit Arrived", "Time First Real Unit Enroute"
 )
-
-# fireDF[nc2] = getTimeDiff(
-#     fireDF["Last Real Unit Clear Incident"],
-#     fireDF["Earliest Time Phone Pickup AFD or EMS"],
-# )
 fireDF = addTimeDiff(
     fireDF,
     nc2,
