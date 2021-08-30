@@ -306,91 +306,24 @@ fireDF = utils.putColAt(fireDF, ["Master Incident Without First Two Digits"], 10
 # ----------------
 # Time Data Extra Colulmn Creation
 # ----------------
-from dateutil.parser import parse
-
-
-def isDate(string, fuzzy=False):
-    """
-    Return whether the string can be interpreted as a date.
-
-    :param string: str, string to check for date
-    :param fuzzy: bool, ignore unknown tokens in string if True
-    """
-    try:
-        if string == "":
-            return False
-        parse(string, fuzzy=fuzzy)
-        return True
-
-    except ValueError:
-        return False
-
-
-import dateutil.parser as dparser
-
-
-def myparser(x):
-    # remove nulls
-    if x == "" or x == None or ("NaTType") in str(type(x)):
-        # print(x, type(x), " - is null")
-        return None
-
-    # if already datetime, fine
-    if ("Timestamp") in str(type(x)) or ("date") in str(type(x)):
-        return x
-
-    # convert strings if you can
-    try:
-        y = dparser.parse(x)
-        # print(x, type(x), " - is valid ")
-        return y
-
-    # return Unknown if you cant
-    except:
-        # print(x, type(x), " - failed")
-        return None
-
-
-def addTimeDiff(df, nt, t1, t2):
-    # ensure valid dateTime, or properly noted error
-    df[t1] = df[t1].apply(myparser)
-    df[t2] = df[t2].apply(myparser)
-
-    # set up distinct error codes
-    invalidInputs = ["Unknown", "Invalid"]
-    conditions = [
-        ((df[t1].isnull()) | df[t2].isnull()),
-        (
-            ~(df[t1].astype(str).isin(invalidInputs))
-            & ~(df[t2].astype(str).isin(invalidInputs))
-        ),
-    ]
-
-    choices = [
-        " ",
-        ((df[t1] - df[t2]).astype(str).str.split("0 days ").str[-1]),
-    ]
-    df[nt] = np.select(
-        conditions,
-        choices,
-        default="default",
-    )
-
-    return df
-
 
 nc1 = "Incident 1st Enroute to 1stArrived Time"
 nc2 = "Incident Duration - Ph PU  to Clear"
 nc3 = "Unit  Ph PU to UnitArrived"
 
-fireDF = addTimeDiff(
+fireDF = utils.addTimeDiff(
     fireDF, nc1, "Time First Real Unit Arrived", "Time First Real Unit Enroute"
 )
-fireDF = addTimeDiff(
+fireDF = utils.addTimeDiff(
     fireDF,
     nc2,
     "Last Real Unit Clear Incident",
     "Earliest Time Phone Pickup AFD or EMS",
+)
+fireDF = utils.addTimeDiff(
+    fireDF,
+    nc3,
+    "Time First Real Unit Arrived" "Earliest Time Phone Pickup AFD or EMS",
 )
 
 # fireDF[nc3] = (
@@ -404,7 +337,7 @@ fireDF = utils.putColAt(fireDF, [nc1], 29)  # 29
 #   right after "Incident First Unitresponse - 1st Real Unit assigned to 1st Real Unit Arrived", AD
 fireDF = utils.putColAt(fireDF, [nc2], 31)
 #   right after "Unit Assign to Clear Call", AD
-# fireDF = utils.putColAt(fireDF, [nc3], 33)
+fireDF = utils.putColAt(fireDF, [nc3], 33)
 
 # Testing for time data creation
 timeData = fireDF[

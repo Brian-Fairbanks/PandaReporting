@@ -1,6 +1,8 @@
 from tabulate import tabulate
 import sys
 import traceback
+import numpy as np
+import dateutil.parser as dparser
 
 
 def pprint(dframe):
@@ -49,3 +51,61 @@ def putColAt(dataframe, seq, loc):
             if curLoc == loc:
                 cols += seq
     return dataframe[cols]
+
+
+def myparser(x):
+    # remove nulls
+    if x == "" or x == None or ("NaTType") in str(type(x)):
+        # print(x, type(x), " - is null")
+        return None
+
+    # if already datetime, fine
+    if ("Timestamp") in str(type(x)) or ("date") in str(type(x)):
+        return x
+
+    # convert strings if you can
+    try:
+        y = dparser.parse(x)
+        # print(x, type(x), " - is valid ")
+        return y
+
+    # return Unknown if you cant
+    except:
+        # print(x, type(x), " - failed")
+        return None
+
+
+def addTimeDiff(df, nt, t1, t2):
+    """
+    Returns a copy of a passed dataframe with a new row added
+
+    :param df: Panda Dataframe, dataframe to add rows too
+    :param nt: str, The neame of the column to be created
+    :param t1: str, the name of the row in df which houses the end datetime
+    :param t2: str,the name of the row in df which houses the start datetime
+    """
+    # ensure valid dateTime, or properly noted error
+    df[t1] = df[t1].apply(myparser)
+    df[t2] = df[t2].apply(myparser)
+
+    # set up distinct error codes
+    invalidInputs = ["Unknown", "Invalid"]
+    conditions = [
+        ((df[t1].isnull()) | df[t2].isnull()),
+        (
+            ~(df[t1].astype(str).isin(invalidInputs))
+            & ~(df[t2].astype(str).isin(invalidInputs))
+        ),
+    ]
+
+    choices = [
+        " ",
+        ((df[t1] - df[t2]).astype(str).str.split("0 days ").str[-1]),
+    ]
+    df[nt] = np.select(
+        conditions,
+        choices,
+        default="default",
+    )
+
+    return df
