@@ -29,6 +29,7 @@ locations = {
     # "DEFAULT": "ALERT to user in gui to determine location"
 }
 
+print(locations.keys)
 
 # ##############################################################################################################################################
 #     Main Code
@@ -339,21 +340,21 @@ fireDF = utils.putColAt(fireDF, [nc2], 31)
 #   right after "Unit Assign to Clear Call", AD
 fireDF = utils.putColAt(fireDF, [nc3], 33)
 
-# Testing for time data creation
-timeData = fireDF[
-    [
-        "Master Incident Number",
-        "Time First Real Unit Arrived",
-        "Time First Real Unit Enroute",
-        nc1,
-        "Last Real Unit Clear Incident",
-        "Earliest Time Phone Pickup AFD or EMS",
-        nc2,
-    ]
-]
-timeData.to_excel(
-    "timeData{0}.xlsx".format((datetime.datetime.now()).strftime("%H-%M-%S"))
-)
+# # Testing for time data creation
+# timeData = fireDF[
+#     [
+#         "Master Incident Number",
+#         "Time First Real Unit Arrived",
+#         "Time First Real Unit Enroute",
+#         nc1,
+#         "Last Real Unit Clear Incident",
+#         "Earliest Time Phone Pickup AFD or EMS",
+#         nc2,
+#     ]
+# ]
+# timeData.to_excel(
+#     "timeData{0}.xlsx".format((datetime.datetime.now()).strftime("%H-%M-%S"))
+# )
 
 # ----------------
 # Exporting and completion
