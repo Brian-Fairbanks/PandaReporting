@@ -7,17 +7,47 @@ import FireCheck as fc
 import pandas as pd
 
 
+def getCellFix(df, changeArray):
+    messagebox.showwarning(
+        "Errors in data",
+        "There seem to be some errors in your data.  Please correct the following:",
+    )
+
+
 def checkFile(df):
-    print("checkfile running", df)
+    print(" -- Starting File Checks --")
+
+    # check 0 ----------------------------------------------------------------------
+    print("missing 'Earliest Time Phone Pickup AFD or EMS': ", end="")
     c0 = fc.check0(df)
-    print("'Earliest Time Phone Pickup AFD or EMS' is blank: ", end="")
     if c0 is not None:
-        messagebox.showwarning(
-            "Errors in data",
-            "There seem to be some errors in your data.  Please correct the following:",
-        )
+        getCellFix(c0, ["Earliest Time Phone Pickup AFD or EMS"])
     else:
-        print("No Instances found")
+        print("passed")
+
+    # check 1 ----------------------------------------------------------------------
+    print("'Missing First Arrived Status: ", end="")
+    c1 = fc.check1(df)
+    if c1 is not None:
+        getCellFix(c1, ["FirstArrived"])
+    else:
+        print("passed")
+
+    # check 2 ----------------------------------------------------------------------
+    print("'Missing Arrival Time: ", end="")
+    c2 = fc.check2(df)
+    if c2 is not None:
+        getCellFix(c2, ["Unit Time Arrived At Scene"])
+    else:
+        print("passed")
+
+    # check 3 ----------------------------------------------------------------------
+    print("'Earliest Time Phone Pickup AFD or EMS", end="")
+    c3 = fc.check3(df)
+    if c3 is not None:
+        getCellFix(c3, ["Earliest Time Phone Pickup AFD or EMS"])
+    else:
+        print("passed")
 
 
 def addFiles():

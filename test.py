@@ -158,9 +158,8 @@ c1 = c1[(c1["Unit Time Arrived At Scene"].notnull())]
 c1 = c1[(~c1["Radio_Name"].isin(["ALARMT", "CNTRL02", "TEST"]))]
 # would like to display as: Unit Time Assigned,	Unit Time Enroute	Unit Time Staged,	Unit Time Arrived At Scene,	Unit Time Call Cleared
 
-#  ---------------
 # Solution here is to set first arrived of incident to Yes, and all others to -
-# ----------------
+# -----------------------------------------------------------------------------
 if c1.size > 0:
     limit = [
         "Master Incident Number",
