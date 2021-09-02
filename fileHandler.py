@@ -7,11 +7,13 @@ import FireCheck as fc
 import pandas as pd
 
 
-def getCellFix(df, changeArray):
+def getCellFix(orig, df, changeArray):
     messagebox.showwarning(
         "Errors in data",
         "There seem to be some errors in your data.  Please correct the following:",
     )
+    for ind, row in df.iterrows():
+        messagebox.showinfo("error", str(row))
 
 
 def checkFile(df):
@@ -21,7 +23,7 @@ def checkFile(df):
     print("missing 'Earliest Time Phone Pickup AFD or EMS': ", end="")
     c0 = fc.check0(df)
     if c0 is not None:
-        getCellFix(c0, ["Earliest Time Phone Pickup AFD or EMS"])
+        getCellFix(df, c0, ["Earliest Time Phone Pickup AFD or EMS"])
     else:
         print("passed")
 
@@ -29,7 +31,7 @@ def checkFile(df):
     print("'Missing First Arrived Status: ", end="")
     c1 = fc.check1(df)
     if c1 is not None:
-        getCellFix(c1, ["FirstArrived"])
+        getCellFix(df, c1, ["FirstArrived"])
     else:
         print("passed")
 
@@ -37,7 +39,7 @@ def checkFile(df):
     print("'Missing Arrival Time: ", end="")
     c2 = fc.check2(df)
     if c2 is not None:
-        getCellFix(c2, ["Unit Time Arrived At Scene"])
+        getCellFix(df, c2, ["Unit Time Arrived At Scene"])
     else:
         print("passed")
 
@@ -45,7 +47,7 @@ def checkFile(df):
     print("'Earliest Time Phone Pickup AFD or EMS", end="")
     c3 = fc.check3(df)
     if c3 is not None:
-        getCellFix(c3, ["Earliest Time Phone Pickup AFD or EMS"])
+        getCellFix(df, c3, ["Earliest Time Phone Pickup AFD or EMS"])
     else:
         print("passed")
 
