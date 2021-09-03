@@ -21,15 +21,16 @@ import datetime
 reserveUnits = ["ENG280", "ENG290", "BT235"]
 
 locations = {
-    "BRATTON": "S02",
     "WREN": "S01",
+    "BRATTON": "S02",
     "KELLY": "S03",
     "PICADILLY": "S04",
     "NIMBUS": "S05",
-    # "DEFAULT": "ALERT to user in gui to determine location"
+    # "": "ALERT to user in gui to determine location",
 }
 
-print(locations.keys)
+# print(locations.keys())
+# print(locations["BRATTON"])
 
 # ##############################################################################################################################################
 #     Main Code
@@ -264,14 +265,16 @@ for i in res0:
     )
 
 # Add a new Stations Column
+# -------------------------------------------------------------------------------------------
 # look up radio name and department
 # S01, S02, S03, S04, S05, ADMIN, AFD, OTHER
 
+
 # pulled from fire data xlsx
 # =IF(AND(AZ1="ESD02 - Pflugerville",BA1="Frontline"),RIGHT(Fire_Table[@[Radio Name]],3),"ADMIN ESD02")
+
 az = "Department"
 ba = "Frontline_Status"
-
 
 conditions = [
     (fireDF[az] == "AFD") & (fireDF[ba] == "Other"),
@@ -291,12 +294,35 @@ choices = [
     "ESD12 - Manor",
     "ADMIN ESD02",
     "S05",
-    # determination of the above cases
-    "RESERVE",
+    # mark instances of reserved units, so we can run an extra filter on these in a moment
+    "Reserve Unit",
     "S0" + fireDF["Radio_Name"].str[-2],
 ]
 
 fireDF["Station"] = np.select(conditions, choices, default=fireDF["Radio_Name"])
+
+# correct reserved units, as I have spent far too long trying to do this all as one part
+#    ----------------------------
+rescor = fireDF.index[fireDF["Station"] == "Reserve Unit"].tolist()
+# again, this is going to be very slow compared to other vectorized checks/changes
+for i in rescor:
+    # get location as a string
+    curLoc = str(fireDF.loc[i, "Location_At_Assign_Time"]).lower()
+    # set default value
+    stationNum = "UNKNOWN"
+
+    # check if it has already been specified
+    if "fs020" in curLoc:
+        stationNum = "FS" + curLoc[-2:]
+    # else check it against known street names (specified at the top of the list)
+    else:
+        for street in locations.keys():
+            if street.lower() in curLoc:
+                stationNum = "F" + locations[street]
+                break
+    # and then set the finalized location
+    fireDF.loc[i, "Station"] = stationNum
+
 
 # move Status col to front
 fireDF = utils.putColAt(fireDF, ["Station", "Status"], 0)
@@ -323,14 +349,9 @@ fireDF = utils.addTimeDiff(
 fireDF = utils.addTimeDiff(
     fireDF,
     nc3,
-    "Time First Real Unit Arrived" "Earliest Time Phone Pickup AFD or EMS",
+    "Time First Real Unit Arrived",
+    "Earliest Time Phone Pickup AFD or EMS",
 )
-
-# fireDF[nc3] = (
-#     fireDF["Time First Real Unit Arrived"]
-#     - fireDF["Earliest Time Phone Pickup AFD or EMS"]
-# )
-
 
 #   right after "Incident Turnout - 1st Real Unit Assigned to 1st Real Unit Enroute", AD
 fireDF = utils.putColAt(fireDF, [nc1], 29)  # 29

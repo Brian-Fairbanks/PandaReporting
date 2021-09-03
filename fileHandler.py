@@ -166,7 +166,4 @@ treescrolly.pack(side="right", fill="y")
 treescrollx.pack(side="bottom", fill="x")
 
 
-# upld = Button(ws, text="Upload Files", command=uploadFiles)
-# upld.grid(row=3, columnspan=3, pady=10)
-
 ws.mainloop()
