@@ -80,9 +80,9 @@ def addTimeDiff(df, nt, t1, t2):
     Returns a copy of a passed dataframe with a new row added
 
     :param df: Panda Dataframe, dataframe to add rows too
-    :param nt: str, The neame of the column to be created
+    :param nt: str, The name of the column to be created
     :param t1: str, the name of the row in df which houses the end datetime
-    :param t2: str,the name of the row in df which houses the start datetime
+    :param t2: str, the name of the row in df which houses the start datetime
     """
     # ensure valid dateTime, or properly noted error
     df[t1] = df[t1].apply(myparser)
@@ -101,6 +101,7 @@ def addTimeDiff(df, nt, t1, t2):
     choices = [
         " ",
         ((df[t1] - df[t2]).astype(str).str.split("0 days ").str[-1]),
+        # ((df[t1] - df[t2])),
     ]
     df[nt] = np.select(
         conditions,

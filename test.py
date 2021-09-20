@@ -22,6 +22,8 @@ reserveUnits = ["ENG280", "ENG290", "BT235"]
 
 locations = {
     "WREN": "S01",
+    "MAIN": "S01",
+    "RAILROAD": "201",
     "BRATTON": "S02",
     "KELLY": "S03",
     "PICADILLY": "S04",
@@ -54,7 +56,7 @@ except Exception as ex:
 #   Handle file input errors
 # ------------------------------------------------------------
 if fire == "":
-    fire = "2021 Jan-March Fire Data.xlsx"
+    fire = "Fire 07 2021 ESD02_RAWDATA_UPDATE_Fairbanks.xlsx"
     # fire = "fire 06 2021 Raw QV Data.xlsx"
     # gracefulCrash("A file was not found for Fire Data")
 # if ems == "":
@@ -85,12 +87,12 @@ except Exception as ex:
 # fireDF.rename(columns={"Master Incident Number": "Incident Number"})
 
 # confirm time values are recognized as time values
-fireDF["Earliest Time Phone Pickup AFD or EMS"] = pd.to_datetime(
-    fireDF["Earliest Time Phone Pickup AFD or EMS"],
-    # format="%m/%d/%Y %H:%M:%S",
-    infer_datetime_format=True,
-    errors="ignore",
-)
+# fireDF["Earliest Time Phone Pickup AFD or EMS"] = pd.to_datetime(
+#     fireDF["Earliest Time Phone Pickup AFD or EMS"],
+#     # format="%m/%d/%Y %H:%M:%S",
+#     infer_datetime_format=True,
+#     errors="ignore",
+# )
 
 #    "Last Real Unit Clear Incident"
 #    "Earliest Time Phone Pickup AFD or EMS"
@@ -281,8 +283,11 @@ conditions = [
     (fireDF[az] == "AFD"),
     (fireDF[az] == "ESD12 - Manor") & (fireDF[ba] == "Other"),
     (fireDF[az] == "ESD12 - Manor"),
-    (fireDF[az] == "ESD02 - Pflugerville") & (fireDF[ba] == "Other"),
+    (fireDF[az] == "ESD02 - Pflugerville") & (fireDF[ba].isin(["Other", "Command"])),
     (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"] == "QNT261"),
+    # fmt: off
+    (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].str.contains("BAT20")),
+    # fmt: on
     # account for instances where vehicle is filling in for another.  We will need to deterimine which station it is filling in for based on the location at time of assignment
     (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].isin(reserveUnits)),
     (fireDF[az] == "ESD02 - Pflugerville"),
@@ -292,8 +297,9 @@ choices = [
     "AFD",
     "ESD12 - Manor Other",
     "ESD12 - Manor",
-    "ADMIN ESD02",
+    "ADMIN",
     "S05",
+    "S01",
     # mark instances of reserved units, so we can run an extra filter on these in a moment
     "Reserve Unit",
     "S0" + fireDF["Radio_Name"].str[-2],
@@ -334,7 +340,7 @@ fireDF = utils.putColAt(fireDF, ["Master Incident Without First Two Digits"], 10
 # ----------------
 
 nc1 = "Incident 1st Enroute to 1stArrived Time"
-nc2 = "Incident Duration - Ph PU  to Clear"
+nc2 = "Incident Duration - Ph PU to Clear"
 nc3 = "Unit  Ph PU to UnitArrived"
 
 fireDF = utils.addTimeDiff(
@@ -360,21 +366,39 @@ fireDF = utils.putColAt(fireDF, [nc2], 31)
 #   right after "Unit Assign to Clear Call", AD
 fireDF = utils.putColAt(fireDF, [nc3], 33)
 
-# # Testing for time data creation
-# timeData = fireDF[
-#     [
-#         "Master Incident Number",
-#         "Time First Real Unit Arrived",
-#         "Time First Real Unit Enroute",
-#         nc1,
-#         "Last Real Unit Clear Incident",
-#         "Earliest Time Phone Pickup AFD or EMS",
-#         nc2,
-#     ]
-# ]
-# timeData.to_excel(
-#     "timeData{0}.xlsx".format((datetime.datetime.now()).strftime("%H-%M-%S"))
-# )
+# ----------------
+# Stage Calls
+# ----------------
+
+# get a list of units that needs to be recalculated  staged = arrived_on_scene if ((first_real_unit was staged prior to arrival) & (real unit was not staged prior to Enroute))
+t = "Time First Real Unit Enroute"
+u = "Incident Time First Staged"
+v = "Time First Real Unit Arrived"
+
+recalc = fireDF[
+    (
+        (~fireDF[v].isnull())
+        & (fireDF[v] != "-")
+        & (~fireDF[u].isnull())
+        & (fireDF[u] != "-")
+        & (~fireDF[t].isnull())
+        & (fireDF[t] != "-")
+    )
+    # & ((fireDF[u] < fireDF[v]) & (fireDF[u] > fireDF[t]))
+]
+recalc2 = recalc[((recalc[u] < recalc[v]) & (recalc[u] > recalc[t]))]
+
+recalcArray = recalc2.index.tolist()
+print(recalcArray)
+
+# now using U instead of V, recaluclate the following columns
+rt1 = "Incident First Unit Response - 1st Real Unit Assigned to 1st Real Unit Arrived"
+rt2 = "Earliest Time Phone Pickup to 1st Real Unit Arrived"
+rt3 = "Time Spent OnScene - 1st Real Unit Arrived to Last Real Unit Call Cleared"
+# nc1 - "Incident 1st Enroute to 1stArrived Time"
+
+# TODO: recalcultate these columns
+
 
 # ----------------
 # Exporting and completion
@@ -382,9 +406,19 @@ fireDF = utils.putColAt(fireDF, [nc3], 33)
 # print to files
 
 # using builtin function vs using ExcelWriter class
-fireDF.to_excel("test.xlsx")
-# fireDF.to_excel(writer)
-# writer.save()
+# fireDF.to_excel("Output{0}.xlsx".format((datetime.datetime.now()).strftime("%H-%M-%S")))
+
+
+writer = pd.ExcelWriter(
+    "Output{0}.xlsx".format((datetime.datetime.now()).strftime("%H-%M-%S")),
+    engine="xlsxwriter",
+    datetime_format="mm/dd/yyyy hh:mm:ss",
+    date_format="mm/dd/yyyy",
+)
+
+
+fireDF.to_excel(writer)
+writer.save()
 # plt.savefig('saved_figure.png')
 
 
