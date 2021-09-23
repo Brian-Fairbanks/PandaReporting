@@ -106,6 +106,9 @@ except Exception as ex:
 # )
 
 
+# replace dash with null value
+fireDF = fireDF.replace("-", np.nan)
+
 # order fire data by time : - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
 fireDF = fireDF.sort_values(
     by=[
@@ -389,15 +392,33 @@ recalc = fireDF[
 recalc2 = recalc[((recalc[u] < recalc[v]) & (recalc[u] > recalc[t]))]
 
 recalcArray = recalc2.index.tolist()
-print(recalcArray)
+
+
+def getSingleTimeDiff(df, row, t1, t2):
+    res = df.loc[row, t2] - df.loc[row, t1]
+    print(res)
+    return res
+
 
 # now using U instead of V, recaluclate the following columns
 rt1 = "Incident First Unit Response - 1st Real Unit Assigned to 1st Real Unit Arrived"
 rt2 = "Earliest Time Phone Pickup to 1st Real Unit Arrived"
-rt3 = "Time Spent OnScene - 1st Real Unit Arrived to Last Real Unit Call Cleared"
 # nc1 - "Incident 1st Enroute to 1stArrived Time"
+rt3 = "Time Spent OnScene - 1st Real Unit Arrived to Last Real Unit Call Cleared"
 
-# TODO: recalcultate these columns
+
+# TODO: recalcultate these columns using U instead of V
+for i in recalcArray:
+    fireDF.loc[i, rt1] = getSingleTimeDiff(
+        fireDF, i, "Time First Real Unit Assigned", u
+    )
+    fireDF.loc[i, rt2] = getSingleTimeDiff(
+        fireDF, i, "Earliest Time Phone Pickup AFD or EMS", u
+    )
+    fireDF.loc[i, nc1] = getSingleTimeDiff(fireDF, i, "Time First Real Unit Enroute", u)
+    fireDF.loc[i, rt3] = getSingleTimeDiff(
+        fireDF, i, u, "Last Real Unit Clear Incident"
+    )
 
 
 # ----------------
