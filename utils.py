@@ -100,8 +100,8 @@ def addTimeDiff(df, nt, t1, t2):
 
     choices = [
         " ",
-        ((df[t1] - df[t2]).astype(str).str.split("0 days ").str[-1]),
-        # ((df[t1] - df[t2])),
+        # ((df[t1] - df[t2]).astype(str).str.split("0 days ").str[-1]),
+        ((df[t1] - df[t2]) / np.timedelta64(1, "s")),
     ]
     df[nt] = np.select(
         conditions,
@@ -109,4 +109,28 @@ def addTimeDiff(df, nt, t1, t2):
         default="default",
     )
 
+    # print(type(df.loc[1, nt]))
+    # print(formatSeconds(float(df.loc[1, nt])))
+
+    df[nt] = df[nt].apply(formatSeconds)
+
     return df
+
+
+def formatSeconds(seconds):
+    if seconds == "" or seconds == " ":
+        return ""
+
+    seconds = int(float(seconds))
+
+    hours = seconds // (60 * 60)
+    seconds %= 60 * 60
+    minutes = seconds // 60
+    seconds %= 60
+    return "%02i:%02i:%02i" % (hours, minutes, seconds)
+
+
+def dtformat(x):
+    # print(type(x))
+    # print(formatSeconds(x / np.timedelta64(1, "s")))
+    return formatSeconds(x / np.timedelta64(1, "s"))

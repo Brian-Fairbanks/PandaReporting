@@ -396,7 +396,7 @@ recalcArray = recalc2.index.tolist()
 
 def getSingleTimeDiff(df, row, t1, t2):
     res = df.loc[row, t2] - df.loc[row, t1]
-    print(res)
+    res = utils.dtformat(res)
     return res
 
 
@@ -429,11 +429,18 @@ for i in recalcArray:
 # using builtin function vs using ExcelWriter class
 # fireDF.to_excel("Output{0}.xlsx".format((datetime.datetime.now()).strftime("%H-%M-%S")))
 
+# convert specific rows to format {h}:mm:ss format
+
+# Incident 1st Enroute to 1stArrived Time
+# Incident Duration - Ph PU to Clear
+# Unit  Ph PU to UnitArrived
+# fireDF[""] = fireDF[""].apply(utils.dtFormat)
+
 
 writer = pd.ExcelWriter(
     "Output{0}.xlsx".format((datetime.datetime.now()).strftime("%H-%M-%S")),
     engine="xlsxwriter",
-    datetime_format="mm/dd/yyyy hh:mm:ss",
+    # datetime_format="mm/dd/yyyy hh:mm:ss",
     date_format="mm/dd/yyyy",
 )
 
