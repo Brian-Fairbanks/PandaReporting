@@ -323,7 +323,7 @@ for i in rescor:
     # check if it has already been specified
     if "fs020" in curLoc:
         stationNum = "FS" + curLoc[-2:]
-    # else check it against known street names (specified at the top of the list)
+    # else check it against known street names (specified at the top of the file)
     else:
         for street in locations.keys():
             if street.lower() in curLoc:
@@ -370,7 +370,7 @@ fireDF = utils.putColAt(fireDF, [nc2], 31)
 fireDF = utils.putColAt(fireDF, [nc3], 33)
 
 # ----------------
-# Stage Calls
+# Correction of time: staging calls
 # ----------------
 
 # get a list of units that needs to be recalculated  staged = arrived_on_scene if ((first_real_unit was staged prior to arrival) & (real unit was not staged prior to Enroute))
@@ -406,8 +406,6 @@ rt2 = "Earliest Time Phone Pickup to 1st Real Unit Arrived"
 # nc1 - "Incident 1st Enroute to 1stArrived Time"
 rt3 = "Time Spent OnScene - 1st Real Unit Arrived to Last Real Unit Call Cleared"
 
-
-# TODO: recalcultate these columns using U instead of V
 for i in recalcArray:
     fireDF.loc[i, rt1] = getSingleTimeDiff(
         fireDF, i, "Time First Real Unit Assigned", u
@@ -440,7 +438,7 @@ for i in recalcArray:
 writer = pd.ExcelWriter(
     "Output{0}.xlsx".format((datetime.datetime.now()).strftime("%H-%M-%S")),
     engine="xlsxwriter",
-    # datetime_format="mm/dd/yyyy hh:mm:ss",
+    datetime_format="mm/dd/yyyy hh:mm:ss",
     date_format="mm/dd/yyyy",
 )
 
