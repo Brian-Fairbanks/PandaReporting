@@ -14,6 +14,9 @@ Ensure you have installed Pandas, NumPy, and matplotlib
    py -3 -mpip install tabulate
    py -3 -mpip install xlsxwriter
    py -3 -mpip install shapely
+   install included fiona.whl
+   install included gdl.whl
+   py -3 -mpip install geopandas
 ```
 
 to run:

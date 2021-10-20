@@ -1,4 +1,6 @@
 from shapely.geometry import MultiPolygon
+import geopandas as gpd
+
 
 def points_from_polygons(polygons):
     points = []
@@ -14,6 +16,7 @@ def points_from_polygons(polygons):
                 for point in interior.coords:
                     points.append(point)
     return points
+
 
 points = points_from_polygons(habitat.geometry)
 x = [point.x for point in points]
