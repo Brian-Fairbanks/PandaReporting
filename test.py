@@ -6,6 +6,7 @@ from utils import gracefulCrash
 from cfr import getCRF
 import utils
 import datetime
+import geopandas as gpd
 
 # Create a Pandas Excel writer using XlsxWriter as the engine.
 # Also set the default datetime and date formats.
@@ -30,6 +31,15 @@ locations = {
     "NIMBUS": "S05",
     # "": "ALERT to user in gui to determine location",
 }
+##############################################################
+# Set up boundaries for ESD17
+
+esd17 = gpd.read_file("esd17.shp")
+# specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
+esd17.set_crs(epsg=2277, inplace=True)
+# and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
+esd17 = esd17.to_crs(4326)
+
 
 # print(locations.keys())
 # print(locations["BRATTON"])
@@ -120,6 +130,27 @@ fireDF = fireDF.sort_values(
     ]
 )
 fireDF = fireDF.reset_index(drop=True)
+
+
+# ##############################################################################################################################################
+#     Set District 17 Values
+# ##############################################################################################################################################
+
+from shapely.geometry import Point
+
+
+def isESD(jur, lon, lat):
+    if jur != "ESD02":
+        return jur
+    plot = Point(lon, lat)
+    if (esd17.contains(plot)).any():
+        return "ESD17"
+    return jur
+
+
+fireDF["Jurisdiction"] = np.vectorize(isESD)(
+    fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"]
+)
 
 
 # ##############################################################################################################################################
