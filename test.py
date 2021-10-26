@@ -7,6 +7,8 @@ from crf import getCRF
 import utils
 import datetime
 
+from pandasgui import show
+
 # Create a Pandas Excel writer using XlsxWriter as the engine.
 # Also set the default datetime and date formats.
 
@@ -117,8 +119,8 @@ fireDF = fireDF.reset_index(drop=True)
 # =================================================================
 #     get Complete Response Force for each Structure Fire
 # =================================================================
-crfDF = getCRF(fireDF)
-utils.pprint(crfDF)
+# crfDF = getCRF(fireDF)
+# utils.pprint(crfDF)
 
 
 # =================================================================
@@ -144,20 +146,19 @@ esd17 = esd17.to_crs(4326)
 
 def isESD(jur, lon, lat):
     if jur != "ESD02":
-        print(lat, lon, "is not in esd17")
+        # print(lat, lon, "is not in esd17")
         return False
     plot = Point(lon, lat)
     if (esd17.contains(plot)).any():
-        print(lat, lon, "is in esd17")
+        # print(lat, lon, "is in esd17")
         return True
-    print(lat, lon, "is not in esd17")
+    # print(lat, lon, "is not in esd17")
     return False
 
 
 fireDF["IsESD17"] = np.vectorize(isESD)(
     fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"]
 )
-
 
 # ##############################################################################################################################################
 #     Fire Data Error Checking
@@ -381,7 +382,7 @@ fireDF = utils.putColAt(fireDF, ["Master Incident Without First Two Digits"], 10
 
 nc1 = "Incident 1st Enroute to 1stArrived Time"
 nc2 = "Incident Duration - Ph PU to Clear"
-nc3 = "Unit  Ph PU to UnitArrived"
+nc3 = "Unit Ph PU to UnitArrived"
 
 fireDF = utils.addTimeDiff(
     fireDF, nc1, "Time First Real Unit Arrived", "Time First Real Unit Enroute"
@@ -471,6 +472,10 @@ for i in recalcArray:
 # Unit  Ph PU to UnitArrived
 # fireDF[""] = fireDF[""].apply(utils.dtFormat)
 
+
+######################################
+# show in gui just before writing
+gui = show(fireDF)
 
 writer = pd.ExcelWriter(
     "Output\\Output_{0}.xlsx".format(

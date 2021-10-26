@@ -3,7 +3,7 @@
 Ensure you have installed Pandas, NumPy, and matplotlib
 
 ```
-   pip3 install pandas
+   pip install pandas
 
    or
 
@@ -17,6 +17,9 @@ Ensure you have installed Pandas, NumPy, and matplotlib
    install included fiona.whl
    install included gdl.whl
    py -3 -mpip install geopandas
+   pip install pywin32
+   pip install pandasgui
+
 ```
 
 to run:

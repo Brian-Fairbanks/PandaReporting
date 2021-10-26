@@ -3,7 +3,6 @@ import sys
 import traceback
 import numpy as np
 import dateutil.parser as dparser
-import pandas as pd
 
 
 def pprint(dframe):
@@ -54,15 +53,7 @@ def putColAt(dataframe, seq, loc):
     return dataframe[cols]
 
 
-last = []
-
-
-def verifyTime(x):
-    global last
-    if not (type(x) in last):
-        last.append(type(x))
-        print(last)
-
+def myparser(x):
     # remove nulls
     if x == "" or x == None or ("NaTType") in str(type(x)):
         # print(x, type(x), " - is null")
@@ -71,7 +62,6 @@ def verifyTime(x):
     # if already datetime, fine
     if ("Timestamp") in str(type(x)) or ("date") in str(type(x)):
         return x
-    # removing this since it creates problems with 'TypeError: Cannot cast array data from dtype('<m8[ns]') to dtype('<M8[ns]') according to the rule 'same_kind''
 
     # convert strings if you can
     try:
@@ -81,7 +71,7 @@ def verifyTime(x):
 
     # return Unknown if you cant
     except:
-        print(x, type(x), " - failed")
+        # print(x, type(x), " - failed")
         return None
 
 
@@ -94,40 +84,35 @@ def addTimeDiff(df, nt, t1, t2):
     :param t1: str, the name of the row in df which houses the end datetime
     :param t2: str, the name of the row in df which houses the start datetime
     """
-    global last
-    last = []
     # ensure valid dateTime, or properly noted error
-    df[t1] = df[t1].apply(verifyTime)
-    df[t2] = df[t2].apply(verifyTime)
+    df[t1] = df[t1].apply(myparser)
+    df[t2] = df[t2].apply(myparser)
 
-    # # set up distinct error codes
-    # invalidInputs = ["Unknown", "Invalid"]
-    # conditions = [
-    #     ((df[t1].isnull()) | df[t2].isnull()),
-    #     (
-    #         ~(df[t1].astype(str).isin(invalidInputs))
-    #         & ~(df[t2].astype(str).isin(invalidInputs))
-    #     ),
-    # ]
+    # set up distinct error codes
+    invalidInputs = ["Unknown", "Invalid"]
+    conditions = [
+        ((df[t1].isnull()) | df[t2].isnull()),
+        (
+            ~(df[t1].astype(str).isin(invalidInputs))
+            & ~(df[t2].astype(str).isin(invalidInputs))
+        ),
+    ]
 
-    # choices = [
-    #     np.datetime64("nat"),
-    #     # ((df[t1] - df[t2]) / np.timedelta64(1, "s")),
-    #     ((df[t1] - df[t2])),
-    # ]
-    # df[nt] = np.select(
-    #     conditions,
-    #     choices,
-    #     default=np.datetime64("nat"),
-    # )
-    df[nt] = (df[t1] - df[t2]).astype("timedelta64[s]")
-    print(df[nt])
+    choices = [
+        " ",
+        # ((df[t1] - df[t2]).astype(str).str.split("0 days ").str[-1]),
+        ((df[t1] - df[t2]) / np.timedelta64(1, "s")),
+    ]
+    df[nt] = np.select(
+        conditions,
+        choices,
+        default="default",
+    )
 
     # print(type(df.loc[1, nt]))
     # print(formatSeconds(float(df.loc[1, nt])))
 
-    # convert from seconds into H:M:S
-    # df[nt] = df[nt].apply(formatSeconds)
+    df[nt] = df[nt].apply(formatSeconds)
 
     return df
 
