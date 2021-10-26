@@ -34,6 +34,8 @@ def getStructureFires(df):
 def getIncidentCRF(incident, df):
     try:
         incDF = df[(df["Master Incident Number"] == incident)]
+        print(incDF["Unit Time Arrived At Scene"])
+
         incDF = incDF.sort_values(by=["Unit Time Arrived At Scene"])
 
         # ret = incDF[["Unit Time Arrived At Scene", "Radio_Name"]]
@@ -97,35 +99,11 @@ def getIncidentCRF(incident, df):
 #     Main Code
 # ##############################################################################################################################################
 def main():
-    # # set up scope for fire and ems files
-    fire, ems = "", ""
-
-    try:
-        for i in range(1, 3):
-            if "fire" in sys.argv[i].lower():
-                fire = sys.argv[i]
-            if "ems" in sys.argv[i].lower():
-                ems = sys.argv[i]
-    except IndexError:
-        pass
-    except Exception as ex:
-        gracefulCrash(ex, sys.exc_info())
-
-    if fire == "":
-        fire = "fire 06 2021 Raw QV Data.xlsx"
-        # gracefulCrash("A file was not found for Fire Data")
-    # if ems == "":
-    #     gracefulCrash("A file was not found for EMS Data")
-
+    fire = "Fire 07 2021 ESD02_RAWDATA_UPDATE_Fairbanks.xlsx"
     fireDF = pd.read_excel(fire)
-    # save an OG copy
-    try:
-        # check if file_original exists, and only write to it if it does not.
-        fireDF.to_excel(fire.split(".")[0] + "_Original.xlsx")
-    except Exception as ex:
-        print(ex)
-        input("\nPress enter to exit")
-        exit(1)
+
+    # replace all instances of "-" with null values
+    fireDF = fireDF.replace("-", np.nan)
 
     # order fire data by time : - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
     fireDF = fireDF.sort_values(
@@ -137,6 +115,7 @@ def main():
             "Unit Time Assigned",
         ]
     )
+    # reset numbering to associate with the ordered values
     fireDF = fireDF.reset_index(drop=True)
 
     crfdf = getCRF(fireDF)

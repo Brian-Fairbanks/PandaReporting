@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 from utils import gracefulCrash
-from cfr import getCRF
+from crf import getCRF
 import utils
 import datetime
 
@@ -74,13 +74,6 @@ fireDF = pd.read_excel(fire)
 #     exit(1)
 
 # =================================================================
-#     get Complete Response Force for each Structure Fire
-# =================================================================
-# crfDF = getCRF(fireDF)
-# utils.pprint(crfDF)
-
-
-# =================================================================
 #     Formatting and Renaming of DataFrames
 # =================================================================
 
@@ -106,7 +99,7 @@ fireDF = pd.read_excel(fire)
 # )
 
 
-# replace dash with null value
+# replace all instances of "-" with null values
 fireDF = fireDF.replace("-", np.nan)
 
 # order fire data by time : - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
@@ -121,10 +114,16 @@ fireDF = fireDF.sort_values(
 )
 fireDF = fireDF.reset_index(drop=True)
 
+# =================================================================
+#     get Complete Response Force for each Structure Fire
+# =================================================================
+crfDF = getCRF(fireDF)
+utils.pprint(crfDF)
 
-# ##############################################################################################################################################
+
+# =================================================================
 #     Set District 17 Values
-# ##############################################################################################################################################
+# =================================================================
 
 from shapely.geometry import Point
 import geopandas as gpd
@@ -145,14 +144,17 @@ esd17 = esd17.to_crs(4326)
 
 def isESD(jur, lon, lat):
     if jur != "ESD02":
-        return jur
+        print(lat, lon, "is not in esd17")
+        return False
     plot = Point(lon, lat)
     if (esd17.contains(plot)).any():
-        return "ESD17"
-    return jur
+        print(lat, lon, "is in esd17")
+        return True
+    print(lat, lon, "is not in esd17")
+    return False
 
 
-fireDF["Jurisdiction"] = np.vectorize(isESD)(
+fireDF["IsESD17"] = np.vectorize(isESD)(
     fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"]
 )
 
