@@ -6,7 +6,6 @@ from utils import gracefulCrash
 from cfr import getCRF
 import utils
 import datetime
-import geopandas as gpd
 
 # Create a Pandas Excel writer using XlsxWriter as the engine.
 # Also set the default datetime and date formats.
@@ -31,15 +30,6 @@ locations = {
     "NIMBUS": "S05",
     # "": "ALERT to user in gui to determine location",
 }
-##############################################################
-# Set up boundaries for ESD17
-
-esd17 = gpd.read_file("esd17.shp")
-# specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
-esd17.set_crs(epsg=2277, inplace=True)
-# and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
-esd17 = esd17.to_crs(4326)
-
 
 # print(locations.keys())
 # print(locations["BRATTON"])
@@ -74,14 +64,14 @@ if fire == "":
 
 
 fireDF = pd.read_excel(fire)
-# save an OG copy
-try:
-    # check if file_original exists, and only write to it if it does not.
-    fireDF.to_excel(fire.split(".")[0] + "_Original.xlsx")
-except Exception as ex:
-    print(ex)
-    input("\nPress enter to exit")
-    exit(1)
+### save an OG copy (Auto duplicate when you start working)
+# try:
+#     # check if file_original exists, and only write to it if it does not.
+#     fireDF.to_excel(fire.split(".")[0] + "_Original.xlsx")
+# except Exception as ex:
+#     print(ex)
+#     input("\nPress enter to exit")
+#     exit(1)
 
 # =================================================================
 #     get Complete Response Force for each Structure Fire
@@ -137,6 +127,20 @@ fireDF = fireDF.reset_index(drop=True)
 # ##############################################################################################################################################
 
 from shapely.geometry import Point
+import geopandas as gpd
+
+
+# Set up boundaries for ESD17
+##############################################################
+
+esd17 = gpd.read_file("Shape\\esd17.shp")
+# specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
+esd17.set_crs(epsg=2277, inplace=True)
+# and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
+esd17 = esd17.to_crs(4326)
+
+# Set assign values for esd17
+##############################################################
 
 
 def isESD(jur, lon, lat):
@@ -467,7 +471,9 @@ for i in recalcArray:
 
 
 writer = pd.ExcelWriter(
-    "Output{0}.xlsx".format((datetime.datetime.now()).strftime("%H-%M-%S")),
+    "Output\\Output_{0}.xlsx".format(
+        (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
+    ),
     engine="xlsxwriter",
     datetime_format="mm/dd/yyyy hh:mm:ss",
     date_format="mm/dd/yyyy",
