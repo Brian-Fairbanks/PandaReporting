@@ -1,9 +1,7 @@
 from tabulate import tabulate
-import sys
 import traceback
 import numpy as np
 import dateutil.parser as dparser
-import pandas as pd
 
 
 def pprint(dframe):
@@ -17,23 +15,14 @@ def gracefulCrash(err, trace):
     exit(1)
 
 
-# reorder columns - sample code kept just in case, rewritten to putColAt
-def set_column_sequence(dataframe, seq, front=True):
-    cols = seq[:]  # copy so we don't mutate seq
-    for x in dataframe.columns:
-        if x not in cols:
-            if front:  # we want "seq" to be in the front
-                # so append current column to the end of the list
-                cols.append(x)
-            else:
-                # we want "seq" to be last, so insert this
-                # column in the front of the new column list
-                # "cols" we are building:
-                cols.insert(0, x)
-    return dataframe[cols]
-
-
 def putColAt(dataframe, seq, loc):
+    """
+    Returns a copy of a passed dataframe, but with specific rows moved around
+
+    :param dataframe: Panda Dataframe, dataframe restructure rows
+    :param sequence: [str], an array of rows by name in the order they should appear
+    :param location: int, the row number that the sequence should be moved to: 0 to be first.  (anything larger than the dataframe will default to the end)
+    """
     # account for loc being too large
     if loc >= (len(dataframe.columns) - len(seq)):
         loc = len(dataframe.columns) - len(seq)
@@ -48,7 +37,6 @@ def putColAt(dataframe, seq, loc):
         if x not in cols + seq:
             cols.append(x)
             curLoc += 1
-            # print(x, " : ", curLoc, "!=", loc)
             if curLoc == loc:
                 cols += seq
     return dataframe[cols]
@@ -58,10 +46,11 @@ last = []
 
 
 def verifyTime(x):
+    # track the types coming through so we can more easily conform them all.  Alternatively, look into re-shaping
     global last
     if not (type(x) in last):
         last.append(type(x))
-        print(last)
+        # print(last)
 
     # remove nulls
     if x == "" or x == None or ("NaTType") in str(type(x)):
@@ -99,9 +88,9 @@ def addTimeDiff(df, nt, t1, t2):
     # ensure valid dateTime, or properly noted error
     df[t1] = df[t1].apply(verifyTime)
     df[t2] = df[t2].apply(verifyTime)
- 
+
     df[nt] = (df[t1] - df[t2]).astype("timedelta64[s]")
-    print(df[nt])
+    # print(df[nt])
 
     # print(type(df.loc[1, nt]))
     # print(formatSeconds(float(df.loc[1, nt])))
