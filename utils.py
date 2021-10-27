@@ -81,7 +81,7 @@ def verifyTime(x):
 
     # return Unknown if you cant
     except:
-        print(x, type(x), " - failed")
+        print(x, " ( ", type(x), " ) - failed")
         return None
 
 
@@ -99,27 +99,7 @@ def addTimeDiff(df, nt, t1, t2):
     # ensure valid dateTime, or properly noted error
     df[t1] = df[t1].apply(verifyTime)
     df[t2] = df[t2].apply(verifyTime)
-
-    # # set up distinct error codes
-    # invalidInputs = ["Unknown", "Invalid"]
-    # conditions = [
-    #     ((df[t1].isnull()) | df[t2].isnull()),
-    #     (
-    #         ~(df[t1].astype(str).isin(invalidInputs))
-    #         & ~(df[t2].astype(str).isin(invalidInputs))
-    #     ),
-    # ]
-
-    # choices = [
-    #     np.datetime64("nat"),
-    #     # ((df[t1] - df[t2]) / np.timedelta64(1, "s")),
-    #     ((df[t1] - df[t2])),
-    # ]
-    # df[nt] = np.select(
-    #     conditions,
-    #     choices,
-    #     default=np.datetime64("nat"),
-    # )
+ 
     df[nt] = (df[t1] - df[t2]).astype("timedelta64[s]")
     print(df[nt])
 
