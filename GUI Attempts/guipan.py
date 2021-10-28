@@ -38,7 +38,7 @@ def addFiles():
         fileList.insert("end", file)
 
     for df in fileArray:
-        checkFile(fileArray[df])
+        df = checkFile(fileArray[df])
 
 
 fileArray = {}

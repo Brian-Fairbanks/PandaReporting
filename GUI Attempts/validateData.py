@@ -41,4 +41,6 @@ def checkFile(df):
         getCellFix(df, c3, ["Earliest Time Phone Pickup AFD or EMS"], curError)
     else:
         print("passed")
+
+    # the checks may have alerted the user to input new data: make sure that this current data is passed back at the end
     return df

@@ -19,6 +19,7 @@ Ensure you have installed Pandas, NumPy, and matplotlib
    py -3 -mpip install geopandas
    pip install pywin32
    pip install pandasgui
+   pip install easygui
 
 ```
 
