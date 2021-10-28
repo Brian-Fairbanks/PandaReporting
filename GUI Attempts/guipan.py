@@ -46,7 +46,7 @@ fileArray = {}
 
 ws = Tk()
 ws.title("Fire/EMS Management")
-ws.geometry("400x400")
+ws.geometry("400x200")
 
 ws.columnconfigure(0, weight=1)
 ws.rowconfigure(1, weight=1)
@@ -65,12 +65,13 @@ addFileLabel.grid(row=0, column=0, padx=10)
 addFileBtn = Button(frame1, text="Choose File", command=lambda: addFiles())
 addFileBtn.grid(row=0, column=1)
 
-loadExcelDataBtn = Button(frame1, text="Load File", command=lambda: loadFile())
-loadExcelDataBtn.grid(row=0, column=2)
+# loadExcelDataBtn = Button(frame1, text="Load File", command=lambda: loadFile())
+# loadExcelDataBtn.grid(row=0, column=2)
 
 
 fileList = Listbox(frame1, height=5)
 fileList.grid(row=1, column=0, columnspan=4, sticky=("ew"))
+
 # TODO - Add ability to drag and drop files directly onto this list
 
 ws.mainloop()
