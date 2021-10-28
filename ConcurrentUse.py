@@ -1,4 +1,13 @@
 import pandas as pd
+from pandasgui import show
+
+
+def recalcDict(arr, time):
+    tempDict = {}
+    for unit in arr:
+        if arr[unit] > time:
+            tempDict[unit] = arr[unit]
+    return tempDict
 
 
 def addConcurrentUse(orig, unitsToCheck, startName, endName):
@@ -21,8 +30,12 @@ def addConcurrentUse(orig, unitsToCheck, startName, endName):
     Dataframe
         a new dataframe which is a copy of orig, but with an extra column used to identify concurrent use at the time of unit assignment
     """
-    # create a dictionary of
-    unitDict = []
+    # create a dictionary of units, and when they will be done
+    unitDict = {}
+
+    orig["Concurrent Usage"] = 0
+
+    # limit the dictionary as much as possible, since
 
     # for i in res0:
     # fireDF.loc[i, "Status"] = (
@@ -33,26 +46,26 @@ def addConcurrentUse(orig, unitsToCheck, startName, endName):
 
 ## Main - Used for testing, and will be ignored on import.
 def main():
-    # testDict = {
-    #     "Incident Time Call Entered in Queue": [
-    #         "Python",
-    #         "Java",
-    #         "Haskell",
-    #         "Go",
-    #         "C++",
-    #     ],
-    #     "Master Incident Number": [120, 85, 95, 80, 90],
-    #     "Earliest Time Phone Pickup AFD or EMS": [18, 22, 34, 10, np.nan],
-    # }
-    # df = pd.DataFrame(testDict)
-
     import loadTestFile
 
     df = loadTestFile.get()
 
+    # remove data not useful for the testing
+    limit = [
+        "Master Incident Number",
+        "Radio_Name",
+        "Unit Time Arrived At Scene",
+        "Unit Time Call Cleared",
+    ]
+    df = df[limit]
+    print(df)
+
+    # test the function
     df = addConcurrentUse(
-        df, "ENG2", "Unit Time Arrived At Scene", "Unit Time Call Clared"
+        df, "ENG2", "Unit Time Arrived At Scene", "Unit Time Call Cleared"
     )
+    # show the results
+    show(df)
 
 
 if __name__ == "__main__":
