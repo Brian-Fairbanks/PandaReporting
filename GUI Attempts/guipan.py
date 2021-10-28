@@ -8,27 +8,27 @@ from tkinter.filedialog import askopenfile, askopenfilenames
 import FireCheck as fc
 
 import pandas as pd
-from pandasgui import show
 
 
 def getCellFix(orig, df, changeArray):
+    print(df)
     show(df)
-    messagebox.showwarning(
-        "Errors in data",
-        "There seem to be some errors in your data.  Please correct the following:",
-    )
-    for ind, row in df.iterrows():
-        messagebox.showinfo("error", str(row))
+    # messagebox.showwarning(
+    #     "Errors in data",
+    #     "There seem to be some errors in your data.  Please correct the following:",
+    # )
+    # for ind, row in df.iterrows():
+    #     messagebox.showinfo("error", str(row))
+    return df
 
 
 def checkFile(df):
     print(" -- Starting File Checks --")
-
     # check 0 ----------------------------------------------------------------------
     print("missing 'Earliest Time Phone Pickup AFD or EMS': ", end="")
     c0 = fc.check0(df)
     if c0 is not None:
-        getCellFix(df, c0, ["Earliest Time Phone Pickup AFD or EMS"])
+        df = getCellFix(df, c0, ["Earliest Time Phone Pickup AFD or EMS"])
     else:
         print("passed")
 
@@ -111,18 +111,6 @@ def loadFile():
     return None
 
 
-# def uploadFiles():
-#     pb1 = Progressbar(ws, orient=HORIZONTAL, length=300, mode="determinate")
-#     pb1.grid(row=4, columnspan=3, pady=20)
-#     for i in range(5):
-#         ws.update_idletasks()
-#         pb1["value"] += 20
-#         time.sleep(1)
-#     pb1.destroy()
-#     Label(ws, text="File Uploaded Successfully!", foreground="green").grid(
-#         row=4, columnspan=3, pady=10
-#     )
-
 fileArray = {}
 
 
@@ -154,21 +142,5 @@ loadExcelDataBtn.grid(row=0, column=2)
 fileList = Listbox(frame1, height=5)
 fileList.grid(row=1, column=0, columnspan=4, sticky=("ew"))
 # TODO - Add ability to drag and drop files directly onto this list
-
-#     Frame for data
-# =========================================================================================================================
-frame2 = LabelFrame(ws, text="Excel Data", height=10, width=20)
-frame2.grid(row=1, column=0, columnspan=4, sticky=("nsew"))
-
-# frame2.columnconfigure(0, weight=1)
-
-tv1 = ttk.Treeview(frame2)
-tv1.place(relheight=1, relwidth=1)
-treescrolly = Scrollbar(frame2, orient="vertical", command=tv1.yview)
-treescrollx = Scrollbar(frame2, orient="horizontal", command=tv1.xview)
-tv1.configure(xscrollcommand=treescrollx.set, yscrollcommand=treescrolly.set)
-treescrolly.pack(side="right", fill="y")
-treescrollx.pack(side="bottom", fill="x")
-
 
 ws.mainloop()
