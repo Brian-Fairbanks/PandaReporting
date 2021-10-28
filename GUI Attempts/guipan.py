@@ -3,58 +3,10 @@ from pandasgui import show
 
 from tkinter import *
 from tkinter import messagebox
-from tkinter import ttk
 from tkinter.filedialog import askopenfile, askopenfilenames
 import FireCheck as fc
 
-import pandas as pd
-
-
-def getCellFix(orig, df, changeArray):
-    print(df)
-    show(df)
-    # messagebox.showwarning(
-    #     "Errors in data",
-    #     "There seem to be some errors in your data.  Please correct the following:",
-    # )
-    # for ind, row in df.iterrows():
-    #     messagebox.showinfo("error", str(row))
-    return df
-
-
-def checkFile(df):
-    print(" -- Starting File Checks --")
-    # check 0 ----------------------------------------------------------------------
-    print("missing 'Earliest Time Phone Pickup AFD or EMS': ", end="")
-    c0 = fc.check0(df)
-    if c0 is not None:
-        df = getCellFix(df, c0, ["Earliest Time Phone Pickup AFD or EMS"])
-    else:
-        print("passed")
-
-    # check 1 ----------------------------------------------------------------------
-    print("'Missing First Arrived Status: ", end="")
-    c1 = fc.check1(df)
-    if c1 is not None:
-        getCellFix(df, c1, ["FirstArrived"])
-    else:
-        print("passed")
-
-    # check 2 ----------------------------------------------------------------------
-    print("'Missing Arrival Time: ", end="")
-    c2 = fc.check2(df)
-    if c2 is not None:
-        getCellFix(df, c2, ["Unit Time Arrived At Scene"])
-    else:
-        print("passed")
-
-    # check 3 ----------------------------------------------------------------------
-    print("'Earliest Time Phone Pickup AFD or EMS", end="")
-    c3 = fc.check3(df)
-    if c3 is not None:
-        getCellFix(df, c3, ["Earliest Time Phone Pickup AFD or EMS"])
-    else:
-        print("passed")
+from validateData import checkFile
 
 
 def addFiles():
@@ -87,28 +39,6 @@ def addFiles():
 
     for df in fileArray:
         checkFile(fileArray[df])
-
-
-def clearData():
-    tv1.delete(*tv1.get_children())
-
-
-def loadFile():
-    fileName = fileList.get(fileList.curselection())
-    df = fileArray[fileName]
-
-    clearData()
-    tv1["column"] = list(df.columns)
-    tv1["show"] = "headings"
-
-    for col in tv1["columns"]:
-        tv1.heading(col, text=col)
-
-    df_rows = df.to_numpy().tolist()
-    for row in df_rows:
-        tv1.insert("", "end", values=row)
-
-    return None
 
 
 fileArray = {}

@@ -1,33 +1,31 @@
 import pandas as pd
-from pandasgui import show
 
-from tkinter import *
-from tkinter import messagebox
-from tkinter import ttk
-from tkinter.filedialog import askopenfile, askopenfilenames
 import FireCheck as fc
 import numpy as np
+import easygui
 
-import pandas as pd
 
-
-def getCellFix(orig, df, changeArray):
+def getCellFix(orig, df, changeArray, error):
     """
     takes a full dataframe, an abbreviated array of just the problem cells, and the specific cell that is causing problems
     prompts for corrections, and returns a fixed dataframe
     """
     print(df)
     # df = show(df)
-    messagebox.showwarning(
-        "Errors in data",
-        "There seem to be some errors in your data.  Please correct the following:",
-    )
+    # messagebox.showwarning(
+    #     "Errors in data",
+    #     "There seem to be some errors in your data.  Please correct the following:",
+    # )
+
     for ind, row in df.iterrows():
-        messagebox.showinfo("error: {0}".format(ind), str(row))
-    return df
-    print(df)
+        # messagebox.showinfo("error: {0}".format(ind), str(row))
+        getInp = easygui.enterbox("{0}:\n {1}".format(error, str(row)))
+        # directly set result.  We should try and make sure that the types match, right?
+        orig.loc[ind, changeArray] = getInp
+    return orig
 
 
+## Main - Used for testing, and will be ignored on import.
 def main():
     testDict = {
         "Incident Time Call Entered in Queue": [
@@ -48,11 +46,17 @@ def main():
     print("missing 'Earliest Time Phone Pickup AFD or EMS': ", end="")
     c0 = fc.check0(df)
     if c0 is not None:
-        getCellFix(df, c0, ["Earliest Time Phone Pickup AFD or EMS"])
+        getCellFix(
+            df,
+            c0,
+            ["Earliest Time Phone Pickup AFD or EMS"],
+            "Missing 'Earliest Time Phone Pickup AFD or EMS': ",
+        )
     else:
         print("passed")
 
     print(df)
 
 
-main()
+if __name__ == "__main__":
+    main()
