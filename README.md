@@ -1,4 +1,4 @@
-# panda_testing
+# Panda_Reporting
 
 Ensure you have installed Pandas, NumPy, and matplotlib
 
@@ -21,10 +21,4 @@ Ensure you have installed Pandas, NumPy, and matplotlib
    pip install pandasgui
    pip install easygui
 
-```
-
-to run:
-
-```
-  py -3 report.py
 ```
