@@ -1,16 +1,17 @@
+import numpy as np
 import pandas as pd
 from pandasgui import show
 
 
 def recalcDict(arr, time):
-    tempDict = {}
+    # print("=========================\n", arr)
     for unit in arr:
-        if arr[unit] > time:
-            tempDict[unit] = arr[unit]
-    return tempDict
+        arr[unit] = list(filter(lambda x: x > time, arr[unit]))
+    # print("\n------\n", arr, "\n")
+    return arr
 
 
-def addConcurrentUse(orig, unitsToCheck, startName, endName):
+def addConcurrentUse(orig, startName, endName):
     """
     Add a column of concurrent values to a dataset
 
@@ -18,9 +19,7 @@ def addConcurrentUse(orig, unitsToCheck, startName, endName):
     --------------------------------
     Original : dataframe
         data to which you want to add the columns
-    Units to Check : str - ex: 'ENG2' - only engines in district 2
-        a unique substring of units to include as "concurrent"
-    Start Name : str - ex: Unit Time Arrived At Scene
+    Start Name : str - ex: Unit Time Assigned
         the time the unit shipped out
     End Name : str - ex: Unit Time Call Cleared
         the time the unit will finish its current call
@@ -33,15 +32,38 @@ def addConcurrentUse(orig, unitsToCheck, startName, endName):
     # create a dictionary of units, and when they will be done
     unitDict = {}
 
-    orig["Concurrent Usage"] = 0
+    # create the column with a obviously default number
+    orig["Concurrent Usage"] = np.NaN
 
-    # limit the dictionary as much as possible, since
+    # limit the dictionary as much as possible, since this will go quite slow
+    # start with jsut our jurisdiction
+    # distArr = orig.index[(orig["Jurisdiction"].isin(["ESD02", "ESD17"]))].tolist()
+    distArr = orig.index[(orig["Department"].isin(["ESD02 - Pflugerville"]))].tolist()
 
-    # for i in res0:
-    # fireDF.loc[i, "Status"] = (
-    #     "X" if ((fireDF.loc[i - 1, "Status"] in (["X", "C"]))) else "0"
-    # )
-    return orig
+    for ind in distArr:
+        # get start and end time of incident
+        startTime = orig.loc[ind, startName]
+        endTime = orig.loc[ind, endName]
+
+        # get unit type from the name
+        unitType = "".join(
+            [d for d in str(orig.loc[ind, "Radio_Name"]) if not d.isdigit()]
+        )
+
+        # store end time for this type into the dictionary
+        unitDict[unitType] = [endTime] + (
+            unitDict[unitType] if unitType in unitDict else []
+        )
+
+        # remove those that are already finished
+        recalcDict(unitDict, startTime)
+
+        # store current count as concurrent usage
+        orig.loc[ind, "Concurrent Usage"] = (
+            len(unitDict[unitType]) - 1  # remove on since this one is being counted
+        )
+
+    return orig  # .astype({"Concurrent Usage": "Int64"})
 
 
 ## Main - Used for testing, and will be ignored on import.
@@ -53,17 +75,15 @@ def main():
     # remove data not useful for the testing
     limit = [
         "Master Incident Number",
+        "Department",
         "Radio_Name",
-        "Unit Time Arrived At Scene",
+        "Unit Time Assigned",
         "Unit Time Call Cleared",
     ]
-    df = df[limit]
-    print(df)
+    # df = df[limit]
 
     # test the function
-    df = addConcurrentUse(
-        df, "ENG2", "Unit Time Arrived At Scene", "Unit Time Call Cleared"
-    )
+    df = addConcurrentUse(df, "Unit Time Assigned", "Unit Time Call Cleared")
     # show the results
     show(df)
 

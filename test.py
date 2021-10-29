@@ -6,6 +6,7 @@ from utils import gracefulCrash
 from crf import getCRF
 import utils
 import datetime
+import ConcurrentUse as cu
 
 from pandasgui import show
 
@@ -121,6 +122,12 @@ fireDF = fireDF.reset_index(drop=True)
 # =================================================================
 # crfDF = getCRF(fireDF)
 # utils.pprint(crfDF)
+
+
+# =================================================================
+#     Calculate Concurrent Use for Each Unit
+# =================================================================
+fireDF = cu.addConcurrentUse(fireDF, "Unit Time Assigned", "Unit Time Call Cleared")
 
 
 # =================================================================
