@@ -125,6 +125,11 @@ fireDF = fireDF.reset_index(drop=True)
 
 
 # =================================================================
+#     Add unit type column to simplify analysis
+# =================================================================
+fireDF = utils.addUnitType(fireDF)
+
+# =================================================================
 #     Calculate Concurrent Use for Each Unit
 # =================================================================
 fireDF = cu.addConcurrentUse(fireDF, "Unit Time Assigned", "Unit Time Call Cleared")

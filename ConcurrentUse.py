@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from pandasgui import show
+import utils as u
 
 
 def recalcDict(arr, time):
@@ -46,9 +47,14 @@ def addConcurrentUse(orig, startName, endName):
         endTime = orig.loc[ind, endName]
 
         # get unit type from the name
-        unitType = "".join(
-            [d for d in str(orig.loc[ind, "Radio_Name"]) if not d.isdigit()]
-        )
+        # unitType = "".join(
+        #     [d for d in str(orig.loc[ind, "Radio_Name"]) if not d.isdigit()]
+        # )
+        # use the column if it exists, since this work should already be done.
+        try:
+            unitType = str(orig.loc[ind, "Unit Type"])
+        except:
+            unitType = u.getUnitType(orig.loc[ind, "Radio_Name"])
 
         # store end time for this type into the dictionary
         unitDict[unitType] = [endTime] + (

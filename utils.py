@@ -118,3 +118,14 @@ def dtformat(x):
     # print(type(x))
     # print(formatSeconds(x / np.timedelta64(1, "s")))
     return formatSeconds(x / np.timedelta64(1, "s"))
+
+
+def getUnitType(name):
+    # get unit type from the name
+    return "".join([d for d in str(name) if not d.isdigit()])
+
+
+def addUnitType(orig):
+    # orig["Unit Type"] = orig.apply(lambda x )
+    orig["Unit Type"] = np.vectorize(getUnitType)(orig["Radio_Name"])
+    return orig
