@@ -12,3 +12,5 @@ APIData.txt
 *.geojson
 
 cache
+
+*graphml*

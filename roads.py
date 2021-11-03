@@ -1,51 +1,129 @@
 import geopandas as gpd
 from shapely.geometry import Point
 import osmnx as ox
+from osmnx import distance as dist
 import networkx as nx
 import matplotlib.pyplot as plt
 from os.path import exists
 
+station = ""
+roadMap = ""
+
+
+def setStation(coords):
+    """
+    sets a current station on the map
+
+    Parameters
+    --------------------------------
+    Lat : float
+        latitude of location
+    Lon : float
+        longituted of location
+
+    Returns
+    --------------------------------
+    Nearest node id to location
+    """
+    global roadMap
+    global station
+    station = ox.nearest_nodes(roadMap, coords[1], coords[0])
+
+    return station
+
+
+def getDistToStation(lat, lon):
+    """
+    returns the distance from a passed lat lon set to a station -
+    requires a station be set.  May crash if no station is set.
+
+    Parameters
+    --------------------------------
+    Lat : float
+        latitude of location
+    Lon : float
+        longituted of location
+
+    Returns
+    --------------------------------
+    Float
+        shortest distance along roadways between passed location and station
+    """
+    global station
+
+    # get the nearest network node to each point
+    global station
+    dest_node = ox.nearest_nodes(roadMap, lon, lat)
+
+    # print(station, ":", dest_node)
+
+    try:
+        # how long is our route in meters?
+        # dist = ox.shortest_path(roadMap, station, dest_node, weight="length")
+        dist = nx.shortest_path_length(roadMap, station, dest_node, weight="length")
+        # print("shortest path is:", dist)
+    except:
+        print(
+            "You have just attempted to find the distance from a station, without first setting a station (setStation(lat,lon))"
+        )
+
+    distInMiles = dist * float(0.000621371)
+    return dist
+
 
 def downloadData():
     place_name = "Pflugerville, Texas, United States"
-    G = ox.graph_from_place(place_name)
-    nx.set_edge_attributes(G, 100, "w3")
+    # buffer distance is area in meters outside of the city.
+    # district can extend up to 5 miles out
+    # 10000m = 6.21 miles
+    G = ox.graph_from_place(place_name, buffer_dist=10)
+    # nx.set_edge_attributes(G, 100, "w3")
 
     # save graph to disk
     ox.save_graphml(G, "./data/roads/roads.graphml")
 
-    # and return the data
+    # return the data
     return G
 
 
 def getRoads():
-    # # Get Road Bondaries, to limit how much data needs to be read in
-    # ##############################################################
-
-    # bounds = gpd.read_file("Shape\\roadBounds.shp")
-    # # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
-    # bounds.set_crs(epsg=2277, inplace=True)
-    # # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
-    # bounds = bounds.to_crs(4326)
-
     # Load the data if it exists, else fetch it first
     if not exists("./data/roads/roads.graphml"):
         print("downloading data from the api, this may take a moment")
-        graph = downloadData()
+        G = downloadData()
     else:
         print("loading data from file.  This should be quite quick")
-        graph = ox.load_graphml("./data/roads/roads.graphml")
-
-    return graph
+        G = ox.load_graphml("./data/roads/roads.graphml")
+    # store andreturn the data
+    global roadMap
+    roadMap = G
+    return G
 
 
 # Testing Code: will only run when this file is called directly.
 # ==================================================================
+
+
 def main():
     # load road data
     roads = getRoads()
 
-    # plot it for reference
+    print("graph is complete.  Setting Station Location")
+
+    # create temporary dictionary of stations
+    #               "station name" = [lat, lon]
+    stationDict = {"S1": [30.438998418785996, -97.61916191173464]}
+
+    # print(stationDict["S1"])
+    setStation(stationDict["S1"])
+
+    print("finding distances:")
+    # gps points to 800 Cheyenne Valley Cove, Round Rock, TX 78664.  Distance is off by ~5%
+    dist = getDistToStation(30.496659877487765, -97.60270496406959)
+    print("Distance is ", dist)
+
+    print("Distances Calculated.  Opening view.")
+    # plot graph
     fig, ax = ox.plot_graph(roads)
     plt.tight_layout()
 

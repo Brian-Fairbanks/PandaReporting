@@ -332,12 +332,12 @@ az = "Department"
 ba = "Frontline_Status"
 
 conditions = [
-    (fireDF[az] == "AFD") & (fireDF[ba] == "Other"),
+    (fireDF[az] == "AFD") & (fireDF[ba] == "Other"),  # 1
     (fireDF[az] == "AFD"),
     (fireDF[az] == "ESD12 - Manor") & (fireDF[ba] == "Other"),
     (fireDF[az] == "ESD12 - Manor"),
     (fireDF[az] == "ESD02 - Pflugerville") & (fireDF[ba].isin(["Other", "Command"])),
-    (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"] == "QNT261"),
+    (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"] == "QNT261"),  # 6
     # fmt: off
     (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].str.contains("BAT20")),
     # fmt: on
@@ -351,7 +351,7 @@ choices = [
     "ESD12 - Manor Other",
     "ESD12 - Manor",
     "ADMIN",
-    "S05",
+    "S05",  # 6
     "S01",
     # mark instances of reserved units, so we can run an extra filter on these in a moment
     "Reserve Unit",
