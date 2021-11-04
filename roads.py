@@ -1,5 +1,7 @@
+import pyproj
 import geopandas as gpd
 from shapely.geometry import Point
+from shapely.ops import transform
 import osmnx as ox
 from osmnx import distance as dist
 import networkx as nx
@@ -8,6 +10,16 @@ from os.path import exists
 
 station = ""
 roadMap = ""
+
+
+def toCrs(lat, lon):
+    wgs84 = pyproj.CRS("EPSG:4326")
+    local = pyproj.CRS("EPSG:2277")
+
+    wgs84_pt = Point(lat, lon)
+
+    project = pyproj.Transformer.from_crs(wgs84, local, always_xy=True).transform
+    return transform(project, wgs84_pt)
 
 
 def setStation(coords):
@@ -27,7 +39,17 @@ def setStation(coords):
     """
     global roadMap
     global station
-    station = ox.nearest_nodes(roadMap, coords[1], coords[0])
+
+    point = toCrs(coords[1], coords[0])
+
+    node = ox.nearest_nodes(roadMap, point.x, point.y)
+    nodeDist = ox.nearest_nodes(roadMap, point.x, point.y, return_dist=True)
+
+    print("===== Station node:distance - \n", nodeDist)
+    print(point)
+    print(roadMap.nodes[node], "\n===============================\n")
+
+    station = node
 
     return station
 
@@ -53,7 +75,16 @@ def getDistToStation(lat, lon):
 
     # get the nearest network node to each point
     global station
-    dest_node = ox.nearest_nodes(roadMap, lon, lat)
+    point = toCrs(lon, lat)
+
+    dest_node = ox.nearest_nodes(roadMap, point.x, point.y)
+    nodeDist = ox.nearest_nodes(roadMap, point.x, point.y, return_dist=True)
+
+    print("===== Station node:distance - \n", nodeDist)
+    print(point)
+    print(roadMap.nodes[dest_node], "\n===============================\n")
+
+    # dest_node = ox.nearest_nodes(roadMap, lon, lat)
 
     # print(station, ":", dest_node)
 
@@ -67,7 +98,7 @@ def getDistToStation(lat, lon):
             "You have just attempted to find the distance from a station, without first setting a station (setStation(lat,lon))"
         )
 
-    distInMiles = dist * float(0.000621371)
+    # distInMiles = dist * float(0.000621371)
     return dist
 
 
@@ -94,10 +125,23 @@ def getRoads():
     else:
         print("loading data from file.  This should be quite quick")
         G = ox.load_graphml("./data/roads/roads.graphml")
+
+    # Project the map (into the proper GPS coordinates system?)
+    print("projecting map...")
+    GProj = ox.project_graph(G)
+
+    print("Consolidating")
+    GCon = ox.consolidate_intersections(
+        GProj, rebuild_graph=True, tolerance=20, dead_ends=False
+    )
+
+    print("projecting to 2277")
+    GFIPS = ox.project_graph(GCon, to_crs="epsg:2277")
+
     # store andreturn the data
     global roadMap
-    roadMap = G
-    return G
+    roadMap = GFIPS
+    return GFIPS
 
 
 # Testing Code: will only run when this file is called directly.
@@ -119,6 +163,8 @@ def main():
 
     print("finding distances:")
     # gps points to 800 Cheyenne Valley Cove, Round Rock, TX 78664.  Distance is off by ~5%
+    # (7659.590000000004), but google claims 8.0km
+    # attempting again after projecting map... - it now shows 0.  Great
     dist = getDistToStation(30.496659877487765, -97.60270496406959)
     print("Distance is ", dist)
 
