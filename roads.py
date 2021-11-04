@@ -98,8 +98,8 @@ def getDistToStation(lat, lon):
             "You have just attempted to find the distance from a station, without first setting a station (setStation(lat,lon))"
         )
 
-    # distInMiles = dist * float(0.000621371)
-    return dist
+    distInMiles = dist * float(0.000621371)
+    return distInMiles
 
 
 def downloadData():
