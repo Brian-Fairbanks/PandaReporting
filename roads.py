@@ -7,6 +7,7 @@ from osmnx import distance as dist
 import networkx as nx
 import matplotlib.pyplot as plt
 from os.path import exists
+import traceback
 
 station = ""
 roadMap = ""
@@ -78,11 +79,16 @@ def getDistToStation(lat, lon):
     point = toCrs(lon, lat)
 
     dest_node = ox.nearest_nodes(roadMap, point.x, point.y)
+
     nodeDist = ox.nearest_nodes(roadMap, point.x, point.y, return_dist=True)
 
-    print("===== Station node:distance - \n", nodeDist)
-    print(point)
-    print(roadMap.nodes[dest_node], "\n===============================\n")
+    # if the incident is more than .3 miles from nearest node, something is problematic
+    # if nodeDist[1] > 500:
+    #     return -1
+
+    # print("===== Station node:distance - \n", nodeDist)
+    # print(point)
+    # print(roadMap.nodes[dest_node], "\n===============================\n")
 
     # dest_node = ox.nearest_nodes(roadMap, lon, lat)
 
@@ -94,9 +100,14 @@ def getDistToStation(lat, lon):
         dist = nx.shortest_path_length(roadMap, station, dest_node, weight="length")
         # print("shortest path is:", dist)
     except:
-        print(
-            "You have just attempted to find the distance from a station, without first setting a station (setStation(lat,lon))"
-        )
+        if station == "":
+            print(
+                "You have likely just attempted to find the distance from a station, without first setting a station (setStation(lat,lon))"
+            )
+        else:
+            print("error getting distance between: ", station, " & ", dest_node)
+            traceback.print_stack()
+        return None
 
     distInMiles = dist * float(0.000621371)
     return distInMiles

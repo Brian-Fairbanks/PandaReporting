@@ -134,6 +134,27 @@ fireDF = utils.addUnitType(fireDF)
 # =================================================================
 fireDF = cu.addConcurrentUse(fireDF, "Unit Time Assigned", "Unit Time Call Cleared")
 
+# =================================================================
+#     Calculate Station Distances
+# =================================================================
+import roads as rd
+
+rd.getRoads()
+
+#  set station array along with standard GPS coordinates of station
+stationDict = {"S1": [30.438998418785996, -97.61916191173464]}
+
+for station in stationDict:
+    # set station on road map
+    rd.setStation(stationDict[station])
+    fireDF["Distance to {0} in miles".format(station)] = np.vectorize(
+        rd.getDistToStation
+    )(
+        fireDF["Y_Lat"],
+        fireDF["X-Long"],
+    )
+
+show(fireDF)
 
 # =================================================================
 #     Set District 17 Values
