@@ -51,8 +51,26 @@ def setStation(coords):
     print(roadMap.nodes[node], "\n===============================\n")
 
     station = node
-
     return station
+
+
+def getArrayDistToStation(df):
+    """
+    STUBBED - get back to this, as this will almost certainly run a LOT faster when vectorized with pandas
+    returns the distance to a previously set statation for a a passed dataframe
+    requires a station be set.  May crash if no station is set.
+
+    Parameters
+    --------------------------------
+    df : Dataframe
+        should contain latitude and longitudes for each location
+
+    Returns
+    --------------------------------
+    Dataframe
+
+
+    """
 
 
 def getDistToStation(lat, lon):
@@ -105,7 +123,9 @@ def getDistToStation(lat, lon):
                 "You have likely just attempted to find the distance from a station, without first setting a station (setStation(lat,lon))"
             )
         else:
-            print("error getting distance between: ", station, " & ", dest_node)
+            print(
+                "error getting distance between: ", station, " & ", dest_node
+            )  ## usually the map is to small and a connection cannot be found
             traceback.print_stack()
         return None
 
@@ -122,35 +142,55 @@ def downloadData():
     # nx.set_edge_attributes(G, 100, "w3")
 
     # save graph to disk
+    print("  Saving Downloaded Map ...")
     ox.save_graphml(G, "./data/roads/roads.graphml")
+    print("  Save Complete!")
 
     # return the data
     return G
 
 
-def getRoads():
-    # Load the data if it exists, else fetch it first
-    if not exists("./data/roads/roads.graphml"):
-        print("downloading data from the api, this may take a moment")
-        G = downloadData()
-    else:
-        print("loading data from file.  This should be quite quick")
-        G = ox.load_graphml("./data/roads/roads.graphml")
-
+def simplifyMap(G):
     # Project the map (into the proper GPS coordinates system?)
-    print("projecting map...")
+    print(" projecting map...")
     GProj = ox.project_graph(G)
 
-    print("Consolidating")
+    print(" Consolidating...")
     GCon = ox.consolidate_intersections(
         GProj, rebuild_graph=True, tolerance=20, dead_ends=False
     )
 
-    print("projecting to 2277")
+    print("  Saving Simplified Map ...")
+    ox.save_graphml(G, "./data/roads/roadsProjected.graphml")
+    print("  Save Complete!")
+
+    return GCon
+
+
+def getRoads():
+    global roadMap
+
+    # Load the data if it exists, else fetch it amd process it
+    if not exists("./data/roads/roadsProjected.graphml"):
+        # final version does exists, see if partial one does.
+        if not exists("./data/roads/roads.graphml"):
+            print("Downloading data from the api, this may take a moment")
+            G = downloadData()
+        else:
+            print("Found a partial file:")
+            G = ox.load_graphml("./data/roads/roads.graphml")
+        # then prep for final data
+        GCon = simplifyMap(G)
+    else:
+        print("Completed Map Exists, this will be quite quick")
+        GCon = ox.load_graphml("./data/roads/roadsProjected.graphml")
+
+    print("Projecting to Texas Local Map...")
     GFIPS = ox.project_graph(GCon, to_crs="epsg:2277")
 
+    print("Map is ready for use!")
+
     # store andreturn the data
-    global roadMap
     roadMap = GFIPS
     return GFIPS
 
@@ -158,24 +198,22 @@ def getRoads():
 # Testing Code: will only run when this file is called directly.
 # ==================================================================
 
+# create temporary dictionary of stations
+#               "station name" = [lat, lon]
+stationDict = {"S1": [30.438998418785996, -97.61916191173464]}
 
-def main():
+
+def testMap():
     # load road data
     roads = getRoads()
 
     print("graph is complete.  Setting Station Location")
 
-    # create temporary dictionary of stations
-    #               "station name" = [lat, lon]
-    stationDict = {"S1": [30.438998418785996, -97.61916191173464]}
-
-    # print(stationDict["S1"])
     setStation(stationDict["S1"])
 
     print("finding distances:")
     # gps points to 800 Cheyenne Valley Cove, Round Rock, TX 78664.  Distance is off by ~5%
-    # (7659.590000000004), but google claims 8.0km
-    # attempting again after projecting map... - it now shows 0.  Great
+    # (), but google claims 8.0km
     dist = getDistToStation(30.496659877487765, -97.60270496406959)
     print("Distance is ", dist)
 
@@ -183,6 +221,17 @@ def main():
     # plot graph
     fig, ax = ox.plot_graph(roads)
     plt.tight_layout()
+
+
+def testNearestNodes():
+
+    roads = getRoads()
+    setStation(stationDict["S1"])
+
+
+def main():
+    testMap()
+    # testNearestNodes()
 
 
 if __name__ == "__main__":
