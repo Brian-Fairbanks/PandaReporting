@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from pandasgui import show
 import utils as u
+from timer import Timer
 
 
 def recalcDict(arr, time):

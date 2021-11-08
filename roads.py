@@ -1,4 +1,6 @@
+from geopandas import geodataframe
 import pyproj
+import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
 from shapely.ops import transform
@@ -8,6 +10,14 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from os.path import exists
 import traceback
+import numpy as np
+from geopandas import GeoDataFrame
+from timer import Timer
+
+from tqdm import tqdm
+
+
+# This really is acting more like a class than a set of functions, but I really need to look into proper class declaration for python 3 ...
 
 station = ""
 roadMap = ""
@@ -46,34 +56,15 @@ def setStation(coords):
     node = ox.nearest_nodes(roadMap, point.x, point.y)
     nodeDist = ox.nearest_nodes(roadMap, point.x, point.y, return_dist=True)
 
-    print("===== Station node:distance - \n", nodeDist)
-    print(point)
-    print(roadMap.nodes[node], "\n===============================\n")
+    # print("===== Station node:distance - \n", nodeDist)
+    # print(point)
+    # print(roadMap.nodes[node], "\n===============================\n")
 
     station = node
     return station
 
 
-def getArrayDistToStation(df):
-    """
-    STUBBED - get back to this, as this will almost certainly run a LOT faster when vectorized with pandas
-    returns the distance to a previously set statation for a a passed dataframe
-    requires a station be set.  May crash if no station is set.
-
-    Parameters
-    --------------------------------
-    df : Dataframe
-        should contain latitude and longitudes for each location
-
-    Returns
-    --------------------------------
-    Dataframe
-
-
-    """
-
-
-def getDistToStation(lat, lon):
+def distToStationFromGPS(lat, lon):
     """
     returns the distance from a passed lat lon set to a station -
     requires a station be set.  May crash if no station is set.
@@ -93,7 +84,6 @@ def getDistToStation(lat, lon):
     global station
 
     # get the nearest network node to each point
-    global station
     point = toCrs(lon, lat)
 
     dest_node = ox.nearest_nodes(roadMap, point.x, point.y)
@@ -133,6 +123,109 @@ def getDistToStation(lat, lon):
     return distInMiles
 
 
+def distToStationFromNode(dest_node, progress=None):
+    """
+    returns the distance from a passed map node -
+    requires a station be set.  May crash if no station is set.
+
+    Parameters
+    --------------------------------
+    dest_node : str
+        strin index of a node on roadMap
+    (Optional) : tqdm progress bar
+
+
+    Returns
+    --------------------------------
+    Float
+        shortest distance along roadways between passed location and station
+    """
+    if progress is not None:
+        progress.update(1)
+
+    try:
+        # how long is our route in meters?
+        dist = nx.shortest_path_length(roadMap, station, dest_node, weight="length")
+    except:
+        if station == "":
+            print(
+                "You have likely just attempted to find the distance from a station, without first setting a station (setStation(lat,lon))"
+            )
+        # else:
+        # print("error getting finding path between: ", station, " & ", dest_node)
+        ## usually the map is to small and a connection cannot be found
+        # traceback.print_stack()
+        return None
+
+    distInMiles = dist * float(0.000621371)
+    return distInMiles
+
+
+# ##############################################################################################################################################
+#     GDF Addition Functions
+# ##############################################################################################################################################
+
+
+def getPoint(point, pbar):
+    pbar.update(1)
+    return ox.nearest_nodes(roadMap, point.x, point.y)
+
+
+def addNearestNodeToGDF(gdf):
+    """
+    Adds a "nearest node" column to a passed dataframe with geometries
+
+    Parameters
+    --------------------------------
+    gdf : Geo DataFrame
+        containing 'geometry' col for nods
+
+    Returns
+    --------------------------------
+    GDF
+        copy of gdf, but with an extra row for nearest node on RoadMap
+    """
+    with tqdm(total=len(gdf.index), desc="Finding nearest Nodes:") as pbar:
+        gdf["nearest node"] = np.vectorize(getPoint)(gdf.geometry, pbar)
+    return gdf
+
+
+def getArrayDistToStation(df):
+    """
+    STUBBED - get back to this, as this will almost certainly run a LOT faster when vectorized with pandas
+    returns the distance to a previously set statation for a a passed dataframe
+    requires a station be set.  May crash if no station is set.
+
+    Parameters
+    --------------------------------
+    df : Dataframe
+        should contain latitude and longitudes for each location
+
+    Returns
+    --------------------------------
+    Dataframe
+    """
+    with tqdm(total=len(stationDict), desc="Routing To Stations:") as stationBar:
+        for curStat in stationDict:
+            stationBar.update(1)
+            # set station on road map
+            setStation(stationDict[curStat])
+            # calculate distances
+
+            with tqdm(
+                total=len(df.index), desc="Calculating distance to station:"
+            ) as pbar2:
+                df["Distance to {0} in miles".format(curStat)] = df.apply(
+                    lambda x: distToStationFromNode(x["nearest node"], pbar2),
+                    axis=1,
+                )
+
+    return df
+
+
+# ##############################################################################################################################################
+#     Map Processing Helper Functions
+# ##############################################################################################################################################
 def downloadData():
     place_name = "Pflugerville, Texas, United States"
     # buffer distance is area in meters outside of the city.
@@ -200,7 +293,14 @@ def getRoads():
 
 # create temporary dictionary of stations
 #               "station name" = [lat, lon]
-stationDict = {"S1": [30.438998418785996, -97.61916191173464]}
+stationDict = {
+    "S1": [30.438998418785996, -97.61916191173464],
+    "S2": [30.453910816877844, -97.68157275754972],
+    "S3": [30.46735859584173, -97.5850678533701],
+    "S4": [30.468996083019054, -97.63488137388288],
+    "S5": [30.453565076497853, -97.65297941530505],
+    "S6": [30.431183729317205, -97.57114474414165],
+}
 
 
 def testMap():
@@ -213,8 +313,8 @@ def testMap():
 
     print("finding distances:")
     # gps points to 800 Cheyenne Valley Cove, Round Rock, TX 78664.  Distance is off by ~5%
-    # (), but google claims 8.0km
-    dist = getDistToStation(30.496659877487765, -97.60270496406959)
+    # (7659.590000000004), but google claims 8.0km
+    dist = distToStationFromGPS(30.496659877487765, -97.60270496406959)
     print("Distance is ", dist)
 
     print("Distances Calculated.  Opening view.")
@@ -224,14 +324,55 @@ def testMap():
 
 
 def testNearestNodes():
+    from pandasgui import show
 
-    roads = getRoads()
-    setStation(stationDict["S1"])
+    import loadTestFile
+
+    df = loadTestFile.get()
+    # df = df.head(50)
+    # remove data not useful for the testing
+    limit = [
+        "Y_Lat",
+        "X-Long",
+    ]
+    # df = df[limit]
+
+    geoTime = Timer("Generating Points")
+    geoTime.start()
+
+    geometry = [Point(xy) for xy in zip(df["X-Long"], df["Y_Lat"])]
+    gdf = GeoDataFrame(df, crs="EPSG:4326", geometry=geometry)
+
+    geoTime.stop()
+
+    ##
+    t1 = Timer()
+    t1.start()
+    gdf = gdf.to_crs(2277)
+    t1.end()
+
+    t2 = Timer("Load Map")
+    t2.start()
+    getRoads()
+    t2.end()
+
+    t3 = Timer("Add Nearest Node to GDF")
+    t3.start()
+    # add_nearest_node_to_gdf(gdf, roads)
+    gdf = addNearestNodeToGDF(gdf)
+    t3.end()
+
+    t4 = Timer("Finding Distance to Station")
+    t4.start()
+    gdf = getArrayDistToStation(gdf)
+    t4.end()
+
+    show(gdf)
 
 
 def main():
-    testMap()
-    # testNearestNodes()
+    # testMap()
+    testNearestNodes()
 
 
 if __name__ == "__main__":
