@@ -139,22 +139,18 @@ fireDF = cu.addConcurrentUse(fireDF, "Unit Time Assigned", "Unit Time Call Clear
 # =================================================================
 import roads as rd
 
-rd.getRoads()
+# create temporary dictionary of stations
+#               "station name" = [lat, lon]
+stationDict = {
+    "S1": [30.438998418785996, -97.61916191173464],
+    "S2": [30.453910816877844, -97.68157275754972],
+    "S3": [30.46735859584173, -97.5850678533701],
+    "S4": [30.468996083019054, -97.63488137388288],
+    "S5": [30.453565076497853, -97.65297941530505],
+    "S6": [30.431183729317205, -97.57114474414165],
+}
 
-#  set station array along with standard GPS coordinates of station
-stationDict = {"S1": [30.438998418785996, -97.61916191173464]}
-
-for station in stationDict:
-    # set station on road map
-    rd.setStation(stationDict[station])
-    fireDF["Distance to {0} in miles".format(station)] = np.vectorize(
-        rd.getDistToStation
-    )(
-        fireDF["Y_Lat"],
-        fireDF["X-Long"],
-    )
-
-show(fireDF)
+fireDF = rd.runRoadAnalysis(fireDF, stationDict)
 
 # =================================================================
 #     Set District 17 Values
