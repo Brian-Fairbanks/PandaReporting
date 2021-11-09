@@ -55,6 +55,7 @@ def addFiles():
                 fileArray[file] = pd.read_excel(excel_filename)
                 # sort the array
                 fileArray[file] = fc.sort(fileArray[file])
+                fileArray[file] = checkFile(fileArray[file])
 
             except ValueError:
                 messagebox.showerror("Invalid File", "The loaded file is invalid")
@@ -63,13 +64,10 @@ def addFiles():
                 messagebox.showerror("Invalid File", "No such file as {excel_filename}")
                 return None
 
-    # remove and re-add
+    # reprint list
     fileList.delete(0, "end")
     for file in fileArray.keys():
         fileList.insert("end", file)
-
-    for df in fileArray:
-        df = checkFile(fileArray[df])
 
 
 def run():
