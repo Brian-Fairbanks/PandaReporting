@@ -4,9 +4,40 @@ from pandasgui import show
 from tkinter import *
 from tkinter import messagebox
 from tkinter.filedialog import askopenfile, askopenfilenames
-import FireCheck as fc
+import GUI.FireCheck as fc
 
-from validateData import checkFile
+from GUI.validateData import checkFile
+
+
+fileArray = {}
+
+ws = Tk()
+ws.title("Fire/EMS Management")
+ws.geometry("400x200")
+
+ws.columnconfigure(0, weight=1)
+ws.rowconfigure(1, weight=1)
+
+#     Frame for file dialog
+# =========================================================================================================================
+frame1 = LabelFrame(ws, text="File Selection")
+frame1.grid(row=0, column=0, columnspan=4, sticky=("ew"))
+
+frame1.columnconfigure(0, weight=1)
+
+addFileLabel = Label(frame1, text="Add Files to List")
+addFileLabel.grid(row=0, column=0, padx=10)
+
+addFileBtn = Button(frame1, text="Choose File", command=lambda: addFiles())
+addFileBtn.grid(row=0, column=1)
+
+# loadExcelDataBtn = Button(frame1, text="Load File", command=lambda: loadFile())
+# loadExcelDataBtn.grid(row=0, column=2)
+global fileList
+fileList = Listbox(frame1, height=5)
+fileList.grid(row=1, column=0, columnspan=4, sticky=("ew"))
+
+# TODO - Add ability to drag and drop files directly onto this list
 
 
 def addFiles():
@@ -41,37 +72,9 @@ def addFiles():
         df = checkFile(fileArray[df])
 
 
-fileArray = {}
+def run():
+    ws.mainloop()
 
 
-ws = Tk()
-ws.title("Fire/EMS Management")
-ws.geometry("400x200")
-
-ws.columnconfigure(0, weight=1)
-ws.rowconfigure(1, weight=1)
-
-#     Frame for file dialog
-# =========================================================================================================================
-frame1 = LabelFrame(ws, text="File Selection")
-frame1.grid(row=0, column=0, columnspan=4, sticky=("ew"))
-
-frame1.columnconfigure(0, weight=1)
-
-addFileLabel = Label(frame1, text="Add Files to List")
-addFileLabel.grid(row=0, column=0, padx=10)
-
-
-addFileBtn = Button(frame1, text="Choose File", command=lambda: addFiles())
-addFileBtn.grid(row=0, column=1)
-
-# loadExcelDataBtn = Button(frame1, text="Load File", command=lambda: loadFile())
-# loadExcelDataBtn.grid(row=0, column=2)
-
-
-fileList = Listbox(frame1, height=5)
-fileList.grid(row=1, column=0, columnspan=4, sticky=("ew"))
-
-# TODO - Add ability to drag and drop files directly onto this list
-
-ws.mainloop()
+if __name__ == "__main__":
+    ws.mainloop()
