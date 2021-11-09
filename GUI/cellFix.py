@@ -1,6 +1,4 @@
 import pandas as pd
-
-import FireCheck as fc
 import numpy as np
 import easygui
 
@@ -27,6 +25,8 @@ def getCellFix(orig, df, changeArray, error):
 
 ## Main - Used for testing, and will be ignored on import.
 def main():
+    import FireCheck as fc
+
     testDict = {
         "Incident Time Call Entered in Queue": [
             "Python",

@@ -188,111 +188,114 @@ fireDF["IsESD17"] = np.vectorize(isESD)(
 #     Fire Data Error Checking
 # ##############################################################################################################################################
 
-# =================================================================
-#     Check # 0 -  Checking for misssing "Earliest Time Phone Pickup AFD or EMS"
-# =================================================================
+# # =================================================================
+# #     Check # 0 -  Checking for misssing "Earliest Time Phone Pickup AFD or EMS"
+# # =================================================================
 
-# If any case where 'Earliest Time Phone Pickup AFD or EMS' is blank, Either pull updated information from visinet, or copy time from 'Incident Time Call Entered in Queue'
-c0 = fireDF[(fireDF["Earliest Time Phone Pickup AFD or EMS"].isnull())]
-if c0.size > 0:
-    # limit the rows that will show in the error output
-    limit = [
-        "Master Incident Number",
-        "Earliest Time Phone Pickup AFD or EMS",
-        "Incident Time Call Entered in Queue",
-    ]
-    c0.to_excel("debug.xlsx")
-    print(
-        "Warning: Please check on the following incidents:\n 'Earliest Time Phone Pickup AFD or EMS' is blank \n 'Earliest Time Phone Pickup AFD or EMS' field must have a value to continue\n Either pull updated information from visinet, or copy time from 'Incident Time Call Entered in Queue' field \n\n"
-    )
-    utils.pprint(c0[limit])
-    input("\nPress enter to exit")
-    exit(1)
-c0 = ""
+# # If any case where 'Earliest Time Phone Pickup AFD or EMS' is blank, Either pull updated information from visinet, or copy time from 'Incident Time Call Entered in Queue'
+# c0 = fireDF[(fireDF["Earliest Time Phone Pickup AFD or EMS"].isnull())]
+# if c0.size > 0:
+#     # limit the rows that will show in the error output
+#     limit = [
+#         "Master Incident Number",
+#         "Earliest Time Phone Pickup AFD or EMS",
+#         "Incident Time Call Entered in Queue",
+#     ]
+#     c0.to_excel("debug.xlsx")
+#     print(
+#         "Warning: Please check on the following incidents:\n 'Earliest Time Phone Pickup AFD or EMS' is blank \n 'Earliest Time Phone Pickup AFD or EMS' field must have a value to continue\n Either pull updated information from visinet, or copy time from 'Incident Time Call Entered in Queue' field \n\n"
+#     )
+#     utils.pprint(c0[limit])
+#     input("\nPress enter to exit")
+#     exit(1)
+# c0 = ""
 
 
-# =================================================================
-#     Check # 1 -  Checking for misssing first arrived status
-# =================================================================
-# its a problem if there is no FirstArrived
-# check each incident in visinet - find Phone Pickup Time
-c1 = fireDF[(fireDF["FirstArrived"].isnull())]
-c1 = c1[(c1["Unit Time Arrived At Scene"].notnull())]
-# and it is not an
-#     alarm test - ALARMT
-#     burn notification - CNTRL02
-#     test - TEST'
+# # =================================================================
+# #     Check # 1 -  Checking for misssing first arrived status
+# # =================================================================
+# # its a problem if there is no FirstArrived
+# # check each incident in visinet - find Phone Pickup Time
+# c1 = fireDF[(fireDF["FirstArrived"].isnull())]
+# c1 = c1[(c1["Unit Time Arrived At Scene"].notnull())]
+# # and it is not an
+# #     alarm test - ALARMT
+# #     burn notification - CNTRL02
+# #     test - TEST'
 
-c1 = c1[(~c1["Radio_Name"].isin(["ALARMT", "CNTRL02", "TEST"]))]
-# would like to display as: Unit Time Assigned,	Unit Time Enroute	Unit Time Staged,	Unit Time Arrived At Scene,	Unit Time Call Cleared
+# c1 = c1[(~c1["Radio_Name"].isin(["ALARMT", "CNTRL02", "TEST"]))]
+# # would like to display as: Unit Time Assigned,	Unit Time Enroute	Unit Time Staged,	Unit Time Arrived At Scene,	Unit Time Call Cleared
 
-# Solution here is to set first arrived of incident to Yes, and all others to -
-# -----------------------------------------------------------------------------
-if c1.size > 0:
-    limit = [
-        "Master Incident Number",
-        "Unit Time Assigned",
-        "Unit Time Enroute",
-        "Unit Time Staged",
-        "Unit Time Arrived At Scene",
-        "Unit Time Call Cleared",
-    ]
-    c1.to_excel("debug.xlsx")
-    print(
-        "Warning: Please check on the following incidents:\n We arrived on scene, but first arrived is blank \n 'Earliest Time Phone Pickup AFD or EMS' field must have a value to continue \n\n"
-    )
-    utils.pprint(c1[limit])
-    input("\nPress enter to exit")
-    exit(1)
-c1 = ""
+# # Solution here is to set first arrived of incident to Yes, and all others to -
+# # -----------------------------------------------------------------------------
+# if c1.size > 0:
+#     limit = [
+#         "Master Incident Number",
+#         "Unit Time Assigned",
+#         "Unit Time Enroute",
+#         "Unit Time Staged",
+#         "Unit Time Arrived At Scene",
+#         "Unit Time Call Cleared",
+#     ]
+#     c1.to_excel("debug.xlsx")
+#     print(
+#         "Warning: Please check on the following incidents:\n We arrived on scene, but first arrived is blank \n 'Earliest Time Phone Pickup AFD or EMS' field must have a value to continue \n\n"
+#     )
+#     utils.pprint(c1[limit])
+#     input("\nPress enter to exit")
+#     exit(1)
+# c1 = ""
 
-# =================================================================
-#     Check #2 -  Missing First Arrived Time
-# =================================================================
-c2 = fireDF[(fireDF["FirstArrived"] == "Yes")]
-c2 = c2[(c2["Unit Time Arrived At Scene"].isnull())]
+# # =================================================================
+# #     Check #2 -  Missing First Arrived Time
+# # =================================================================
+# c2 = fireDF[(fireDF["FirstArrived"] == "Yes")]
+# c2 = c2[(c2["Unit Time Arrived At Scene"].isnull())]
 
-# ----------------
-# To automate solution here
-# copy data from "Time First Real Unit Arrived"
-# ----------------
-if c2.size > 0:
-    print(
-        "Warning: Please check on the following incidents:\nThese incidents are missing 'Unit Time Arrived At Scene' field \n 'Unit Time Arrived At Scene' field must have a value to continue \n\n",
-        c2,
-    )
-    input("\nPress enter to exit")
-    exit(1)
-c2 = ""
+# # ----------------
+# # To automate solution here
+# # copy data from "Time First Real Unit Arrived"
+# # ----------------
+# if c2.size > 0:
+#     print(
+#         "Warning: Please check on the following incidents:\nThese incidents are missing 'Unit Time Arrived At Scene' field \n 'Unit Time Arrived At Scene' field must have a value to continue \n\n",
+#         c2,
+#     )
+#     input("\nPress enter to exit")
+#     exit(1)
+# c2 = ""
 
-# =================================================================
-#     Check #3 -  PhonePickupTime is  unknown*
-# =================================================================
-c3 = fireDF[
-    (fireDF["Earliest Time Phone Pickup AFD or EMS"] == "Unknown")
-    | (fireDF["Earliest Time Phone Pickup AFD or EMS"].isnull())
-]
-###  more than likely TCSO or APD, but still has to be filled
-# c3 = c3[(~c3["Calltaker Agency"].isin(["TCSO", "APD"]))]
+# # =================================================================
+# #     Check #3 -  PhonePickupTime is  unknown*
+# # =================================================================
+# c3 = fireDF[
+#     (fireDF["Earliest Time Phone Pickup AFD or EMS"] == "Unknown")
+#     | (fireDF["Earliest Time Phone Pickup AFD or EMS"].isnull())
+# ]
+# ###  more than likely TCSO or APD, but still has to be filled
+# # c3 = c3[(~c3["Calltaker Agency"].isin(["TCSO", "APD"]))]
 
-if c3.size > 0:
-    limit = [
-        "Master Incident Number",
-        "Earliest Time Phone Pickup AFD or EMS",
-        "Unit Time Assigned",
-        "Unit Time Enroute",
-        "Unit Time Staged",
-        "Unit Time Arrived At Scene",
-        "Unit Time Call Cleared",
-    ]
-    print(
-        "Warning: Please check on the following incidents:\n'Earliest Time Phone Pickup AFD or EMS' is blank or 'unknown':\n"
-    )
-    utils.pprint(c3[limit])
-    input("\nPress enter to exit")
-    exit(1)
+# if c3.size > 0:
+#     limit = [
+#         "Master Incident Number",
+#         "Earliest Time Phone Pickup AFD or EMS",
+#         "Unit Time Assigned",
+#         "Unit Time Enroute",
+#         "Unit Time Staged",
+#         "Unit Time Arrived At Scene",
+#         "Unit Time Call Cleared",
+#     ]
+#     print(
+#         "Warning: Please check on the following incidents:\n'Earliest Time Phone Pickup AFD or EMS' is blank or 'unknown':\n"
+#     )
+#     utils.pprint(c3[limit])
+#     input("\nPress enter to exit")
+#     exit(1)
 
-c3 = ""
+# c3 = ""
+from GUI.validateData import checkFile
+
+fireDF = checkFile(fireDF)
 
 # To automate solution here
 # c3 = fireDF[(fireDF["Earliest Time Phone Pickup AFD or EMS"] == "Unknown")]
