@@ -1,4 +1,8 @@
-import utils
+from tabulate import tabulate
+
+
+def pprint(dframe):
+    print(tabulate(dframe, headers="keys", tablefmt="psql", showindex=False))
 
 
 def sort(fireDF):
@@ -32,7 +36,7 @@ def check0(df):
         print(
             "Warning: Please check on the following incidents:\n 'Earliest Time Phone Pickup AFD or EMS' is blank \n 'Earliest Time Phone Pickup AFD or EMS' field must have a value to continue\n Either pull updated information from visinet, or copy time from 'Incident Time Call Entered in Queue' field \n\n"
         )
-        utils.pprint(c0[limit])
+        pprint(c0[limit])
         return c0[limit]
     return None
 
@@ -65,7 +69,7 @@ def check1(df):
         print(
             "Warning: Please check on the following incidents:\n We arrived on scene, but first arrived is blank \n 'Earliest Time Phone Pickup AFD or EMS' field must have a value to continue \n\n"
         )
-        utils.pprint(c1[limit])
+        pprint(c1[limit])
         return c1[limit]
 
 
@@ -108,7 +112,7 @@ def check3(df):
         print(
             "Warning: Please check on the following incidents:\n'Earliest Time Phone Pickup AFD or EMS' is blank or 'unknown':\n"
         )
-        utils.pprint(c3[limit])
+        pprint(c3[limit])
         return c3[limit]
 
 
