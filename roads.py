@@ -355,14 +355,9 @@ def runRoadAnalysis(df, stationDict):
 
 # create temporary dictionary of stations
 #               "station name" = [lat, lon]
-stationDict = {
-    "S1": [30.438998418785996, -97.61916191173464],
-    "S2": [30.453910816877844, -97.68157275754972],
-    "S3": [30.46735859584173, -97.5850678533701],
-    "S4": [30.468996083019054, -97.63488137388288],
-    "S5": [30.453565076497853, -97.65297941530505],
-    "S6": [30.431183729317205, -97.57114474414165],
-}
+import getData as data
+
+stationDict = data.getStations()
 
 
 def testMap():

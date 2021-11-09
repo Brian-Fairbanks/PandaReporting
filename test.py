@@ -21,25 +21,28 @@ from pandasgui import show
 # )
 
 
-reserveUnits = ["ENG280", "ENG290", "BT235"]
+# reserveUnits = ["ENG280", "ENG290", "BT235"]
 
-locations = {
-    "WREN": "S01",
-    "MAIN": "S01",
-    "RAILROAD": "201",
-    "BRATTON": "S02",
-    "KELLY": "S03",
-    "PICADILLY": "S04",
-    "NIMBUS": "S05",
-    # "": "ALERT to user in gui to determine location",
-}
-
-# print(locations.keys())
-# print(locations["BRATTON"])
+# locations = {
+#     "WREN": "S01",
+#     "MAIN": "S01",
+#     "RAILROAD": "201",
+#     "BRATTON": "S02",
+#     "KELLY": "S03",
+#     "PICADILLY": "S04",
+#     "NIMBUS": "S05",
+#     # "": "ALERT to user in gui to determine location",
+# }
 
 # ##############################################################################################################################################
 #     Main Code
 # ##############################################################################################################################################
+
+import getData as data
+
+locations = data.getLocations()
+reserves = data.getReserves()
+stationDict = data.getStations()
 
 # set up scope for fire and ems files
 fire, ems = "", ""
@@ -139,17 +142,7 @@ fireDF = cu.addConcurrentUse(fireDF, "Unit Time Assigned", "Unit Time Call Clear
 # =================================================================
 import roads as rd
 
-# create temporary dictionary of stations
-#               "station name" = [lat, lon]
-stationDict = {
-    "S1": [30.438998418785996, -97.61916191173464],
-    "S2": [30.453910816877844, -97.68157275754972],
-    "S3": [30.46735859584173, -97.5850678533701],
-    "S4": [30.468996083019054, -97.63488137388288],
-    "S5": [30.453565076497853, -97.65297941530505],
-    "S6": [30.431183729317205, -97.57114474414165],
-}
-
+stationDict = data.getStations()
 fireDF = rd.runRoadAnalysis(fireDF, stationDict)
 
 # =================================================================
