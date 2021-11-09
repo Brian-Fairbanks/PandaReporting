@@ -230,6 +230,24 @@ def getArrayDistToStation(df):
     return df
 
 
+def addClosestStations(df):
+    names = [f"Distance to {i} in miles" for i in stationDict]
+    df["Closest Station"] = df[names].idxmin(axis=1)
+
+    def tryRegex(x):
+        try:
+            return re.search("(?<=Distance to )(.*)(?= in miles)", x).group(0)
+        except:
+            return None
+
+    # Simplify Name
+    df["Closest Station"] = df.apply(
+        lambda x: tryRegex(str(x["Closest Station"])),
+        axis=1,
+    )
+    return df
+
+
 # ##############################################################################################################################################
 #     Map Processing Helper Functions
 # ##############################################################################################################################################
@@ -295,7 +313,12 @@ def getRoads():
     return GFIPS
 
 
-def runRoadAnalysis(df):
+# =================================
+#    Primary function called from outside
+# =================================
+
+
+def addRoadDistances(df):
     import re
     import getData as data
 
@@ -327,24 +350,7 @@ def runRoadAnalysis(df):
     df1 = pd.DataFrame(gdf.drop(columns=["geometry", "nearest node"]))
 
     # TODO: add Closest Station column
-    names = [f"Distance to {i} in miles" for i in stationDict]
-    df1["Closest Station"] = df1[names].idxmin(axis=1)
-
-    def tryRegex(x):
-        try:
-            return re.search("(?<=Distance to )(.*)(?= in miles)", x).group(0)
-        except:
-            return None
-
-    # Simplify Name
-    df1["Closest Station"] = df1.apply(
-        lambda x: tryRegex(str(x["Closest Station"])),
-        axis=1,
-    )
-
-    # TODO: add Is At Station When Assigned
-    # TODO: add Is Sent From Closest Station
-
+    df1 = addClosestStations(df1)
     return df1
 
 
@@ -430,7 +436,7 @@ def testStandAlone():
 
     df = loadTestFile.get()
     df = df.head(150)
-    gdf = runRoadAnalysis(df)
+    gdf = addRoadDistances(df)
     show(gdf)
 
 

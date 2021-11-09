@@ -7,6 +7,7 @@ from crf import getCRF
 import utils
 import datetime
 import ConcurrentUse as cu
+import roads as rd
 
 from pandasgui import show
 
@@ -19,6 +20,15 @@ from pandasgui import show
 #     datetime_format="mmm d yyyy hh:mm:ss",
 #     date_format="mmmm dd yyyy",
 # )
+
+# ##############################################################################################################################################
+#     Station Assignment Functions
+# ##############################################################################################################################################
+def addIsClosestStation(df):
+    df["Is Closest Station"] = df.apply(
+        lambda row: row["Station"] == row["Closest Station"], axis=1
+    )
+    return df
 
 
 def getLoc(address):
@@ -138,7 +148,17 @@ fireDF = pd.read_excel(fire)
 # replace all instances of "-" with null values
 fireDF = fireDF.replace("-", np.nan)
 
-# order fire data by time : - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
+# =================================================================
+#     Fire Data Error Checking
+# =================================================================
+from GUI.validateData import checkFile
+
+fireDF = checkFile(fireDF)
+
+# =================================================================
+#     order fire data by time
+# =================================================================
+# - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
 fireDF = fireDF.sort_values(
     by=[
         "Master Incident Number",
@@ -166,13 +186,6 @@ fireDF = utils.addUnitType(fireDF)
 #     Calculate Concurrent Use for Each Unit
 # =================================================================
 fireDF = cu.addConcurrentUse(fireDF, "Unit Time Assigned", "Unit Time Call Cleared")
-
-# =================================================================
-#     Calculate Station Distances
-# =================================================================
-import roads as rd
-
-# fireDF = rd.runRoadAnalysis(fireDF)
 
 # =================================================================
 #     Set District 17 Values
@@ -211,17 +224,6 @@ fireDF["IsESD17"] = np.vectorize(isESD)(
     fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"]
 )
 
-# ##############################################################################################################################################
-#     Fire Data Error Checking
-# ##############################################################################################################################################
-from GUI.validateData import checkFile
-
-fireDF = checkFile(fireDF)
-
-# ##############################################################################################################################################
-#     After checks are preformed...
-# ##############################################################################################################################################
-
 
 # After the checks, add 2 extra columns -
 #   'Sequence' -
@@ -250,17 +252,30 @@ for i in res0:
         "X" if ((fireDF.loc[i - 1, "Status"] in (["X", "C"]))) else "0"
     )
 
-# Add a new Stations Column
-# -------------------------------------------------------------------------------------------
+# =================================================================
+#     Add a new Stations Column
+# =================================================================
 fireDF = getStations(fireDF)
 
-# Add a new Column for if Unit was at its Station Address when Assigned
-# -------------------------------------------------------------------------------------------
+# =================================================================
+#     Add a new Column for if Unit was at its Station Address when Assigned
+# =================================================================
 fireDF = addLocAtAssignToDF(fireDF)
 
-# ----------------
+# =================================================================
+#     Calculate Station Distances
+# =================================================================
+fireDF = rd.addRoadDistances(fireDF)
+
+# =================================================================
+#     add Is Sent From Closest Station
+# =================================================================
+# TODO: add Is Sent From Closest Station
+fireDF = addIsClosestStation(fireDF)
+
+# =================================================================
 # Time Data Extra Colulmn Creation
-# ----------------
+# =================================================================
 
 nc1 = "Incident 1st Enroute to 1stArrived Time"
 nc2 = "Incident Duration - Ph PU to Clear"
