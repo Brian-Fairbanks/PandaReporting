@@ -191,7 +191,7 @@ def addNearestNodeToGDF(gdf):
     return gdf
 
 
-def getArrayDistToStation(df, stationDict):
+def getArrayDistToStation(df):
     """
     STUBBED - get back to this, as this will almost certainly run a LOT faster when vectorized with pandas
     returns the distance to a previously set statation for a a passed dataframe
@@ -295,9 +295,12 @@ def getRoads():
     return GFIPS
 
 
-def runRoadAnalysis(df, stationDict):
-    from pandasgui import show
+def runRoadAnalysis(df):
     import re
+    import getData as data
+
+    global stationDict
+    stationDict = data.getStations()
 
     # add geometry to map, and convert to FIPS
     geometry = [Point(xy) for xy in zip(df["X-Long"], df["Y_Lat"])]
@@ -317,7 +320,7 @@ def runRoadAnalysis(df, stationDict):
 
     t4 = Timer("Finding Distance to Station")
     t4.start()
-    gdf = getArrayDistToStation(gdf, stationDict)
+    gdf = getArrayDistToStation(gdf)
     t4.end()
 
     # these dont really mean anything without the context of the graph...
@@ -352,12 +355,6 @@ def runRoadAnalysis(df, stationDict):
 # Testing Code: will only run when this file is called directly.
 # ==================================================================
 ################################
-
-# create temporary dictionary of stations
-#               "station name" = [lat, lon]
-import getData as data
-
-stationDict = data.getStations()
 
 
 def testMap():
@@ -433,7 +430,7 @@ def testStandAlone():
 
     df = loadTestFile.get()
     df = df.head(150)
-    gdf = runRoadAnalysis(df, stationDict)
+    gdf = runRoadAnalysis(df)
     show(gdf)
 
 

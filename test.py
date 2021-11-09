@@ -142,8 +142,7 @@ fireDF = cu.addConcurrentUse(fireDF, "Unit Time Assigned", "Unit Time Call Clear
 # =================================================================
 import roads as rd
 
-stationDict = data.getStations()
-fireDF = rd.runRoadAnalysis(fireDF, stationDict)
+fireDF = rd.runRoadAnalysis(fireDF)
 
 # =================================================================
 #     Set District 17 Values
