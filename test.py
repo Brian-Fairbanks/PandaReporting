@@ -21,6 +21,33 @@ from pandasgui import show
 # )
 
 
+def getLoc(address):
+    curLoc = str(address).lower()
+    stationNum = None
+    if "fs020" in curLoc:
+        stationNum = "S" + curLoc[-2:]
+    # else check it against known street names (specified at the top of the file)
+    else:
+        for street in locations.keys():
+            if street.lower() in curLoc:
+                stationNum = locations[street]
+                break
+    return stationNum
+
+
+def getLocAtAssign(station, address):
+    return station == getLoc(address)
+
+
+def addLocAtAssignToDF(df):
+
+    df["Assigned at Station"] = df.apply(
+        lambda row: getLocAtAssign(row["Station"], row["Location_At_Assign_Time"]),
+        axis=1,
+    )
+    return df
+
+
 def getStations(fireDF):
     # Add a new Stations Column
     # -------------------------------------------------------------------------------------------
@@ -145,7 +172,7 @@ fireDF = cu.addConcurrentUse(fireDF, "Unit Time Assigned", "Unit Time Call Clear
 # =================================================================
 import roads as rd
 
-fireDF = rd.runRoadAnalysis(fireDF)
+# fireDF = rd.runRoadAnalysis(fireDF)
 
 # =================================================================
 #     Set District 17 Values
@@ -227,6 +254,9 @@ for i in res0:
 # -------------------------------------------------------------------------------------------
 fireDF = getStations(fireDF)
 
+# Add a new Column for if Unit was at its Station Address when Assigned
+# -------------------------------------------------------------------------------------------
+fireDF = addLocAtAssignToDF(fireDF)
 
 # ----------------
 # Time Data Extra Colulmn Creation
