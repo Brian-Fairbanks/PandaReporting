@@ -4,9 +4,13 @@ from pandasgui import show
 from tkinter import *
 from tkinter import messagebox
 from tkinter.filedialog import askopenfile, askopenfilenames
-import GUI.FireCheck as fc
 
-from GUI.validateData import checkFile
+try:
+    import FireCheck as fc
+    from validateData import checkFile
+except:
+    import GUI.FireCheck as fc
+    from GUI.validateData import checkFile
 
 
 fileArray = {}
