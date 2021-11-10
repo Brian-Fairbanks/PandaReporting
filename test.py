@@ -7,6 +7,7 @@ from crf import getCRF
 import utils
 import datetime
 import ConcurrentUse as cu
+import roads as rd
 
 from pandasgui import show
 
@@ -20,92 +21,144 @@ from pandasgui import show
 #     date_format="mmmm dd yyyy",
 # )
 
+# ##############################################################################################################################################
+#     Station Assignment Functions
+# ##############################################################################################################################################
+def addIsClosestStation(df):
+    df["Is Closest Station"] = df.apply(
+        lambda row: row["Station"] == row["Closest Station"], axis=1
+    )
+    return df
 
-reserveUnits = ["ENG280", "ENG290", "BT235"]
 
-locations = {
-    "WREN": "S01",
-    "MAIN": "S01",
-    "RAILROAD": "201",
-    "BRATTON": "S02",
-    "KELLY": "S03",
-    "PICADILLY": "S04",
-    "NIMBUS": "S05",
-    # "": "ALERT to user in gui to determine location",
-}
+def getLoc(address):
+    curLoc = str(address).lower()
+    stationNum = None
+    if "fs020" in curLoc:
+        stationNum = "S" + curLoc[-2:]
+    # else check it against known street names (specified at the top of the file)
+    else:
+        for street in locations.keys():
+            if street.lower() in curLoc:
+                stationNum = locations[street]
+                break
+    return stationNum
 
-# print(locations.keys())
-# print(locations["BRATTON"])
+
+def getLocAtAssign(station, address):
+    return station == getLoc(address)
+
+
+def addLocAtAssignToDF(df):
+
+    df["Assigned at Station"] = df.apply(
+        lambda row: getLocAtAssign(row["Station"], row["Location_At_Assign_Time"]),
+        axis=1,
+    )
+    return df
+
+
+def getStations(fireDF):
+    # Add a new Stations Column
+    # -------------------------------------------------------------------------------------------
+    # look up radio name and department
+    # S01, S02, S03, S04, S05, ADMIN, AFD, OTHER
+
+    # pulled from fire data xlsx
+    # =IF(AND(AZ1="ESD02 - Pflugerville",BA1="Frontline"),RIGHT(Fire_Table[@[Radio Name]],3),"ADMIN ESD02")
+
+    az = "Department"
+    ba = "Frontline_Status"
+
+    conditions = [
+        (fireDF[az] == "AFD") & (fireDF[ba] == "Other"),  # 1
+        (fireDF[az] == "AFD"),
+        (fireDF[az] == "ESD12 - Manor") & (fireDF[ba] == "Other"),
+        (fireDF[az] == "ESD12 - Manor"),
+        (fireDF[az] == "ESD02 - Pflugerville")
+        & (fireDF[ba].isin(["Other", "Command"])),
+        (fireDF[az] == "ESD02 - Pflugerville")
+        & (fireDF["Radio_Name"] == "QNT261"),  # 6
+        # fmt: off
+        (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].str.contains("BAT20")),
+        # fmt: on
+        # account for instances where vehicle is filling in for another.  We will need to deterimine which station it is filling in for based on the location at time of assignment
+        (fireDF[az] == "ESD02 - Pflugerville")
+        & (fireDF["Radio_Name"].isin(reserveUnits)),
+        (fireDF[az] == "ESD02 - Pflugerville"),
+    ]
+    choices = [
+        "AFD Other",
+        "AFD",
+        "ESD12 - Manor Other",
+        "ESD12 - Manor",
+        "ADMIN",
+        "S05",  # 6
+        "S01",
+        # mark instances of reserved units, so we can run an extra filter on these in a moment
+        "Reserve Unit",
+        "S0" + fireDF["Radio_Name"].str[-2],
+    ]
+
+    fireDF["Station"] = np.select(conditions, choices, default=fireDF["Radio_Name"])
+
+    # correct reserved units, as I have spent far too long trying to do this all as one part
+    #    ----------------------------
+    rescor = fireDF.index[fireDF["Station"] == "Reserve Unit"].tolist()
+    # again, this is going to be very slow compared to other vectorized checks/changes
+    for i in rescor:
+        # get location as a string
+        curLoc = str(fireDF.loc[i, "Location_At_Assign_Time"]).lower()
+        # set default value
+        stationNum = "UNKNOWN"
+
+        # check if it has already been specified
+        if "fs020" in curLoc:
+            stationNum = "FS" + curLoc[-2:]
+        # else check it against known street names (specified at the top of the file)
+        else:
+            for street in locations.keys():
+                if street.lower() in curLoc:
+                    stationNum = "F" + locations[street]
+                    break
+        # and then set the finalized location
+        fireDF.loc[i, "Station"] = stationNum
+
+    # move Status col to front
+    fireDF = utils.putColAt(fireDF, ["Station", "Status"], 0)
+    fireDF = utils.putColAt(fireDF, ["Master Incident Without First Two Digits"], 100)
+
+    return fireDF
+
 
 # ##############################################################################################################################################
 #     Main Code
 # ##############################################################################################################################################
 
-# set up scope for fire and ems files
-fire, ems = "", ""
+import getData as data
 
-try:
-    for i in range(1, 3):
-        if "fire" in sys.argv[i].lower():
-            fire = sys.argv[i]
-        if "ems" in sys.argv[i].lower():
-            ems = sys.argv[i]
-except IndexError:
-    # just means that we dont need to check all 3 files
-    pass
-except Exception as ex:
-    gracefulCrash(ex, sys.exc_info())
+locations = data.getLocations()
+reserveUnits = data.getReserves()
+stationDict = data.getStations()
 
-#   Handle file input errors
-# ------------------------------------------------------------
-if fire == "":
-    fire = "Fire 07 2021 fail first arrived check.xlsx"
-    # fire = "fire 06 2021 Raw QV Data.xlsx"
-    # gracefulCrash("A file was not found for Fire Data")
-# if ems == "":
-#     gracefulCrash("A file was not found for EMS Data")
-
-
+# Load Input File
+fire = "Fire 07 2021 ESD02_RAWDATA_UPDATE_Fairbanks.xlsx"
 fireDF = pd.read_excel(fire)
-### save an OG copy (Auto duplicate when you start working)
-# try:
-#     # check if file_original exists, and only write to it if it does not.
-#     fireDF.to_excel(fire.split(".")[0] + "_Original.xlsx")
-# except Exception as ex:
-#     print(ex)
-#     input("\nPress enter to exit")
-#     exit(1)
-
-# =================================================================
-#     Formatting and Renaming of DataFrames
-# =================================================================
-
-# fireDF.rename(columns={"Master Incident Number": "Incident Number"})
-
-# confirm time values are recognized as time values
-# fireDF["Earliest Time Phone Pickup AFD or EMS"] = pd.to_datetime(
-#     fireDF["Earliest Time Phone Pickup AFD or EMS"],
-#     # format="%m/%d/%Y %H:%M:%S",
-#     infer_datetime_format=True,
-#     errors="ignore",
-# )
-
-#    "Last Real Unit Clear Incident"
-#    "Earliest Time Phone Pickup AFD or EMS"
-
-# # confirm time values are recognized as time values
-# fireDF["Last Real Unit Clear Incident"] = pd.to_datetime(
-#     fireDF["Last Real Unit Clear Incident"],
-#     # format="%m/%d/%Y %H:%M:%S",
-#     infer_datetime_format=True,
-#     errors="ignore",
-# )
-
 
 # replace all instances of "-" with null values
 fireDF = fireDF.replace("-", np.nan)
 
-# order fire data by time : - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
+# =================================================================
+#     Fire Data Error Checking
+# =================================================================
+from GUI.validateData import checkFile
+
+fireDF = checkFile(fireDF)
+
+# =================================================================
+#     order fire data by time
+# =================================================================
+# - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
 fireDF = fireDF.sort_values(
     by=[
         "Master Incident Number",
@@ -171,128 +224,6 @@ fireDF["IsESD17"] = np.vectorize(isESD)(
     fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"]
 )
 
-# ##############################################################################################################################################
-#     Fire Data Error Checking
-# ##############################################################################################################################################
-
-# # =================================================================
-# #     Check # 0 -  Checking for misssing "Earliest Time Phone Pickup AFD or EMS"
-# # =================================================================
-
-# # If any case where 'Earliest Time Phone Pickup AFD or EMS' is blank, Either pull updated information from visinet, or copy time from 'Incident Time Call Entered in Queue'
-# c0 = fireDF[(fireDF["Earliest Time Phone Pickup AFD or EMS"].isnull())]
-# if c0.size > 0:
-#     # limit the rows that will show in the error output
-#     limit = [
-#         "Master Incident Number",
-#         "Earliest Time Phone Pickup AFD or EMS",
-#         "Incident Time Call Entered in Queue",
-#     ]
-#     c0.to_excel("debug.xlsx")
-#     print(
-#         "Warning: Please check on the following incidents:\n 'Earliest Time Phone Pickup AFD or EMS' is blank \n 'Earliest Time Phone Pickup AFD or EMS' field must have a value to continue\n Either pull updated information from visinet, or copy time from 'Incident Time Call Entered in Queue' field \n\n"
-#     )
-#     utils.pprint(c0[limit])
-#     input("\nPress enter to exit")
-#     exit(1)
-# c0 = ""
-
-
-# # =================================================================
-# #     Check # 1 -  Checking for misssing first arrived status
-# # =================================================================
-# # its a problem if there is no FirstArrived
-# # check each incident in visinet - find Phone Pickup Time
-# c1 = fireDF[(fireDF["FirstArrived"].isnull())]
-# c1 = c1[(c1["Unit Time Arrived At Scene"].notnull())]
-# # and it is not an
-# #     alarm test - ALARMT
-# #     burn notification - CNTRL02
-# #     test - TEST'
-
-# c1 = c1[(~c1["Radio_Name"].isin(["ALARMT", "CNTRL02", "TEST"]))]
-# # would like to display as: Unit Time Assigned,	Unit Time Enroute	Unit Time Staged,	Unit Time Arrived At Scene,	Unit Time Call Cleared
-
-# # Solution here is to set first arrived of incident to Yes, and all others to -
-# # -----------------------------------------------------------------------------
-# if c1.size > 0:
-#     limit = [
-#         "Master Incident Number",
-#         "Unit Time Assigned",
-#         "Unit Time Enroute",
-#         "Unit Time Staged",
-#         "Unit Time Arrived At Scene",
-#         "Unit Time Call Cleared",
-#     ]
-#     c1.to_excel("debug.xlsx")
-#     print(
-#         "Warning: Please check on the following incidents:\n We arrived on scene, but first arrived is blank \n 'Earliest Time Phone Pickup AFD or EMS' field must have a value to continue \n\n"
-#     )
-#     utils.pprint(c1[limit])
-#     input("\nPress enter to exit")
-#     exit(1)
-# c1 = ""
-
-# # =================================================================
-# #     Check #2 -  Missing First Arrived Time
-# # =================================================================
-# c2 = fireDF[(fireDF["FirstArrived"] == "Yes")]
-# c2 = c2[(c2["Unit Time Arrived At Scene"].isnull())]
-
-# # ----------------
-# # To automate solution here
-# # copy data from "Time First Real Unit Arrived"
-# # ----------------
-# if c2.size > 0:
-#     print(
-#         "Warning: Please check on the following incidents:\nThese incidents are missing 'Unit Time Arrived At Scene' field \n 'Unit Time Arrived At Scene' field must have a value to continue \n\n",
-#         c2,
-#     )
-#     input("\nPress enter to exit")
-#     exit(1)
-# c2 = ""
-
-# # =================================================================
-# #     Check #3 -  PhonePickupTime is  unknown*
-# # =================================================================
-# c3 = fireDF[
-#     (fireDF["Earliest Time Phone Pickup AFD or EMS"] == "Unknown")
-#     | (fireDF["Earliest Time Phone Pickup AFD or EMS"].isnull())
-# ]
-# ###  more than likely TCSO or APD, but still has to be filled
-# # c3 = c3[(~c3["Calltaker Agency"].isin(["TCSO", "APD"]))]
-
-# if c3.size > 0:
-#     limit = [
-#         "Master Incident Number",
-#         "Earliest Time Phone Pickup AFD or EMS",
-#         "Unit Time Assigned",
-#         "Unit Time Enroute",
-#         "Unit Time Staged",
-#         "Unit Time Arrived At Scene",
-#         "Unit Time Call Cleared",
-#     ]
-#     print(
-#         "Warning: Please check on the following incidents:\n'Earliest Time Phone Pickup AFD or EMS' is blank or 'unknown':\n"
-#     )
-#     utils.pprint(c3[limit])
-#     input("\nPress enter to exit")
-#     exit(1)
-
-# c3 = ""
-from GUI.validateData import checkFile
-
-fireDF = checkFile(fireDF)
-
-# To automate solution here
-# c3 = fireDF[(fireDF["Earliest Time Phone Pickup AFD or EMS"] == "Unknown")]
-# overwrite Unkown with time from - "Incident Time Call Entered in Queue"
-## < -----------------------------------------------------------------------------------  look into how to overwrite data with pandas and run this!
-
-# ##############################################################################################################################################
-#     After checks are preformed...
-# ##############################################################################################################################################
-
 
 # After the checks, add 2 extra columns -
 #   'Sequence' -
@@ -321,78 +252,30 @@ for i in res0:
         "X" if ((fireDF.loc[i - 1, "Status"] in (["X", "C"]))) else "0"
     )
 
-# Add a new Stations Column
-# -------------------------------------------------------------------------------------------
-# look up radio name and department
-# S01, S02, S03, S04, S05, ADMIN, AFD, OTHER
+# =================================================================
+#     Add a new Stations Column
+# =================================================================
+fireDF = getStations(fireDF)
 
+# =================================================================
+#     Add a new Column for if Unit was at its Station Address when Assigned
+# =================================================================
+fireDF = addLocAtAssignToDF(fireDF)
 
-# pulled from fire data xlsx
-# =IF(AND(AZ1="ESD02 - Pflugerville",BA1="Frontline"),RIGHT(Fire_Table[@[Radio Name]],3),"ADMIN ESD02")
+# =================================================================
+#     Calculate Station Distances
+# =================================================================
+fireDF = rd.addRoadDistances(fireDF)
 
-az = "Department"
-ba = "Frontline_Status"
+# =================================================================
+#     add Is Sent From Closest Station
+# =================================================================
+# TODO: add Is Sent From Closest Station
+fireDF = addIsClosestStation(fireDF)
 
-conditions = [
-    (fireDF[az] == "AFD") & (fireDF[ba] == "Other"),  # 1
-    (fireDF[az] == "AFD"),
-    (fireDF[az] == "ESD12 - Manor") & (fireDF[ba] == "Other"),
-    (fireDF[az] == "ESD12 - Manor"),
-    (fireDF[az] == "ESD02 - Pflugerville") & (fireDF[ba].isin(["Other", "Command"])),
-    (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"] == "QNT261"),  # 6
-    # fmt: off
-    (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].str.contains("BAT20")),
-    # fmt: on
-    # account for instances where vehicle is filling in for another.  We will need to deterimine which station it is filling in for based on the location at time of assignment
-    (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].isin(reserveUnits)),
-    (fireDF[az] == "ESD02 - Pflugerville"),
-]
-choices = [
-    "AFD Other",
-    "AFD",
-    "ESD12 - Manor Other",
-    "ESD12 - Manor",
-    "ADMIN",
-    "S05",  # 6
-    "S01",
-    # mark instances of reserved units, so we can run an extra filter on these in a moment
-    "Reserve Unit",
-    "S0" + fireDF["Radio_Name"].str[-2],
-]
-
-fireDF["Station"] = np.select(conditions, choices, default=fireDF["Radio_Name"])
-
-# correct reserved units, as I have spent far too long trying to do this all as one part
-#    ----------------------------
-rescor = fireDF.index[fireDF["Station"] == "Reserve Unit"].tolist()
-# again, this is going to be very slow compared to other vectorized checks/changes
-for i in rescor:
-    # get location as a string
-    curLoc = str(fireDF.loc[i, "Location_At_Assign_Time"]).lower()
-    # set default value
-    stationNum = "UNKNOWN"
-
-    # check if it has already been specified
-    if "fs020" in curLoc:
-        stationNum = "FS" + curLoc[-2:]
-    # else check it against known street names (specified at the top of the file)
-    else:
-        for street in locations.keys():
-            if street.lower() in curLoc:
-                stationNum = "F" + locations[street]
-                break
-    # and then set the finalized location
-    fireDF.loc[i, "Station"] = stationNum
-
-
-# move Status col to front
-fireDF = utils.putColAt(fireDF, ["Station", "Status"], 0)
-fireDF = utils.putColAt(fireDF, ["Master Incident Without First Two Digits"], 100)
-
-
-# ----------------
+# =================================================================
 # Time Data Extra Colulmn Creation
-# ----------------
+# =================================================================
 
 nc1 = "Incident 1st Enroute to 1stArrived Time"
 nc2 = "Incident Duration - Ph PU to Clear"

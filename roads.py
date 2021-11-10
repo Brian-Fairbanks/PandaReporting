@@ -21,6 +21,7 @@ from tqdm import tqdm
 
 station = ""
 roadMap = ""
+distBuf = 10  # 10 for testing, so everything goes much faster.  Actual data should be 10000 (~6.2 miles)
 
 
 def toCrs(lat, lon):
@@ -123,7 +124,7 @@ def distToStationFromGPS(lat, lon):
     return distInMiles
 
 
-def distToStationFromNode(dest_node, progress=None):
+def distToStationFromNode(dest_node, fullProgress=None):
     """
     returns the distance from a passed map node -
     requires a station be set.  May crash if no station is set.
@@ -140,8 +141,8 @@ def distToStationFromNode(dest_node, progress=None):
     Float
         shortest distance along roadways between passed location and station
     """
-    if progress is not None:
-        progress.update(1)
+    if fullProgress is not None:
+        fullProgress.update(1)
 
     try:
         # how long is our route in meters?
@@ -205,21 +206,45 @@ def getArrayDistToStation(df):
     --------------------------------
     Dataframe
     """
-    with tqdm(total=len(stationDict), desc="Routing To Stations:") as stationBar:
+    with tqdm(
+        total=len(stationDict) * len(df.index), desc="Routing All Stations:"
+    ) as stationBar:
         for curStat in stationDict:
             stationBar.update(1)
             # set station on road map
             setStation(stationDict[curStat])
             # calculate distances
 
-            with tqdm(
-                total=len(df.index), desc="Calculating distance to station:"
-            ) as pbar2:
-                df["Distance to {0} in miles".format(curStat)] = df.apply(
-                    lambda x: distToStationFromNode(x["nearest node"], pbar2),
-                    axis=1,
-                )
+            tqdm.pandas(
+                desc=f"Calculating distance to {curStat}:",
+                leave=False,
+            )
+            df["Distance to {0} in miles".format(curStat)] = df.progress_apply(
+                lambda x: distToStationFromNode(
+                    x["nearest node"],
+                    stationBar,
+                ),
+                axis=1,
+            )
 
+    return df
+
+
+def addClosestStations(df):
+    names = [f"Distance to {i} in miles" for i in stationDict]
+    df["Closest Station"] = df[names].idxmin(axis=1)
+
+    def tryRegex(x):
+        try:
+            return re.search("(?<=Distance to )(.*)(?= in miles)", x).group(0)
+        except:
+            return None
+
+    # Simplify Name
+    df["Closest Station"] = df.apply(
+        lambda x: tryRegex(str(x["Closest Station"])),
+        axis=1,
+    )
     return df
 
 
@@ -231,7 +256,7 @@ def downloadData():
     # buffer distance is area in meters outside of the city.
     # district can extend up to 5 miles out
     # 10000m = 6.21 miles
-    G = ox.graph_from_place(place_name, buffer_dist=10)
+    G = ox.graph_from_place(place_name, buffer_dist=distBuf)
     # nx.set_edge_attributes(G, 100, "w3")
 
     # save graph to disk
@@ -288,19 +313,54 @@ def getRoads():
     return GFIPS
 
 
+# =================================
+#    Primary function called from outside
+# =================================
+
+
+def addRoadDistances(df):
+    import re
+    import getData as data
+
+    global stationDict
+    stationDict = data.getStations()
+
+    # add geometry to map, and convert to FIPS
+    geometry = [Point(xy) for xy in zip(df["X-Long"], df["Y_Lat"])]
+    gdf = GeoDataFrame(df, crs="EPSG:4326", geometry=geometry)
+    gdf = gdf.to_crs(2277)
+
+    # Load road map data
+    t2 = Timer("Load Map")
+    t2.start()
+    getRoads()
+    t2.end()
+
+    t3 = Timer("Add Nearest Node to GDF")
+    t3.start()
+    gdf = addNearestNodeToGDF(gdf)
+    t3.end()
+
+    t4 = Timer("Finding Distance to Station")
+    t4.start()
+    gdf = getArrayDistToStation(gdf)
+    t4.end()
+
+    # these dont really mean anything without the context of the graph...
+    df1 = pd.DataFrame(gdf.drop(columns=["geometry", "nearest node"]))
+
+    # TODO: add Closest Station column
+    df1 = addClosestStations(df1)
+    return df1
+
+
+################################
+# ==================================================================
+#
+#
 # Testing Code: will only run when this file is called directly.
 # ==================================================================
-
-# create temporary dictionary of stations
-#               "station name" = [lat, lon]
-stationDict = {
-    "S1": [30.438998418785996, -97.61916191173464],
-    "S2": [30.453910816877844, -97.68157275754972],
-    "S3": [30.46735859584173, -97.5850678533701],
-    "S4": [30.468996083019054, -97.63488137388288],
-    "S5": [30.453565076497853, -97.65297941530505],
-    "S6": [30.431183729317205, -97.57114474414165],
-}
+################################
 
 
 def testMap():
@@ -370,9 +430,20 @@ def testNearestNodes():
     show(gdf)
 
 
+def testStandAlone():
+    import loadTestFile
+    from pandasgui import show
+
+    df = loadTestFile.get()
+    df = df.head(150)
+    gdf = addRoadDistances(df)
+    show(gdf)
+
+
 def main():
     # testMap()
-    testNearestNodes()
+    # testNearestNodes()
+    testStandAlone()
 
 
 if __name__ == "__main__":
