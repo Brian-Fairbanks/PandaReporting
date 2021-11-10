@@ -21,7 +21,7 @@ from tqdm import tqdm
 
 station = ""
 roadMap = ""
-distBuf = 10  # 10 for testing, so everything goes much faster.  Actual data should be 10000 (~6.2 miles)
+distBuf = 10000  # 10 for testing, so everything goes much faster.  Actual data should be 10000 (~6.2 miles)
 
 
 def toCrs(lat, lon):
@@ -230,6 +230,8 @@ def getArrayDistToStation(df):
 
 
 def addClosestStations(df):
+    import re  # make sure that we can run regular expressions.
+
     names = [f"Distance to {i} in miles" for i in stationDict]
     df["Closest Station"] = df[names].idxmin(axis=1)
 
