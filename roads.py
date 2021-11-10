@@ -193,7 +193,6 @@ def addNearestNodeToGDF(gdf):
 
 def getArrayDistToStation(df):
     """
-    STUBBED - get back to this, as this will almost certainly run a LOT faster when vectorized with pandas
     returns the distance to a previously set statation for a a passed dataframe
     requires a station be set.  May crash if no station is set.
 

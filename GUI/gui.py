@@ -4,10 +4,19 @@ from pandasgui import show
 from tkinter import *
 from tkinter import messagebox
 from tkinter.filedialog import askopenfile, askopenfilenames
-import GUI.FireCheck as fc
 
-from GUI.validateData import checkFile
+try:
+    import FireCheck as fc
+    from validateData import checkFile
+except:
+    import GUI.FireCheck as fc
+    from GUI.validateData import checkFile
 
+
+try:
+    from analyzefire import analyzeFire
+except:
+    pass
 
 fileArray = {}
 
@@ -31,13 +40,21 @@ addFileLabel.grid(row=0, column=0, padx=10)
 addFileBtn = Button(frame1, text="Choose File", command=lambda: addFiles())
 addFileBtn.grid(row=0, column=1)
 
-# loadExcelDataBtn = Button(frame1, text="Load File", command=lambda: loadFile())
-# loadExcelDataBtn.grid(row=0, column=2)
+analyzeButton = Button(frame1, text="Analyze Data", command=lambda: guiAnalyze())
+analyzeButton.grid(row=0, column=2)
+
 global fileList
 fileList = Listbox(frame1, height=5)
 fileList.grid(row=1, column=0, columnspan=4, sticky=("ew"))
 
 # TODO - Add ability to drag and drop files directly onto this list
+
+
+def guiAnalyze():
+    # Merge file before had? calculate them all separately and thne merge at the end?  what do we do here?
+    for file in fileArray:
+        analyzeFire(fileArray[file])
+    return None
 
 
 def addFiles():

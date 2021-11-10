@@ -1,5 +1,9 @@
-import GUI.FireCheck as fc
-from GUI.cellFix import getCellFix
+try:
+    import FireCheck as fc
+    from cellFix import getCellFix
+except:
+    import GUI.FireCheck as fc
+    from GUI.cellFix import getCellFix
 
 
 def checkFile(df):
