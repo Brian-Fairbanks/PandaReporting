@@ -235,7 +235,7 @@ def analyzeFire(fireDF):
 
     # Set up boundaries for ESD17
     ##############################################################
-
+    print("loading esd shape:")
     esd17 = gpd.read_file("Shape\\esd17.shp")
     # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
     esd17.set_crs(epsg=2277, inplace=True)
@@ -244,6 +244,7 @@ def analyzeFire(fireDF):
 
     # Assign values for esd17
     ##############################################################
+    print("assigning ESD17 status:")
 
     def isESD(jur, lon, lat):
         if jur != "ESD02":
@@ -266,6 +267,7 @@ def analyzeFire(fireDF):
     # =================================================================
     #     Set pop density values Values
     # =================================================================
+    print("loading mapsco grid:")
     mapsco = gpd.read_file("Shape\\Mapsco_grid.shp")
     # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
     mapsco.set_crs(epsg=2277, inplace=True)
