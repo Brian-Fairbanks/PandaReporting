@@ -21,7 +21,7 @@ from tqdm import tqdm
 
 station = ""
 roadMap = ""
-distBuf = 10000  # 10 for testing, so everything goes much faster.  Actual data should be 10000 (~6.2 miles)
+distBuf = 10  # 10 for testing, so everything goes much faster.  Actual data should be 10000 (~6.2 miles)
 
 
 def toCrs(lat, lon):
@@ -302,7 +302,14 @@ def getRoads():
         GCon = simplifyMap(G)
     else:
         print("Completed Map Exists, this will be quite quick")
-        GCon = ox.load_graphml("./data/roads/roadsProjected.graphml")
+        G = ox.load_graphml("./data/roads/roadsProjected.graphml")
+        print(" projecting map...")
+        GProj = ox.project_graph(G)
+
+        print(" Consolidating...")
+        GCon = ox.consolidate_intersections(
+            GProj, rebuild_graph=True, tolerance=5, dead_ends=False
+        )
 
     print("Projecting to Texas Local Map...")
     GFIPS = ox.project_graph(GCon, to_crs="epsg:2277")
@@ -347,7 +354,7 @@ def addRoadDistances(df):
     gdf = getArrayDistToStation(gdf)
     t4.end()
 
-    # these dont really mean anything without the context of the graph...
+    # these dont really mean anything without the context of the graph, so drop them off...
     df1 = pd.DataFrame(gdf.drop(columns=["geometry", "nearest node"]))
 
     # TODO: add Closest Station column
