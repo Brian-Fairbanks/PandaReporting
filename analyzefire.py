@@ -272,12 +272,27 @@ def analyzeFire(fireDF):
     # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
     mapsco = mapsco.to_crs(4326)
 
+    # print(mapsco)
+
     def getMapscoGrid(lon, lat):
         plot = Point(lon, lat)
-        # if (esd17.contains(plot)).any():
-        return "Map Data"
+        try:
+            return mapsco.loc[(mapsco.index[mapsco.contains(plot)])[0], "MAPSCO_PAG"]
+        except:
+            return None
 
-    fireDF["Mapsco"] = np.vectorize(getMapscoGrid)(fireDF["X-Long"], fireDF["Y_Lat"])
+    from tqdm import tqdm
+
+    tqdm.pandas(
+        desc=f"finding Mapsco Data:",
+        leave=False,
+    )
+    fireDF["Mapsco"] = fireDF.progress_apply(
+        lambda x: getMapscoGrid(x["X-Long"], x["Y_Lat"]),
+        axis=1,
+    )
+
+    # (getMapscoGrid)(fireDF["X-Long"], fireDF["Y_Lat"])
 
     # =================================================================
     #     Set Status for each call
