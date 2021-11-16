@@ -198,6 +198,7 @@ def analyzeFire(fireDF):
     #     Add unit type column to simplify analysis
     # =================================================================
     fireDF = utils.addUnitType(fireDF)
+    fireDF = utils.addBucketType(fireDF)
 
     # =================================================================
     #     Calculate Concurrent Use for Each Unit

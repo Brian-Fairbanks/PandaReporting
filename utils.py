@@ -129,3 +129,15 @@ def addUnitType(orig):
     # orig["Unit Type"] = orig.apply(lambda x )
     orig["Unit Type"] = np.vectorize(getUnitType)(orig["Radio_Name"])
     return orig
+
+
+def getUnitBucket(type):
+    buckets = {"BT": "ENG", "ENG": "ENG", "QNT": "ENG"}
+    if type not in buckets:
+        return type
+    return buckets[type]
+
+
+def addBucketType(orig):
+    orig["Bucket Type"] = orig.apply(lambda x: getUnitBucket(x["Unit Type"]), axis=1)
+    return orig
