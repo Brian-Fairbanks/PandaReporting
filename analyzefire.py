@@ -167,6 +167,24 @@ def analyzeFire(fireDF):
     fireDF = fireDF.replace("-", np.nan)
 
     # =================================================================
+    #     Match esri formatting for first arrived
+    # =================================================================
+    #  if unit arrived first, yes
+    #  if arrived at all, but not first, -
+    #  else X
+    def replaceAssigned(x, y):
+        if y is None:
+            return "X"
+        if x is None:
+            return "-"
+        return x
+
+    fireDF["FirstArrivedEsri"] = fireDF.apply(
+        lambda x: replaceAssigned(x["FirstArrived"], x["Unit Time Arrived At Scene"]),
+        axis=1,
+    )
+
+    # =================================================================
     #     Fire Data Error Checking
     # =================================================================
     from GUI.validateData import checkFile
@@ -187,6 +205,10 @@ def analyzeFire(fireDF):
         ]
     )
     fireDF = fireDF.reset_index(drop=True)
+    # =================================================================
+    #     Drop useless data
+    # =================================================================
+    # fireDF = fireDF.drop(["ESD02_Record"])
 
     # =================================================================
     #     get Complete Response Force for each Structure Fire
@@ -220,7 +242,7 @@ def analyzeFire(fireDF):
     # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
     esd17 = esd17.to_crs(4326)
 
-    # Set assign values for esd17
+    # Assign values for esd17
     ##############################################################
 
     def isESD(jur, lon, lat):
@@ -238,9 +260,28 @@ def analyzeFire(fireDF):
         fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"]
     )
 
-    # After the checks, add 2 extra columns -
-    #   'Sequence' -
+    # Clear data
+    esd17 = None
 
+    # =================================================================
+    #     Set pop density values Values
+    # =================================================================
+    mapsco = gpd.read_file("Shape\\Mapsco_grid.shp")
+    # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
+    mapsco.set_crs(epsg=2277, inplace=True)
+    # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
+    mapsco = mapsco.to_crs(4326)
+
+    def getMapscoGrid(lon, lat):
+        plot = Point(lon, lat)
+        # if (esd17.contains(plot)).any():
+        return "Map Data"
+
+    fireDF["Mapsco"] = np.vectorize(getMapscoGrid)(fireDF["X-Long"], fireDF["Y_Lat"])
+
+    # =================================================================
+    #     Set Status for each call
+    # =================================================================
     #   'Status'   - 1, 0, x, c
     # 1 - is the earliest arrived of a set of identical 'Master Incident Number'
     # 0 - all other rows in a set of identical 'Master Incident Number' - multi unit Response
@@ -266,7 +307,7 @@ def analyzeFire(fireDF):
         )
 
     # =================================================================
-    #     Add a new Stations Column
+    #     Add a new Stations (Origin) Column
     # =================================================================
     fireDF = getStations(fireDF)
 
