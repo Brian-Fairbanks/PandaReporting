@@ -164,8 +164,52 @@ def analyzeFire(fireDF):
     #     Basic Format
     # =================================================================
     # replace all instances of "-" with null values
+    # ------------------
     fireDF = fireDF.replace("-", np.nan)
 
+    # convert strings to datetime
+    # ------------------
+    time_columns_to_convert = [
+        "Earliest Time Phone Pickup AFD or EMS",
+        "Incident Time Call Entered in Queue",
+        "Time First Real Unit Assigned",
+        "Time First Real Unit Enroute",
+        "Incident Time First Staged",
+        "Time First Real Unit Arrived",
+        "Incident Time Call Closed",
+        "Last Real Unit Clear Incident",
+    ]
+
+    for index, colName in enumerate(time_columns_to_convert):
+        pd.to_datetime(fireDF[colName], errors="raise", unit="s")
+        # group and move to front for testing
+        # fireDF = utils.putColAt(fireDF, [colName], index)
+
+    # convert strings/dates to timeDelta
+    # ------------------
+
+    timeDeltasToConvert = [
+        "Earliest Time Phone Pickup to 1st Real Unit Assigned",
+        "Incident Turnout - 1st Real Unit Assigned to 1st Real Unit Enroute",
+        "Incident First Unit Response - 1st Real Unit Assigned to 1st Real Unit Arrived",
+        "Earliest Time Phone Pickup to 1st Real Unit Arrived",
+        "Time Spent OnScene - 1st Real Unit Arrived to Last Real Unit Call Cleared",
+        "Unit Dispatch to Respond Time",
+        "Unit Respond to Arrival",
+        "Unit Dispatch to Onscene",
+        "Unit OnScene to Clear Call",
+        "Unit Assign To Clear Call Time",
+    ]
+
+    def tryDelta(times):
+        return pd.Timedelta(str(times)) / np.timedelta64(1, "s")
+
+    for index, colName in enumerate(timeDeltasToConvert):
+        fireDF[colName] = fireDF.apply(lambda x: tryDelta(x[colName]), axis=1)
+        # group and move to front for testing
+        fireDF = utils.putColAt(fireDF, [colName], index)
+
+    #
     # =================================================================
     #     Fire Data Error Checking
     # =================================================================
@@ -344,8 +388,8 @@ def analyzeFire(fireDF):
 
     def getSingleTimeDiff(df, row, t1, t2):
         res = df.loc[row, t2] - df.loc[row, t1]
-        res = utils.dtformat(res)
-        return res
+        # Convert to seconds
+        return res / np.timedelta64(1, "s")
 
     # now using U instead of V, recaluclate the following columns
     rt1 = (
