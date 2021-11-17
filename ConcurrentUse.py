@@ -7,8 +7,8 @@ from timer import Timer
 
 def recalcDict(arr, time):
     # print("=========================\n", arr)
-    for unit in arr:
-        arr[unit] = list(filter(lambda x: x > time, arr[unit]))
+    for bucket in arr:
+        arr[bucket] = list(filter(lambda x: x > time, arr[bucket]))
     # print("\n------\n", arr, "\n")
     return arr
 
@@ -22,17 +22,17 @@ def addConcurrentUse(orig, startName, endName):
     Original : dataframe
         data to which you want to add the columns
     Start Name : str - ex: Unit Time Assigned
-        the time the unit shipped out
+        the time the bucket shipped out
     End Name : str - ex: Unit Time Call Cleared
-        the time the unit will finish its current call
+        the time the bucket will finish its current call
 
     Returns
     --------------------------------
     Dataframe
-        a new dataframe which is a copy of orig, but with an extra column used to identify concurrent use at the time of unit assignment
+        a new dataframe which is a copy of orig, but with an extra column used to identify concurrent use at the time of bucket assignment
     """
-    # create a dictionary of units, and when they will be done
-    unitDict = {}
+    # create a dictionary of buckets, and when they will be done
+    bucketDict = {}
 
     # create the column with a obviously default number
     orig["Concurrent Usage"] = np.NaN
@@ -47,27 +47,27 @@ def addConcurrentUse(orig, startName, endName):
         startTime = orig.loc[ind, startName]
         endTime = orig.loc[ind, endName]
 
-        # get unit type from the name
-        # unitType = "".join(
+        # get bucket type from the name
+        # bucketType = "".join(
         #     [d for d in str(orig.loc[ind, "Radio_Name"]) if not d.isdigit()]
         # )
         # use the column if it exists, since this work should already be done.
         try:
-            unitType = str(orig.loc[ind, "Unit Type"])
+            bucketType = str(orig.loc[ind, "Bucket Type"])
         except:
-            unitType = u.getUnitType(orig.loc[ind, "Radio_Name"])
+            bucketType = u.getUnitBucket(u.getUnitType(orig.loc[ind, "Radio_Name"]))
 
         # store end time for this type into the dictionary
-        unitDict[unitType] = [endTime] + (
-            unitDict[unitType] if unitType in unitDict else []
+        bucketDict[bucketType] = [endTime] + (
+            bucketDict[bucketType] if bucketType in bucketDict else []
         )
 
         # remove those that are already finished
-        recalcDict(unitDict, startTime)
+        recalcDict(bucketDict, startTime)
 
         # store current count as concurrent usage
         orig.loc[ind, "Concurrent Usage"] = (
-            len(unitDict[unitType]) - 1  # remove on since this one is being counted
+            len(bucketDict[bucketType]) - 1  # remove on since this one is being counted
         )
 
     return orig  # .astype({"Concurrent Usage": "Int64"})
