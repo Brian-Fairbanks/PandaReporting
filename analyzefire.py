@@ -312,30 +312,31 @@ def analyzeFire(fireDF):
     # =================================================================
     #     Set pop density values Values
     # =================================================================
-    print("loading mapsco grid:")
-    mapsco = gpd.read_file("Shape\\Mapsco_grid.shp")
+    print("loading population grid:")
+    popData = gpd.read_file("Shape\\ESD2Pop.shp")
     # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
-    mapsco.set_crs(epsg=2277, inplace=True)
+    popData.set_crs(epsg=2277, inplace=True)
     # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
-    mapsco = mapsco.to_crs(4326)
+    popData = popData.to_crs(4326)
 
     # print(mapsco)
 
-    def getMapscoGrid(lon, lat):
+    def getPopulationDensity(lon, lat):
         plot = Point(lon, lat)
         try:
-            return mapsco.loc[(mapsco.index[mapsco.contains(plot)])[0], "MAPSCO_PAG"]
+            return popData[popData.contains(plot)]
+            # return popData.loc[(popData.index[popData.contains(plot)])[0], "MAPSCO_PAG"]
         except:
             return None
 
     from tqdm import tqdm
 
     tqdm.pandas(
-        desc=f"finding Mapsco Data:",
+        desc=f"finding Population Data:",
         leave=False,
     )
-    fireDF["Mapsco"] = fireDF.progress_apply(
-        lambda x: getMapscoGrid(x["X-Long"], x["Y_Lat"]),
+    fireDF["Population Density"] = fireDF.progress_apply(
+        lambda x: getPopulationDensity(x["X-Long"], x["Y_Lat"]),
         axis=1,
     )
 
