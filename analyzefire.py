@@ -211,6 +211,24 @@ def analyzeFire(fireDF):
 
     #
     # =================================================================
+    #     Match esri formatting for first arrived
+    # =================================================================
+    #  if unit arrived first, yes
+    #  if arrived at all, but not first, -
+    #  else X
+    def replaceAssigned(x, y):
+        if y is None:
+            return "X"
+        if x is None:
+            return "-"
+        return x
+
+    fireDF["FirstArrivedEsri"] = fireDF.apply(
+        lambda x: replaceAssigned(x["FirstArrived"], x["Unit Time Arrived At Scene"]),
+        axis=1,
+    )
+
+    # =================================================================
     #     Fire Data Error Checking
     # =================================================================
     from GUI.validateData import checkFile
@@ -231,6 +249,10 @@ def analyzeFire(fireDF):
         ]
     )
     fireDF = fireDF.reset_index(drop=True)
+    # =================================================================
+    #     Drop useless data
+    # =================================================================
+    # fireDF = fireDF.drop(["ESD02_Record"])
 
     # =================================================================
     #     get Complete Response Force for each Structure Fire
@@ -258,15 +280,16 @@ def analyzeFire(fireDF):
 
     # Set up boundaries for ESD17
     ##############################################################
-
+    print("loading esd shape:")
     esd17 = gpd.read_file("Shape\\esd17.shp")
     # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
     esd17.set_crs(epsg=2277, inplace=True)
     # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
     esd17 = esd17.to_crs(4326)
 
-    # Set assign values for esd17
+    # Assign values for esd17
     ##############################################################
+    print("assigning ESD17 status:")
 
     def isESD(jur, lon, lat):
         if jur != "ESD02":
@@ -283,9 +306,63 @@ def analyzeFire(fireDF):
         fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"]
     )
 
-    # After the checks, add 2 extra columns -
-    #   'Sequence' -
+    # Clear data
+    esd17 = None
 
+    # =================================================================
+    #     Set pop density values Values
+    # =================================================================
+    print("loading population grid:")
+    popData = gpd.read_file("Shape\\ESD2Pop.shp")
+    # specify that source data is WGS 84 / Pseudo-Mercator -- Spherical Mercator, Google Maps, OpenStreetMap, Bing, ArcGIS, ESRI' - https://epsg.io/3857
+    popData.set_crs(epsg=3857, inplace=True)
+    # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
+    popData = popData.to_crs(4326)
+
+    # weird aliases... this is total population / AreaofLAND(meters)
+    popData["Pop/Mile"] = popData.apply(
+        lambda x: (x["B01001_001"] / x["ALAND"]) * 2590000, axis=1
+    )
+
+    def getPopulationDensity(lon, lat):
+        plot = Point(lon, lat)
+        try:
+            # return None
+            mapInd = (popData.index[popData.contains(plot)])[0]
+            # population = popData.loc[mapInd, "B01001_001E"]
+            # area = popData.loc[mapInd, "Shape_Area"]
+            return popData.loc[mapInd, "Pop/Mile"]
+            # return mapInd
+        except:
+            return None
+
+    from tqdm import tqdm
+
+    tqdm.pandas(
+        desc=f"finding Population Data:",
+        leave=False,
+    )
+    fireDF["People/Mile"] = fireDF.progress_apply(
+        lambda x: getPopulationDensity(x["X-Long"], x["Y_Lat"]),
+        axis=1,
+    )
+
+    def popRatio(pop):
+        if pop < 1000:
+            return "rural"
+        if pop < 2000:
+            return "suburban"
+        return "urban"
+
+    fireDF["Population Classification"] = fireDF.apply(
+        lambda x: popRatio(x["People/Mile"]), axis=1
+    )
+
+    # (getMapscoGrid)(fireDF["X-Long"], fireDF["Y_Lat"])
+
+    # =================================================================
+    #     Set Status for each call
+    # =================================================================
     #   'Status'   - 1, 0, x, c
     # 1 - is the earliest arrived of a set of identical 'Master Incident Number'
     # 0 - all other rows in a set of identical 'Master Incident Number' - multi unit Response
@@ -311,7 +388,7 @@ def analyzeFire(fireDF):
         )
 
     # =================================================================
-    #     Add a new Stations Column
+    #     Add a new Stations (Origin) Column
     # =================================================================
     fireDF = getStations(fireDF)
 
