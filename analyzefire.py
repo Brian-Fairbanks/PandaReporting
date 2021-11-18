@@ -163,6 +163,14 @@ def analyzeFire(fireDF):
     # =================================================================
     #     Basic Format
     # =================================================================
+    # correct naming conventions
+    # ------------------
+    renames = {
+        "Master_Incident_Number": "Master Incident Number",
+        "Last Unit Clear Incident": "Last Real Unit Clear Incident",
+    }
+    fireDF = fireDF.rename(columns=renames, errors="ignore")
+
     # replace all instances of "-" with null values
     # ------------------
     fireDF = fireDF.replace("-", np.nan)

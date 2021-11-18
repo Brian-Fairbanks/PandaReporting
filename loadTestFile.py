@@ -3,7 +3,8 @@ import numpy as np
 
 
 def get():
-    fire = "Fire 07 2021 ESD02_RAWDATA_UPDATE_Fairbanks.xlsx"
+    # fire = "Fire 07 2021 ESD02_RAWDATA_UPDATE_Fairbanks.xlsx"
+    fire = "fire 10-21.xlsx"
     # fire = "fire 06 2021 Raw QV Data.xlsx"
     # gracefulCrash("A file was not found for Fire Data")
     # if ems == "":
@@ -36,13 +37,8 @@ def get():
     #    "Last Real Unit Clear Incident"
     #    "Earliest Time Phone Pickup AFD or EMS"
 
-    # # confirm time values are recognized as time values
-    # fireDF["Last Real Unit Clear Incident"] = pd.to_datetime(
-    #     fireDF["Last Real Unit Clear Incident"],
-    #     # format="%m/%d/%Y %H:%M:%S",
-    #     infer_datetime_format=True,
-    #     errors="ignore",
-    # )
+    renames = {"Master_Incident_Number": "Master Incident Number"}
+    fireDF = fireDF.rename(columns=renames, errors="raise")
 
     # replace all instances of "-" with null values
     fireDF = fireDF.replace("-", np.nan)
