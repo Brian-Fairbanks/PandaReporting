@@ -21,7 +21,7 @@ from tqdm import tqdm
 
 station = ""
 roadMap = ""
-distBuf = 10  # 10 for testing, so everything goes much faster.  Actual data should be 10000 (~6.2 miles)
+distBuf = 10000  # 10 for testing, so everything goes much faster.  Actual data should be 10000 (~6.2 miles)
 
 
 def toCrs(lat, lon):
@@ -327,9 +327,6 @@ def getRoads():
 
 
 def addRoadDistances(df):
-    df["Closest Station"] = None
-    return df
-
     import re
     import getData as data
 
