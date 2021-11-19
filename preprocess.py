@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from datetime import datetime as dt
 from dateutil.relativedelta import relativedelta as rd
 
 
@@ -8,10 +9,9 @@ def preprocess(fireDF, start=None, end=None):
     # Get Date Range
     # =================================================================
     if end is None and start is None:
-        # get start of month
-        end = pd.datetime.now().replace(
-            day=1, hour=0, minute=0, second=0, microsecond=0
-        )
+        # get start of this month for end
+        end = dt.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        # and then go back one month for the start
         start = end - rd(months=1)
 
     # =================================================================
