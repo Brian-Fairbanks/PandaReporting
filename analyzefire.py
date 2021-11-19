@@ -222,6 +222,23 @@ def analyzeFire(fireDF):
         fireDF = utils.putColAt(fireDF, [colName], index)
 
     #
+
+    # now that we have actual times... trim the file to a reasonable size
+    print("triming dates")
+    start = pd.to_datetime("10/01/2021")
+    end = pd.to_datetime("11/01/2021")
+    fireDF = fireDF[
+        (fireDF["Earliest Time Phone Pickup AFD or EMS"] >= start)
+        & (fireDF["Earliest Time Phone Pickup AFD or EMS"] < end)
+        | (fireDF["Incident Time Call Entered in Queue"] >= start)
+        & (fireDF["Incident Time Call Entered in Queue"] < end)
+    ]
+
+    # Reset index for this subset
+    fireDF = fireDF.reset_index(drop=True)
+
+    show(fireDF)
+
     # =================================================================
     #     Match esri formatting for first arrived
     # =================================================================
