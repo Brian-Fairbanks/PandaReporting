@@ -168,6 +168,7 @@ def analyzeFire(fireDF):
     renames = {
         "Master_Incident_Number": "Master Incident Number",
         "Last Unit Clear Incident": "Last Real Unit Clear Incident",
+        "X_Long": "X-Long",
     }
     fireDF = fireDF.rename(columns=renames, errors="ignore")
 
@@ -210,10 +211,13 @@ def analyzeFire(fireDF):
     ]
 
     def tryDelta(times):
+        if type(times) in [float, int, np.float64]:
+            return times
         return pd.Timedelta(str(times)) / np.timedelta64(1, "s")
 
     for index, colName in enumerate(timeDeltasToConvert):
-        fireDF[colName] = fireDF.apply(lambda x: tryDelta(x[colName]), axis=1)
+        # fireDF[colName] = fireDF.apply(lambda x: tryDelta(x[colName]), axis=1)
+        fireDF[colName] = np.vectorize(tryDelta)(fireDF[colName])
         # group and move to front for testing
         fireDF = utils.putColAt(fireDF, [colName], index)
 
@@ -236,6 +240,7 @@ def analyzeFire(fireDF):
         axis=1,
     )
 
+    show(fireDF)
     # =================================================================
     #     Fire Data Error Checking
     # =================================================================
