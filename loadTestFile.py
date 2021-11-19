@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from preprocess import preprocess
 
 
 def get():
@@ -37,22 +38,4 @@ def get():
     #    "Last Real Unit Clear Incident"
     #    "Earliest Time Phone Pickup AFD or EMS"
 
-    renames = {"Master_Incident_Number": "Master Incident Number"}
-    fireDF = fireDF.rename(columns=renames, errors="raise")
-
-    # replace all instances of "-" with null values
-    fireDF = fireDF.replace("-", np.nan)
-
-    # order fire data by time : - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
-    fireDF = fireDF.sort_values(
-        by=[
-            "Master Incident Number",
-            "Unit Time Arrived At Scene",
-            "Unit Time Staged",
-            "Unit Time Enroute",
-            "Unit Time Assigned",
-        ]
-    )
-    fireDF = fireDF.reset_index(drop=True)
-
-    return fireDF
+    return preprocess(fireDF)
