@@ -135,7 +135,6 @@ def getStations(fireDF):
 
     # move Status col to front
     fireDF = utils.putColAt(fireDF, ["Station", "Status"], 0)
-    fireDF = utils.putColAt(fireDF, ["Master Incident Without First Two Digits"], 100)
 
     return fireDF
 
