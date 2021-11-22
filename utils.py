@@ -15,7 +15,19 @@ def gracefulCrash(err, trace):
     exit(1)
 
 
-def putColAt(dataframe, seq, loc):
+def putColAfter(dataframe, sequence, location):
+    """
+    Returns a copy of a passed dataframe, but with specific rows moved around
+
+    :param dataframe: Panda Dataframe, dataframe restructure rows
+    :param sequence: [str], an array of rows by name in the order they should appear
+    :param location: str, the name of the column this sequence should follow
+    """
+    at = dataframe.columns.get_loc(location) + 1
+    return putColAt(dataframe, sequence, at)
+
+
+def putColAt(dataframe, sequence, location):
     """
     Returns a copy of a passed dataframe, but with specific rows moved around
 
@@ -24,21 +36,21 @@ def putColAt(dataframe, seq, loc):
     :param location: int, the row number that the sequence should be moved to: 0 to be first.  (anything larger than the dataframe will default to the end)
     """
     # account for loc being too large
-    if loc >= (len(dataframe.columns) - len(seq)):
-        loc = len(dataframe.columns) - len(seq)
-    if loc < 0:
-        loc = 0
+    if location >= (len(dataframe.columns) - len(sequence)):
+        location = len(dataframe.columns) - len(sequence)
+    if location < 0:
+        location = 0
     cols = []
     curLoc = 0
     # account of it being 0
-    if loc == 0:
-        cols = seq[:]
+    if location == 0:
+        cols = sequence[:]
     for x in dataframe.columns:
-        if x not in cols + seq:
+        if x not in cols + sequence:
             cols.append(x)
             curLoc += 1
-            if curLoc == loc:
-                cols += seq
+            if curLoc == location:
+                cols += sequence
     return dataframe[cols]
 
 

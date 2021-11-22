@@ -1,9 +1,11 @@
 import pandas as pd
 import numpy as np
+from preprocess import preprocess
 
 
 def get():
-    fire = "Fire 07 2021 ESD02_RAWDATA_UPDATE_Fairbanks.xlsx"
+    # fire = "Fire 07 2021 ESD02_RAWDATA_UPDATE_Fairbanks.xlsx"
+    fire = "fire 10-21.xlsx"
     # fire = "fire 06 2021 Raw QV Data.xlsx"
     # gracefulCrash("A file was not found for Fire Data")
     # if ems == "":
@@ -36,27 +38,4 @@ def get():
     #    "Last Real Unit Clear Incident"
     #    "Earliest Time Phone Pickup AFD or EMS"
 
-    # # confirm time values are recognized as time values
-    # fireDF["Last Real Unit Clear Incident"] = pd.to_datetime(
-    #     fireDF["Last Real Unit Clear Incident"],
-    #     # format="%m/%d/%Y %H:%M:%S",
-    #     infer_datetime_format=True,
-    #     errors="ignore",
-    # )
-
-    # replace all instances of "-" with null values
-    fireDF = fireDF.replace("-", np.nan)
-
-    # order fire data by time : - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
-    fireDF = fireDF.sort_values(
-        by=[
-            "Master Incident Number",
-            "Unit Time Arrived At Scene",
-            "Unit Time Staged",
-            "Unit Time Enroute",
-            "Unit Time Assigned",
-        ]
-    )
-    fireDF = fireDF.reset_index(drop=True)
-
-    return fireDF
+    return preprocess(fireDF)

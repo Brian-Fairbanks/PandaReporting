@@ -14,6 +14,9 @@ import ConcurrentUse as cu
 import roads as rd
 import getData as data
 
+# Dont warn me about potentially assigning a copy
+pd.options.mode.chained_assignment = None
+
 # import global additional/updatable json data
 locations = data.getLocations()
 reserveUnits = data.getReserves()
@@ -135,7 +138,6 @@ def getStations(fireDF):
 
     # move Status col to front
     fireDF = utils.putColAt(fireDF, ["Station", "Status"], 0)
-    fireDF = utils.putColAt(fireDF, ["Master Incident Without First Two Digits"], 100)
 
     return fireDF
 
@@ -159,74 +161,25 @@ def analyzeFire(fireDF):
     Dataframe:
         A larger dataframe with additional information gleamed from the passed file.
     """
-
-    # =================================================================
-    #     Basic Format
-    # =================================================================
-    # replace all instances of "-" with null values
-    # ------------------
-    fireDF = fireDF.replace("-", np.nan)
-
-    # convert strings to datetime
-    # ------------------
-    time_columns_to_convert = [
-        "Earliest Time Phone Pickup AFD or EMS",
-        "Incident Time Call Entered in Queue",
-        "Time First Real Unit Assigned",
-        "Time First Real Unit Enroute",
-        "Incident Time First Staged",
-        "Time First Real Unit Arrived",
-        "Incident Time Call Closed",
-        "Last Real Unit Clear Incident",
-    ]
-
-    for index, colName in enumerate(time_columns_to_convert):
-        pd.to_datetime(fireDF[colName], errors="raise", unit="s")
-        # group and move to front for testing
-        # fireDF = utils.putColAt(fireDF, [colName], index)
-
-    # convert strings/dates to timeDelta
-    # ------------------
-
-    timeDeltasToConvert = [
-        "Earliest Time Phone Pickup to 1st Real Unit Assigned",
-        "Incident Turnout - 1st Real Unit Assigned to 1st Real Unit Enroute",
-        "Incident First Unit Response - 1st Real Unit Assigned to 1st Real Unit Arrived",
-        "Earliest Time Phone Pickup to 1st Real Unit Arrived",
-        "Time Spent OnScene - 1st Real Unit Arrived to Last Real Unit Call Cleared",
-        "Unit Dispatch to Respond Time",
-        "Unit Respond to Arrival",
-        "Unit Dispatch to Onscene",
-        "Unit OnScene to Clear Call",
-        "Unit Assign To Clear Call Time",
-    ]
-
-    def tryDelta(times):
-        return pd.Timedelta(str(times)) / np.timedelta64(1, "s")
-
-    for index, colName in enumerate(timeDeltasToConvert):
-        fireDF[colName] = fireDF.apply(lambda x: tryDelta(x[colName]), axis=1)
-        # group and move to front for testing
-        fireDF = utils.putColAt(fireDF, [colName], index)
-
-    #
     # =================================================================
     #     Match esri formatting for first arrived
     # =================================================================
     #  if unit arrived first, yes
     #  if arrived at all, but not first, -
     #  else X
-    def replaceAssigned(x, y):
-        if y is None:
+    def replaceAssigned(firstArrived, timeAtScene):
+        if pd.isnull(timeAtScene):
             return "X"
-        if x is None:
+        if pd.isnull(firstArrived) or firstArrived == "" or firstArrived == " ":
             return "-"
-        return x
+        print(firstArrived)
+        return firstArrived
 
     fireDF["FirstArrivedEsri"] = fireDF.apply(
         lambda x: replaceAssigned(x["FirstArrived"], x["Unit Time Arrived At Scene"]),
         axis=1,
     )
+    fireDF = utils.putColAfter(fireDF, ["FirstArrivedEsri"], "FirstArrived")
 
     # =================================================================
     #     Fire Data Error Checking
@@ -234,25 +187,6 @@ def analyzeFire(fireDF):
     from GUI.validateData import checkFile
 
     fireDF = checkFile(fireDF)
-
-    # =================================================================
-    #     order fire data by time
-    # =================================================================
-    # - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
-    fireDF = fireDF.sort_values(
-        by=[
-            "Master Incident Number",
-            "Unit Time Arrived At Scene",
-            "Unit Time Staged",
-            "Unit Time Enroute",
-            "Unit Time Assigned",
-        ]
-    )
-    fireDF = fireDF.reset_index(drop=True)
-    # =================================================================
-    #     Drop useless data
-    # =================================================================
-    # fireDF = fireDF.drop(["ESD02_Record"])
 
     # =================================================================
     #     get Complete Response Force for each Structure Fire
