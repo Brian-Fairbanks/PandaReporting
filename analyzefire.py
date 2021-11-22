@@ -179,6 +179,7 @@ def analyzeFire(fireDF):
         lambda x: replaceAssigned(x["FirstArrived"], x["Unit Time Arrived At Scene"]),
         axis=1,
     )
+    fireDF = utils.putColAfter(fireDF, ["FirstArrivedEsri"], "FirstArrived")
 
     # =================================================================
     #     Fire Data Error Checking
