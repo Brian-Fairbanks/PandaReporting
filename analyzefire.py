@@ -168,26 +168,17 @@ def analyzeFire(fireDF):
     #  if arrived at all, but not first, -
     #  else X
     def replaceAssigned(firstArrived, timeAtScene):
-        print(
-            f"{firstArrived}{type(firstArrived)} | {timeAtScene}{type(timeAtScene)} : ",
-            end="",
-        )
         if pd.isnull(timeAtScene):
-            print("X")
             return "X"
         if pd.isnull(firstArrived) or firstArrived == "" or firstArrived == " ":
-            print("-")
             return "-"
         print(firstArrived)
         return firstArrived
 
-    fireDF["FirstArrivedEsri"] = np.vectorize(replaceAssigned)(
-        fireDF["FirstArrived"], fireDF["Unit Time Arrived At Scene"]
+    fireDF["FirstArrivedEsri"] = fireDF.apply(
+        lambda x: replaceAssigned(x["FirstArrived"], x["Unit Time Arrived At Scene"]),
+        axis=1,
     )
-    # fireDF["FirstArrivedEsri"] = fireDF.apply(
-    #     lambda x: replaceAssigned(x["FirstArrived"], x["Unit Time Arrived At Scene"]),
-    #     axis=1,
-    # )
 
     # =================================================================
     #     Fire Data Error Checking
