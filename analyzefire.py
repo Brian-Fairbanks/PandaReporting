@@ -14,6 +14,9 @@ import ConcurrentUse as cu
 import roads as rd
 import getData as data
 
+# Dont warn me about potentially assigning a copy
+pd.options.mode.chained_assignment = None
+
 # import global additional/updatable json data
 locations = data.getLocations()
 reserveUnits = data.getReserves()
@@ -164,17 +167,27 @@ def analyzeFire(fireDF):
     #  if unit arrived first, yes
     #  if arrived at all, but not first, -
     #  else X
-    def replaceAssigned(x, y):
-        if y is None:
+    def replaceAssigned(firstArrived, timeAtScene):
+        print(
+            f"{firstArrived}{type(firstArrived)} | {timeAtScene}{type(timeAtScene)} : ",
+            end="",
+        )
+        if pd.isnull(timeAtScene):
+            print("X")
             return "X"
-        if x is None:
+        if pd.isnull(firstArrived) or firstArrived == "" or firstArrived == " ":
+            print("-")
             return "-"
-        return x
+        print(firstArrived)
+        return firstArrived
 
-    fireDF["FirstArrivedEsri"] = fireDF.apply(
-        lambda x: replaceAssigned(x["FirstArrived"], x["Unit Time Arrived At Scene"]),
-        axis=1,
+    fireDF["FirstArrivedEsri"] = np.vectorize(replaceAssigned)(
+        fireDF["FirstArrived"], fireDF["Unit Time Arrived At Scene"]
     )
+    # fireDF["FirstArrivedEsri"] = fireDF.apply(
+    #     lambda x: replaceAssigned(x["FirstArrived"], x["Unit Time Arrived At Scene"]),
+    #     axis=1,
+    # )
 
     # =================================================================
     #     Fire Data Error Checking
