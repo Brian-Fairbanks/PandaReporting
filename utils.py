@@ -23,7 +23,7 @@ def putColAfter(dataframe, sequence, location):
     :param sequence: [str], an array of rows by name in the order they should appear
     :param location: str, the name of the column this sequence should follow
     """
-    at = dataframe.columns.get_loc(location)
+    at = dataframe.columns.get_loc(location) + 1
     return putColAt(dataframe, sequence, at)
 
 
