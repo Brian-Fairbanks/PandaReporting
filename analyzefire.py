@@ -83,7 +83,8 @@ def getStations(fireDF):
     ba = "Frontline_Status"
 
     conditions = [
-        (fireDF[az] == "AFD") & (fireDF[ba] == "Other"),  # 1
+        (fireDF["Frontline_Status" == "Not a unit"])(fireDF[az] == "AFD")
+        & (fireDF[ba] == "Other"),  # 1
         (fireDF[az] == "AFD"),
         (fireDF[az] == "ESD12 - Manor") & (fireDF[ba] == "Other"),
         (fireDF[az] == "ESD12 - Manor"),
@@ -100,6 +101,7 @@ def getStations(fireDF):
         (fireDF[az] == "ESD02 - Pflugerville"),
     ]
     choices = [
+        "Not a unit",
         "AFD Other",
         "AFD",
         "ESD12 - Manor Other",
@@ -191,7 +193,6 @@ def analyzeFire(fireDF):
         axis=1,
     )
     fireDF = utils.putColAfter(fireDF, ["FirstArrivedEsri"], "FirstArrived")
-    show(fireDF)
 
     # =================================================================
     #     Fire Data Error Checking
