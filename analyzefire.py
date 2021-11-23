@@ -83,8 +83,8 @@ def getStations(fireDF):
     ba = "Frontline_Status"
 
     conditions = [
-        (fireDF["Frontline_Status" == "Not a unit"])(fireDF[az] == "AFD")
-        & (fireDF[ba] == "Other"),  # 1
+        (fireDF["Frontline_Status" == "Not a unit"]),
+        (fireDF[az] == "AFD") & (fireDF[ba] == "Other"),  # 1
         (fireDF[az] == "AFD"),
         (fireDF[az] == "ESD12 - Manor") & (fireDF[ba] == "Other"),
         (fireDF[az] == "ESD12 - Manor"),
