@@ -310,9 +310,19 @@ def analyzeFire(fireDF):
     #     Set Status for each call
     # =================================================================
     #   'Status'   - 1, 0, x, c
+
     # 1 - is the earliest arrived of a set of identical 'Master Incident Number'
     # 0 - all other rows in a set of identical 'Master Incident Number' - multi unit Response
     # C - Incident Canceled Prior to unit arrival (no 'Unit Time Arrived At Scene')
+    # X - all other rows in a set of identical 'Master Incident Number' with no 'Unit Time Arrived At Scene'
+
+    # 1 - is the earliest arrived of a set of identical 'Master Incident Number'
+    # 1 if "firstArrivedEsri" == "Yes"
+    # 0 - all other rows in a set of identical 'Master Incident Number' - multi unit Response
+    # else "0"
+    # C - Incident Canceled Prior to unit arrival (no 'Unit Time Arrived At Scene')
+    # pd.isnull("Unit time arrived at scene")
+    # ||  "firstArrivedEsri" == "Yes"
     # X - all other rows in a set of identical 'Master Incident Number' with no 'Unit Time Arrived At Scene'
 
     # Set Canceled, 1(first arrived), or 0(multi incident)
