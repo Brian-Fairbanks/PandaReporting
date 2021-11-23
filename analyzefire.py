@@ -167,19 +167,31 @@ def analyzeFire(fireDF):
     #  if unit arrived first, yes
     #  if arrived at all, but not first, -
     #  else X
-    def replaceAssigned(firstArrived, timeAtScene):
+    # def replaceAssigned(firstArrived, timeAtScene):
+    #     if pd.isnull(timeAtScene):
+    #         return "X"
+    #     if pd.isnull(firstArrived) or firstArrived == "" or firstArrived == " ":
+    #         return "-"
+    #     print(firstArrived)
+    #     return firstArrived
+    def replaceAssigned(firstArrived, timeAtScene, timeFirstArrived):
         if pd.isnull(timeAtScene):
             return "X"
-        if pd.isnull(firstArrived) or firstArrived == "" or firstArrived == " ":
-            return "-"
-        print(firstArrived)
-        return firstArrived
+        # if pd.isnull(firstArrived) or firstArrived == "" or firstArrived == " ":
+        if timeAtScene == timeFirstArrived:
+            return "Yes"
+        return "-"
 
     fireDF["FirstArrivedEsri"] = fireDF.apply(
-        lambda x: replaceAssigned(x["FirstArrived"], x["Unit Time Arrived At Scene"]),
+        lambda x: replaceAssigned(
+            x["FirstArrived"],
+            x["Unit Time Arrived At Scene"],
+            x["Time First Real Unit Arrived"],
+        ),
         axis=1,
     )
     fireDF = utils.putColAfter(fireDF, ["FirstArrivedEsri"], "FirstArrived")
+    show(fireDF)
 
     # =================================================================
     #     Fire Data Error Checking
