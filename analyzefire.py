@@ -83,23 +83,22 @@ def getStations(fireDF):
     ba = "Frontline_Status"
 
     conditions = [
+        # fmt: off
+        (fireDF["Frontline_Status"] == "Not a unit"),  # 0
         (fireDF[az] == "AFD") & (fireDF[ba] == "Other"),  # 1
         (fireDF[az] == "AFD"),
         (fireDF[az] == "ESD12 - Manor") & (fireDF[ba] == "Other"),
         (fireDF[az] == "ESD12 - Manor"),
-        (fireDF[az] == "ESD02 - Pflugerville")
-        & (fireDF[ba].isin(["Other", "Command"])),
-        (fireDF[az] == "ESD02 - Pflugerville")
-        & (fireDF["Radio_Name"] == "QNT261"),  # 6
-        # fmt: off
+        (fireDF[az] == "ESD02 - Pflugerville") & (fireDF[ba].isin(["Other", "Command"])),
+        (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"] == "QNT261"),  # 6
         (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].str.contains("BAT20")),
-        # fmt: on
-        # account for instances where vehicle is filling in for another.  We will need to deterimine which station it is filling in for based on the location at time of assignment
-        (fireDF[az] == "ESD02 - Pflugerville")
-        & (fireDF["Radio_Name"].isin(reserveUnits)),
+            # account for instances where vehicle is filling in for another.  We will need to deterimine which station it is filling in for based on the location at time of assignment
+        (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].isin(reserveUnits)),
         (fireDF[az] == "ESD02 - Pflugerville"),
+        # fmt: on
     ]
     choices = [
+        "Not a unit",  # 0
         "AFD Other",
         "AFD",
         "ESD12 - Manor Other",
@@ -112,7 +111,7 @@ def getStations(fireDF):
         "S0" + fireDF["Radio_Name"].str[-2],
     ]
 
-    fireDF["Station"] = np.select(conditions, choices, default=fireDF["Radio_Name"])
+    fireDF["Station"] = np.select(conditions, choices, default=fireDF["Department"])
 
     # correct reserved units, as I have spent far too long trying to do this all as one part
     #    ----------------------------
@@ -126,12 +125,12 @@ def getStations(fireDF):
 
         # check if it has already been specified
         if "fs020" in curLoc:
-            stationNum = "FS" + curLoc[-2:]
+            stationNum = "S" + curLoc[-2:]
         # else check it against known street names (specified at the top of the file)
         else:
             for street in locations.keys():
                 if street.lower() in curLoc:
-                    stationNum = "F" + locations[street]
+                    stationNum = locations[street]
                     break
         # and then set the finalized location
         fireDF.loc[i, "Station"] = stationNum
@@ -167,16 +166,27 @@ def analyzeFire(fireDF):
     #  if unit arrived first, yes
     #  if arrived at all, but not first, -
     #  else X
-    def replaceAssigned(firstArrived, timeAtScene):
+    # def replaceAssigned(firstArrived, timeAtScene):
+    #     if pd.isnull(timeAtScene):
+    #         return "X"
+    #     if pd.isnull(firstArrived) or firstArrived == "" or firstArrived == " ":
+    #         return "-"
+    #     print(firstArrived)
+    #     return firstArrived
+    def replaceAssigned(firstArrived, timeAtScene, timeFirstArrived):
         if pd.isnull(timeAtScene):
             return "X"
-        if pd.isnull(firstArrived) or firstArrived == "" or firstArrived == " ":
-            return "-"
-        print(firstArrived)
-        return firstArrived
+        # if pd.isnull(firstArrived) or firstArrived == "" or firstArrived == " ":
+        if timeAtScene == timeFirstArrived:
+            return "Yes"
+        return "-"
 
     fireDF["FirstArrivedEsri"] = fireDF.apply(
-        lambda x: replaceAssigned(x["FirstArrived"], x["Unit Time Arrived At Scene"]),
+        lambda x: replaceAssigned(
+            x["FirstArrived"],
+            x["Unit Time Arrived At Scene"],
+            x["Time First Real Unit Arrived"],
+        ),
         axis=1,
     )
     fireDF = utils.putColAfter(fireDF, ["FirstArrivedEsri"], "FirstArrived")
@@ -298,9 +308,19 @@ def analyzeFire(fireDF):
     #     Set Status for each call
     # =================================================================
     #   'Status'   - 1, 0, x, c
+
     # 1 - is the earliest arrived of a set of identical 'Master Incident Number'
     # 0 - all other rows in a set of identical 'Master Incident Number' - multi unit Response
     # C - Incident Canceled Prior to unit arrival (no 'Unit Time Arrived At Scene')
+    # X - all other rows in a set of identical 'Master Incident Number' with no 'Unit Time Arrived At Scene'
+
+    # 1 - is the earliest arrived of a set of identical 'Master Incident Number'
+    # 1 if "firstArrivedEsri" == "Yes"
+    # 0 - all other rows in a set of identical 'Master Incident Number' - multi unit Response
+    # else "0"
+    # C - Incident Canceled Prior to unit arrival (no 'Unit Time Arrived At Scene')
+    # pd.isnull("Unit time arrived at scene")
+    # ||  "firstArrivedEsri" == "Yes"
     # X - all other rows in a set of identical 'Master Incident Number' with no 'Unit Time Arrived At Scene'
 
     # Set Canceled, 1(first arrived), or 0(multi incident)
@@ -346,9 +366,9 @@ def analyzeFire(fireDF):
     # Time Data Extra Colulmn Creation
     # =================================================================
 
-    nc1 = "Incident 1st Enroute to 1stArrived Time"
+    nc1 = "Incident 1st Enroute to 1st Arrived Time"
     nc2 = "Incident Duration - Ph PU to Clear"
-    nc3 = "Unit Ph PU to UnitArrived"
+    nc3 = "Ph PU to Unit Arrived"
 
     fireDF = utils.addTimeDiff(
         fireDF, nc1, "Time First Real Unit Arrived", "Time First Real Unit Enroute"
@@ -362,7 +382,7 @@ def analyzeFire(fireDF):
     fireDF = utils.addTimeDiff(
         fireDF,
         nc3,
-        "Time First Real Unit Arrived",
+        "Unit Time Arrived At Scene",
         "Earliest Time Phone Pickup AFD or EMS",
     )
 
@@ -439,10 +459,6 @@ def analyzeFire(fireDF):
     # Unit  Ph PU to UnitArrived
     # fireDF[""] = fireDF[""].apply(utils.dtFormat)
 
-    ######################################
-    # show in gui just before writing
-    gui = show(fireDF)
-
     writer = pd.ExcelWriter(
         "Output\\Output_{0}.xlsx".format(
             (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
@@ -456,12 +472,16 @@ def analyzeFire(fireDF):
     writer.save()
     # plt.savefig('saved_figure.png')
 
+    ######################################
+    # show in gui just after writing
+    gui = show(fireDF)
+
 
 ################################
 # ==================================================================
 #
-#
 # Testing Code: will only run when this file is called directly.
+#
 # ==================================================================
 ################################
 if __name__ == "__main__":

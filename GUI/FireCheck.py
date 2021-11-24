@@ -30,8 +30,11 @@ def check0(df):
         # limit the rows that will show in the error output
         limit = [
             "Master Incident Number",
-            "Earliest Time Phone Pickup AFD or EMS",
+            # "Earliest Time Phone Pickup AFD or EMS",
             "Incident Time Call Entered in Queue",
+            "FirstArrived",
+            "Unit Time Arrived At Scene",
+            "Time First Real Unit Arrived",
         ]
         print(
             "Warning: Please check on the following incidents:\n 'Earliest Time Phone Pickup AFD or EMS' is blank \n 'Earliest Time Phone Pickup AFD or EMS' field must have a value to continue\n Either pull updated information from visinet, or copy time from 'Incident Time Call Entered in Queue' field \n\n"
