@@ -366,9 +366,9 @@ def analyzeFire(fireDF):
     # Time Data Extra Colulmn Creation
     # =================================================================
 
-    nc1 = "Incident 1st Enroute to 1stArrived Time"
+    nc1 = "Incident 1st Enroute to 1st Arrived Time"
     nc2 = "Incident Duration - Ph PU to Clear"
-    nc3 = "Unit Ph PU to UnitArrived"
+    nc3 = "Ph PU to Unit Arrived"
 
     fireDF = utils.addTimeDiff(
         fireDF, nc1, "Time First Real Unit Arrived", "Time First Real Unit Enroute"
@@ -382,7 +382,7 @@ def analyzeFire(fireDF):
     fireDF = utils.addTimeDiff(
         fireDF,
         nc3,
-        "Time First Real Unit Arrived",
+        "Unit Time Arrived At Scene",
         "Earliest Time Phone Pickup AFD or EMS",
     )
 
