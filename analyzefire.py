@@ -83,25 +83,22 @@ def getStations(fireDF):
     ba = "Frontline_Status"
 
     conditions = [
-        (fireDF["Frontline_Status"] == "Not a unit"),
+        # fmt: off
+        (fireDF["Frontline_Status"] == "Not a unit"),  # 0
         (fireDF[az] == "AFD") & (fireDF[ba] == "Other"),  # 1
         (fireDF[az] == "AFD"),
         (fireDF[az] == "ESD12 - Manor") & (fireDF[ba] == "Other"),
         (fireDF[az] == "ESD12 - Manor"),
-        (fireDF[az] == "ESD02 - Pflugerville")
-        & (fireDF[ba].isin(["Other", "Command"])),
-        (fireDF[az] == "ESD02 - Pflugerville")
-        & (fireDF["Radio_Name"] == "QNT261"),  # 6
-        # fmt: off
+        (fireDF[az] == "ESD02 - Pflugerville") & (fireDF[ba].isin(["Other", "Command"])),
+        (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"] == "QNT261"),  # 6
         (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].str.contains("BAT20")),
-        # fmt: on
-        # account for instances where vehicle is filling in for another.  We will need to deterimine which station it is filling in for based on the location at time of assignment
-        (fireDF[az] == "ESD02 - Pflugerville")
-        & (fireDF["Radio_Name"].isin(reserveUnits)),
+            # account for instances where vehicle is filling in for another.  We will need to deterimine which station it is filling in for based on the location at time of assignment
+        (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].isin(reserveUnits)),
         (fireDF[az] == "ESD02 - Pflugerville"),
+        # fmt: on
     ]
     choices = [
-        "Not a unit",
+        "Not a unit",  # 0
         "AFD Other",
         "AFD",
         "ESD12 - Manor Other",
@@ -114,7 +111,7 @@ def getStations(fireDF):
         "S0" + fireDF["Radio_Name"].str[-2],
     ]
 
-    fireDF["Station"] = np.select(conditions, choices, default=fireDF["Radio_Name"])
+    fireDF["Station"] = np.select(conditions, choices, default=fireDF["Department"])
 
     # correct reserved units, as I have spent far too long trying to do this all as one part
     #    ----------------------------

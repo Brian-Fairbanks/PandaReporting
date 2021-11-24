@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime as dt
 from dateutil.relativedelta import relativedelta as rd
+import utils
 
 
 def preprocess(fireDF, start=None, end=None):
@@ -41,9 +42,16 @@ def preprocess(fireDF, start=None, end=None):
         lambda row: getFrontline(row["Frontline_Status"]), axis=1
     )
 
+    fireDF["Not Arrived"] = fireDF.apply(
+        lambda row: pd.isnull(row["Unit Time Arrived At Scene"]), axis=1
+    )
+
+    fireDF = utils.putColAt(fireDF, ["ignoreInStatus", "Not Arrived"], 1)
+
     fireDF = fireDF.sort_values(
         by=[
             "Master Incident Number",
+            "Not Arrived",
             "ignoreInStatus",
             "Unit Time Arrived At Scene",
             "Unit Time Staged",
