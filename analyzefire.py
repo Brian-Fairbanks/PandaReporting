@@ -83,7 +83,7 @@ def getStations(fireDF):
     ba = "Frontline_Status"
 
     conditions = [
-        (fireDF["Frontline_Status" == "Not a unit"]),
+        (fireDF["Frontline_Status"] == "Not a unit"),
         (fireDF[az] == "AFD") & (fireDF[ba] == "Other"),  # 1
         (fireDF[az] == "AFD"),
         (fireDF[az] == "ESD12 - Manor") & (fireDF[ba] == "Other"),
@@ -128,12 +128,12 @@ def getStations(fireDF):
 
         # check if it has already been specified
         if "fs020" in curLoc:
-            stationNum = "FS" + curLoc[-2:]
+            stationNum = "S" + curLoc[-2:]
         # else check it against known street names (specified at the top of the file)
         else:
             for street in locations.keys():
                 if street.lower() in curLoc:
-                    stationNum = "F" + locations[street]
+                    stationNum = locations[street]
                     break
         # and then set the finalized location
         fireDF.loc[i, "Station"] = stationNum
