@@ -462,10 +462,6 @@ def analyzeFire(fireDF):
     # Unit  Ph PU to UnitArrived
     # fireDF[""] = fireDF[""].apply(utils.dtFormat)
 
-    ######################################
-    # show in gui just before writing
-    gui = show(fireDF)
-
     writer = pd.ExcelWriter(
         "Output\\Output_{0}.xlsx".format(
             (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
@@ -479,12 +475,16 @@ def analyzeFire(fireDF):
     writer.save()
     # plt.savefig('saved_figure.png')
 
+    ######################################
+    # show in gui just after writing
+    gui = show(fireDF)
+
 
 ################################
 # ==================================================================
 #
-#
 # Testing Code: will only run when this file is called directly.
+#
 # ==================================================================
 ################################
 if __name__ == "__main__":
