@@ -416,8 +416,8 @@ def analyzeFire(fireDF):
             "Last Real Unit Clear Incident",
         ],
         "Incident Duration - Earliest Time Phone Pickup to Last Real Unit Call Cleared": [
-            "Last Real Unit Clear Incident",
             "Earliest Time Phone Pickup AFD or EMS",
+            "Last Real Unit Clear Incident",
         ],
     }
 
@@ -434,18 +434,41 @@ def analyzeFire(fireDF):
         "Last Real Unit Clear Incident",
     )
 
-    # unitCols = {
-    #     "In Queue to Unit Dispatch": ["",""]
-    #     "Unit Dispatch to Respond Time": ["", ""],
-    #     "Unit Respond to Arrival": ["", ""],
-    #     "Unit Dispatch to Onscene": ["", ""],
-    #     "Unit OnScene to Clear Call": ["", ""],
-    #     "Earliest Phone Pickup Time to Unit Arrival": ["",""]
-    #     "Unit Assign To Clear Call Time": ["", ""],
-    # }
+    unitCols = {
+        "In Queue to Unit Dispatch": [
+            "Incident Time Call Entered in Queue",
+            "Unit Time Assigned",
+        ],
+        "Unit Dispatch to Respond Time": ["Unit Time Assigned", "Unit Time Enroute"],
+        "Unit Respond to Arrival": ["Unit Time Enroute", "Unit Time Arrived At Scene"],
+        "Unit Dispatch to Onscene": [
+            "Unit Time Assigned",
+            "Unit Time Arrived At Scene",
+        ],
+        "Unit OnScene to Clear Call": [
+            "Unit Time Arrived At Scene",
+            "Unit Time Call Cleared",
+        ],
+        "Earliest Phone Pickup Time to Unit Arrival": [
+            "Earliest Time Phone Pickup AFD or EMS",
+            "Unit Time Arrived At Scene",
+        ],
+        "Unit Assign To Clear Call Time": [
+            "Unit Time Assigned",
+            "Unit Time Call Cleared",
+        ],
+    }
 
-    # for col in unitCols:
-    #     fireDF = utils.addTimeDiff(fireDF, col, unitCols[col][0], unitCols[col][1])
+    # Create TimeDelta Columns
+    for col in unitCols:
+        fireDF = utils.addTimeDiff(fireDF, col, unitCols[col][0], unitCols[col][1])
+
+    # Move TimeDelta Columns to correct spot in file
+    fireDF = utils.putColAfter(
+        fireDF,
+        list(unitCols.keys()),
+        "Unit Time Call Cleared",
+    )
 
     # fireDF = utils.addTimeDiff(
     #     fireDF, nc1, "Time First Real Unit Arrived", "Time First Real Unit Enroute"

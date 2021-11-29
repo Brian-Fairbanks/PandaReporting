@@ -86,22 +86,22 @@ def verifyTime(x):
         return None
 
 
-def addTimeDiff(df, nt, t1, t2):
+def addTimeDiff(df, nt, timeStart, timeEnd):
     """
     Returns a copy of a passed dataframe with a new row added
 
     :param df: Panda Dataframe, dataframe to add rows too
     :param nt: str, The name of the column to be created
-    :param t1: str, the name of the row in df which houses the end datetime
-    :param t2: str, the name of the row in df which houses the start datetime
+    :param timeStart: str, the name of the row in df which houses the start datetime
+    :param timeEnd: str, the name of the row in df which houses the end datetime
     """
     global last
     last = []
     # ensure valid dateTime, or properly noted error
-    df[t1] = df[t1].apply(verifyTime)
-    df[t2] = df[t2].apply(verifyTime)
+    df[timeEnd] = df[timeEnd].apply(verifyTime)
+    df[timeStart] = df[timeStart].apply(verifyTime)
 
-    df[nt] = (df[t1] - df[t2]).astype("timedelta64[s]")
+    df[nt] = (df[timeEnd] - df[timeStart]).astype("timedelta64[s]")
     # print(df[nt])
 
     # print(type(df.loc[1, nt]))
