@@ -93,26 +93,34 @@ def preprocess(fireDF, start=None, end=None):
     # convert strings/dates to timeDelta
     # =================================================================
     timeDeltasToConvert = [
+        "Earliest Time Phone Pickup to In Queue",
+        "In Queue to 1st Real Unit Assigned",
         "Earliest Time Phone Pickup to 1st Real Unit Assigned",
         "Incident Turnout - 1st Real Unit Assigned to 1st Real Unit Enroute",
+        "Incident Travel Time - 1st Real Unit Enroute to 1st Real Unit Arrived ",
         "Incident First Unit Response - 1st Real Unit Assigned to 1st Real Unit Arrived",
         "Earliest Time Phone Pickup to 1st Real Unit Arrived",
         "Time Spent OnScene - 1st Real Unit Arrived to Last Real Unit Call Cleared",
+        "IncidentDuration - Earliest Time Phone Pickup to Last Real Unit Call Cleared",
+        "In Queue to Unit Dispatch",
         "Unit Dispatch to Respond Time",
         "Unit Respond to Arrival",
         "Unit Dispatch to Onscene",
         "Unit OnScene to Clear Call",
+        "Earliest Phone Pickup Time to Unit Arrival",
         "Unit Assign To Clear Call Time",
     ]
 
-    def tryDelta(times):
-        if type(times) in [float, int, np.float64]:
-            return times
-        return pd.Timedelta(str(times)) / np.timedelta64(1, "s")
+    # def tryDelta(times):
+    #     if type(times) in [float, int, np.float64]:
+    #         return times
+    #     return pd.Timedelta(str(times)) / np.timedelta64(1, "s")
 
-    for index, colName in enumerate(timeDeltasToConvert):
-        fireDF[colName] = fireDF.apply(lambda x: tryDelta(x[colName]), axis=1)
-        # fireDF[colName] = np.vectorize(tryDelta)(fireDF[colName])
+    # for index, colName in enumerate(timeDeltasToConvert):
+    #     fireDF[colName] = fireDF.apply(lambda x: tryDelta(x[colName]), axis=1)
+    #     # fireDF[colName] = np.vectorize(tryDelta)(fireDF[colName])
+
+    fireDF = fireDF.drop(timeDeltasToConvert, axis=1)
 
     # =================================================================
     # Reset index for order and size

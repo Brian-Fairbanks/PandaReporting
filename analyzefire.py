@@ -370,28 +370,128 @@ def analyzeFire(fireDF):
     nc2 = "Incident Duration - Ph PU to Clear"
     nc3 = "Ph PU to Unit Arrived"
 
-    fireDF = utils.addTimeDiff(
-        fireDF, nc1, "Time First Real Unit Arrived", "Time First Real Unit Enroute"
-    )
-    fireDF = utils.addTimeDiff(
+    incidentCols = {
+        # "Incident 1st Enroute to 1st Arrived Time": [
+        #     "Time First Real Unit Arrived",
+        #     "Time First Real Unit Enroute",
+        # ],
+        # "Incident Duration - Ph PU to Clear": [
+        #     "Last Real Unit Clear Incident",
+        #     "Earliest Time Phone Pickup AFD or EMS",
+        # ],
+        # "Ph PU to Unit Arrived": [
+        #     "Unit Time Arrived At Scene",
+        #     "Earliest Time Phone Pickup AFD or EMS",
+        # ],
+        "Earliest Time Phone Pickup to In Queue": [
+            "Earliest Time Phone Pickup AFD or EMS",
+            "Incident Time Call Entered in Queue",
+        ],
+        "In Queue to 1st Real Unit Assigned": [
+            "Incident Time Call Entered in Queue",
+            "Time First Real Unit Assigned",
+        ],
+        "Earliest Time Phone Pickup to 1st Real Unit Assigned": [
+            "Earliest Time Phone Pickup AFD or EMS",
+            "Time First Real Unit Assigned",
+        ],
+        "Incident Turnout - 1st Real Unit Assigned to 1st Real Unit Enroute": [
+            "Time First Real Unit Assigned",
+            "Time First Real Unit Enroute",
+        ],
+        "Incident Travel Time - 1st Real Unit Enroute to 1st Real Unit Arrived ": [
+            "Time First Real Unit Enroute",
+            "Time First Real Unit Arrived",
+        ],
+        "Incident First Unit Response - 1st Real Unit Assigned to 1st Real Unit Arrived": [
+            "Time First Real Unit Assigned",
+            "Time First Real Unit Arrived",
+        ],
+        "Earliest Time Phone Pickup to 1st Real Unit Arrived": [
+            "Earliest Time Phone Pickup AFD or EMS",
+            "Time First Real Unit Arrived",
+        ],
+        "Time Spent OnScene - 1st Real Unit Arrived to Last Real Unit Call Cleared": [
+            "Time First Real Unit Arrived",
+            "Last Real Unit Clear Incident",
+        ],
+        "Incident Duration - Earliest Time Phone Pickup to Last Real Unit Call Cleared": [
+            "Earliest Time Phone Pickup AFD or EMS",
+            "Last Real Unit Clear Incident",
+        ],
+    }
+
+    # Create TimeDelta Columns
+    for col in incidentCols:
+        fireDF = utils.addTimeDiff(
+            fireDF, col, incidentCols[col][0], incidentCols[col][1]
+        )
+
+    # Move TimeDelta Columns to correct spot in file
+    fireDF = utils.putColAfter(
         fireDF,
-        nc2,
+        list(incidentCols.keys()),
         "Last Real Unit Clear Incident",
-        "Earliest Time Phone Pickup AFD or EMS",
-    )
-    fireDF = utils.addTimeDiff(
-        fireDF,
-        nc3,
-        "Unit Time Arrived At Scene",
-        "Earliest Time Phone Pickup AFD or EMS",
     )
 
-    #   right after "Incident Turnout - 1st Real Unit Assigned to 1st Real Unit Enroute", AD
-    fireDF = utils.putColAt(fireDF, [nc1], 29)  # 29
-    #   right after "Incident First Unitresponse - 1st Real Unit assigned to 1st Real Unit Arrived", AD
-    fireDF = utils.putColAt(fireDF, [nc2], 31)
-    #   right after "Unit Assign to Clear Call", AD
-    fireDF = utils.putColAt(fireDF, [nc3], 33)
+    unitCols = {
+        "In Queue to Unit Dispatch": [
+            "Incident Time Call Entered in Queue",
+            "Unit Time Assigned",
+        ],
+        "Unit Dispatch to Respond Time": ["Unit Time Assigned", "Unit Time Enroute"],
+        "Unit Respond to Arrival": ["Unit Time Enroute", "Unit Time Arrived At Scene"],
+        "Unit Dispatch to Onscene": [
+            "Unit Time Assigned",
+            "Unit Time Arrived At Scene",
+        ],
+        "Unit OnScene to Clear Call": [
+            "Unit Time Arrived At Scene",
+            "Unit Time Call Cleared",
+        ],
+        "Earliest Phone Pickup Time to Unit Arrival": [
+            "Earliest Time Phone Pickup AFD or EMS",
+            "Unit Time Arrived At Scene",
+        ],
+        "Unit Assign To Clear Call Time": [
+            "Unit Time Assigned",
+            "Unit Time Call Cleared",
+        ],
+    }
+
+    # Create TimeDelta Columns
+    for col in unitCols:
+        fireDF = utils.addTimeDiff(fireDF, col, unitCols[col][0], unitCols[col][1])
+
+    # Move TimeDelta Columns to correct spot in file
+    fireDF = utils.putColAfter(
+        fireDF,
+        list(unitCols.keys()),
+        "Unit Time Call Cleared",
+    )
+
+    # fireDF = utils.addTimeDiff(
+    #     fireDF, nc1, "Time First Real Unit Arrived", "Time First Real Unit Enroute"
+    # )
+    # fireDF = utils.addTimeDiff(
+    #     fireDF,
+    #     nc2,
+    #     "Last Real Unit Clear Incident",
+    #     "Earliest Time Phone Pickup AFD or EMS",
+    # )
+    # fireDF = utils.addTimeDiff(
+    #     fireDF,
+    #     nc3,
+    #     "Unit Time Arrived At Scene",
+    #     "Earliest Time Phone Pickup AFD or EMS",
+    # )
+
+    # #   right after "Incident Turnout - 1st Real Unit Assigned to 1st Real Unit Enroute", AD
+    # fireDF = utils.putColAt(fireDF, [nc1], 29)  # 29
+    # #   right after "Incident First Unitresponse - 1st Real Unit assigned to 1st Real Unit Arrived", AD
+    # fireDF = utils.putColAt(fireDF, [nc2], 31)
+    # #   right after "Unit Assign to Clear Call", AD
+    # fireDF = utils.putColAt(fireDF, [nc3], 33)
 
     # ----------------
     # Correction of time: staging calls
