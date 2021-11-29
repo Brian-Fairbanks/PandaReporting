@@ -415,18 +415,24 @@ def analyzeFire(fireDF):
             "Time First Real Unit Arrived",
             "Last Real Unit Clear Incident",
         ],
-        "IncidentDuration - Earliest Time Phone Pickup to Last Real Unit Call Cleared": [
+        "Incident Duration - Earliest Time Phone Pickup to Last Real Unit Call Cleared": [
             "Last Real Unit Clear Incident",
             "Earliest Time Phone Pickup AFD or EMS",
         ],
     }
 
-    print(list(incidentCols.keys()))
+    # Create TimeDelta Columns
+    for col in incidentCols:
+        fireDF = utils.addTimeDiff(
+            fireDF, col, incidentCols[col][0], incidentCols[col][1]
+        )
 
-    # for col in incidentCols:
-    #     fireDF = utils.addTimeDiff(
-    #         fireDF, col, incidentCols[col][0], incidentCols[col][1]
-    #     )
+    # Move TimeDelta Columns to correct spot in file
+    fireDF = utils.putColAfter(
+        fireDF,
+        list(incidentCols.keys()),
+        "Last Real Unit Clear Incident",
+    )
 
     # unitCols = {
     #     "In Queue to Unit Dispatch": ["",""]
