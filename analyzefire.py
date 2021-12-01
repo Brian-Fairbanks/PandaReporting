@@ -299,6 +299,28 @@ def analyzeFire(fireDF):
         )
 
     # =================================================================
+    #     Recalculate Shift Data
+    # =================================================================
+    def getShift(assigned, phpu):
+        # =CHOOSE(1+MOD(DAYS(BB,DATE(2021,3,30)) + (IF( IF(ISBLANK(BB),HOUR(W),HOUR(BB))<7, 0, 1)), 3), "A Shift","B Shift","C Shift")
+        shift = ["A Shift", "B Shift", "C Shift"]
+
+        if pd.isnull(phpu):
+            time = assigned
+        else:
+            time = phpu
+        delta = (1 + (time - pd.to_datetime("3/30/21 7:00:00")).days) % 3
+
+        return shift[delta]
+
+    col_bb = "Unit Time Assigned"
+    col_w = "Earliest Time Phone Pickup AFD or EMS"
+
+    fireDF["ESD02_Shift"] = fireDF.apply(
+        lambda row: getShift(row[col_bb], row[col_w]), axis=1
+    )
+
+    # =================================================================
     #     Add a new Stations (Origin) Column
     # =================================================================
     fireDF = getStations(fireDF)
