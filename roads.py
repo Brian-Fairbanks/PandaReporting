@@ -327,6 +327,9 @@ def getRoads():
 
 
 def addRoadDistances(df):
+    df["Closest Station"] = None
+    return df
+
     import re
     import getData as data
 

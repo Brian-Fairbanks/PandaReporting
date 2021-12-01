@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy as np
+from datetime import datetime as dt
 from preprocess import preprocess
 
 
@@ -38,4 +38,6 @@ def get():
     #    "Last Real Unit Clear Incident"
     #    "Earliest Time Phone Pickup AFD or EMS"
 
-    return preprocess(fireDF)
+    return preprocess(
+        fireDF, pd.to_datetime("10/1/21 00:00:00"), pd.to_datetime("11/1/21 00:00:00")
+    )

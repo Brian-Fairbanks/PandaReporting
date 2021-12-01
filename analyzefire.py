@@ -366,23 +366,7 @@ def analyzeFire(fireDF):
     # Time Data Extra Colulmn Creation
     # =================================================================
 
-    nc1 = "Incident 1st Enroute to 1st Arrived Time"
-    nc2 = "Incident Duration - Ph PU to Clear"
-    nc3 = "Ph PU to Unit Arrived"
-
     incidentCols = {
-        # "Incident 1st Enroute to 1st Arrived Time": [
-        #     "Time First Real Unit Arrived",
-        #     "Time First Real Unit Enroute",
-        # ],
-        # "Incident Duration - Ph PU to Clear": [
-        #     "Last Real Unit Clear Incident",
-        #     "Earliest Time Phone Pickup AFD or EMS",
-        # ],
-        # "Ph PU to Unit Arrived": [
-        #     "Unit Time Arrived At Scene",
-        #     "Earliest Time Phone Pickup AFD or EMS",
-        # ],
         "Earliest Time Phone Pickup to In Queue": [
             "Earliest Time Phone Pickup AFD or EMS",
             "Incident Time Call Entered in Queue",
@@ -470,29 +454,6 @@ def analyzeFire(fireDF):
         "Unit Time Call Cleared",
     )
 
-    # fireDF = utils.addTimeDiff(
-    #     fireDF, nc1, "Time First Real Unit Arrived", "Time First Real Unit Enroute"
-    # )
-    # fireDF = utils.addTimeDiff(
-    #     fireDF,
-    #     nc2,
-    #     "Last Real Unit Clear Incident",
-    #     "Earliest Time Phone Pickup AFD or EMS",
-    # )
-    # fireDF = utils.addTimeDiff(
-    #     fireDF,
-    #     nc3,
-    #     "Unit Time Arrived At Scene",
-    #     "Earliest Time Phone Pickup AFD or EMS",
-    # )
-
-    # #   right after "Incident Turnout - 1st Real Unit Assigned to 1st Real Unit Enroute", AD
-    # fireDF = utils.putColAt(fireDF, [nc1], 29)  # 29
-    # #   right after "Incident First Unitresponse - 1st Real Unit assigned to 1st Real Unit Arrived", AD
-    # fireDF = utils.putColAt(fireDF, [nc2], 31)
-    # #   right after "Unit Assign to Clear Call", AD
-    # fireDF = utils.putColAt(fireDF, [nc3], 33)
-
     # ----------------
     # Correction of time: staging calls
     # ----------------
@@ -527,22 +488,27 @@ def analyzeFire(fireDF):
         "Incident First Unit Response - 1st Real Unit Assigned to 1st Real Unit Arrived"
     )
     rt2 = "Earliest Time Phone Pickup to 1st Real Unit Arrived"
-    # nc1 - "Incident 1st Enroute to 1stArrived Time"
+    nc12 = "Incident Travel Time - 1st Real Unit Enroute to 1st Real Unit Arrived "
     rt3 = "Time Spent OnScene - 1st Real Unit Arrived to Last Real Unit Call Cleared"
 
     for i in recalcArray:
-        fireDF.loc[i, rt1] = getSingleTimeDiff(
+        fireDF.loc[i, rt1 + "recalc"] = getSingleTimeDiff(
             fireDF, i, "Time First Real Unit Assigned", u
         )
-        fireDF.loc[i, rt2] = getSingleTimeDiff(
+        fireDF.loc[i, rt2 + "recalc"] = getSingleTimeDiff(
             fireDF, i, "Earliest Time Phone Pickup AFD or EMS", u
         )
-        fireDF.loc[i, nc1] = getSingleTimeDiff(
+        fireDF.loc[i, nc12 + "recalc"] = getSingleTimeDiff(
             fireDF, i, "Time First Real Unit Enroute", u
         )
-        fireDF.loc[i, rt3] = getSingleTimeDiff(
+        fireDF.loc[i, rt3 + "recalc"] = getSingleTimeDiff(
             fireDF, i, u, "Last Real Unit Clear Incident"
         )
+
+    fireDF = utils.putColAfter(fireDF, [rt1 + "recalc"], rt1)
+    fireDF = utils.putColAfter(fireDF, [rt2 + "recalc"], rt2)
+    fireDF = utils.putColAfter(fireDF, [rt3 + "recalc"], rt3)
+    fireDF = utils.putColAfter(fireDF, [nc12 + "recalc"], nc12)
 
     # ----------------
     # Exporting and completion
