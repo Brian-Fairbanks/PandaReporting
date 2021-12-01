@@ -41,3 +41,4 @@ def get():
     return preprocess(
         fireDF, pd.to_datetime("10/1/21 00:00:00"), pd.to_datetime("11/1/21 00:00:00")
     )
+    # return preprocess(fireDF)
