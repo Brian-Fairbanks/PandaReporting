@@ -256,52 +256,9 @@ def analyzeFire(fireDF):
     # =================================================================
     #     Set pop density values Values
     # =================================================================
-    print("loading population grid:")
-    popData = gpd.read_file("Shape\\ESD2Pop.shp")
-    # specify that source data is WGS 84 / Pseudo-Mercator -- Spherical Mercator, Google Maps, OpenStreetMap, Bing, ArcGIS, ESRI' - https://epsg.io/3857
-    popData.set_crs(epsg=3857, inplace=True)
-    # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
-    popData = popData.to_crs(4326)
+    import popden
 
-    # weird aliases... this is total population / AreaofLAND(meters)
-    popData["Pop/Mile"] = popData.apply(
-        lambda x: (x["B01001_001"] / x["ALAND"]) * 2590000, axis=1
-    )
-
-    def getPopulationDensity(lon, lat):
-        plot = Point(lon, lat)
-        try:
-            # return None
-            mapInd = (popData.index[popData.contains(plot)])[0]
-            # population = popData.loc[mapInd, "B01001_001E"]
-            # area = popData.loc[mapInd, "Shape_Area"]
-            return popData.loc[mapInd, "Pop/Mile"]
-            # return mapInd
-        except:
-            return None
-
-    from tqdm import tqdm
-
-    tqdm.pandas(
-        desc=f"finding Population Data:",
-        leave=False,
-    )
-    fireDF["People/Mile"] = fireDF.progress_apply(
-        lambda x: getPopulationDensity(x["X-Long"], x["Y_Lat"]),
-        axis=1,
-    )
-
-    def popRatio(pop):
-        if pop < 1000:
-            return "rural"
-        if pop < 2000:
-            return "suburban"
-        return "urban"
-
-    fireDF["Population Classification"] = fireDF.apply(
-        lambda x: popRatio(x["People/Mile"]), axis=1
-    )
-
+    fireDF = popden.addPopDen(fireDF)
     # (getMapscoGrid)(fireDF["X-Long"], fireDF["Y_Lat"])
 
     # =================================================================
@@ -340,6 +297,28 @@ def analyzeFire(fireDF):
         fireDF.loc[i, "Status"] = (
             "X" if ((fireDF.loc[i - 1, "Status"] in (["X", "C"]))) else "0"
         )
+
+    # =================================================================
+    #     Recalculate Shift Data
+    # =================================================================
+    def getShift(assigned, phpu):
+        # =CHOOSE(1+MOD(DAYS(BB,DATE(2021,3,30)) + (IF( IF(ISBLANK(BB),HOUR(W),HOUR(BB))<7, 0, 1)), 3), "A Shift","B Shift","C Shift")
+        shift = ["A Shift", "B Shift", "C Shift"]
+
+        if pd.isnull(phpu):
+            time = assigned
+        else:
+            time = phpu
+        delta = (1 + (time - pd.to_datetime("3/30/21 7:00:00")).days) % 3
+
+        return shift[delta]
+
+    col_bb = "Unit Time Assigned"
+    col_w = "Earliest Time Phone Pickup AFD or EMS"
+
+    fireDF["ESD02_Shift"] = fireDF.apply(
+        lambda row: getShift(row[col_bb], row[col_w]), axis=1
+    )
 
     # =================================================================
     #     Add a new Stations (Origin) Column
