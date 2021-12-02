@@ -433,15 +433,28 @@ def analyzeFire(fireDF):
         "Unit Time Call Cleared",
     )
 
-    # ----------------
+    # =================================================================
     # Correction of time: staging calls
-    # ----------------
+    # =================================================================
+
+    def getSingleTimeDiff(df, row, t1, t2, reverse):
+        if not reverse:
+            res = df.loc[row, t2] - df.loc[row, t1]
+        else:
+            res = df.loc[row, t1] - df.loc[row, t2]
+        # Convert to seconds
+        return res / np.timedelta64(1, "s")
+
+    #   ----------------
+    #           Incident Recalculations
+    #   ----------------
 
     # get a list of units that needs to be recalculated  staged = arrived_on_scene if ((first_real_unit was staged prior to arrival) & (real unit was not staged prior to Enroute))
     t = "Time First Real Unit Enroute"
     u = "Incident Time First Staged"
     v = "Time First Real Unit Arrived"
 
+    # --- get a list of columns that need to be recalculated
     recalc = fireDF[
         (
             (~fireDF[v].isnull())
@@ -451,39 +464,81 @@ def analyzeFire(fireDF):
             & (~fireDF[t].isnull())
             & (fireDF[t] != "-")
         )
-        # & ((fireDF[u] < fireDF[v]) & (fireDF[u] > fireDF[t]))
     ]
     recalc2 = recalc[((recalc[u] < recalc[v]) & (recalc[u] > recalc[t]))]
-
     recalcArray = recalc2.index.tolist()
 
-    def getSingleTimeDiff(df, row, t1, t2):
-        res = df.loc[row, t2] - df.loc[row, t1]
-        # Convert to seconds
-        return res / np.timedelta64(1, "s")
-
-    # now using U instead of V, recaluclate the following columns
-    rt1 = (
-        "Incident First Unit Response - 1st Real Unit Assigned to 1st Real Unit Arrived"
-    )
-    rt2 = "Earliest Time Phone Pickup to 1st Real Unit Arrived"
-    nc12 = "Incident Travel Time - 1st Real Unit Enroute to 1st Real Unit Arrived "
-    rt3 = "Time Spent OnScene - 1st Real Unit Arrived to Last Real Unit Call Cleared"
+    # now using U(staging time) instead of V(arrived time), recaluclate the following columns
+    recalcIncidentCols = {
+        #    Column name:
+        #       [  column to get diff from 'arrived time'  ,   reverse order  ]
+        "Incident First Unit Response - 1st Real Unit Assigned to 1st Real Unit Arrived": [
+            "Time First Real Unit Assigned",
+            False,
+        ],
+        "Earliest Time Phone Pickup to 1st Real Unit Arrived": [
+            "Earliest Time Phone Pickup AFD or EMS",
+            False,
+        ],
+        "Incident Travel Time - 1st Real Unit Enroute to 1st Real Unit Arrived ": [
+            "Time First Real Unit Enroute",
+            False,
+        ],
+        "Time Spent OnScene - 1st Real Unit Arrived to Last Real Unit Call Cleared": [
+            "Last Real Unit Clear Incident",
+            True,
+        ],
+    }
 
     for i in recalcArray:
-        fireDF.loc[i, rt1] = getSingleTimeDiff(
-            fireDF, i, "Time First Real Unit Assigned", u
-        )
-        fireDF.loc[i, rt2] = getSingleTimeDiff(
-            fireDF, i, "Earliest Time Phone Pickup AFD or EMS", u
-        )
-        fireDF.loc[i, nc12] = getSingleTimeDiff(
-            fireDF, i, "Time First Real Unit Enroute", u
-        )
-        fireDF.loc[i, rt3] = getSingleTimeDiff(
-            fireDF, i, u, "Last Real Unit Clear Incident"
-        )
+        for col in recalcIncidentCols:
+            fireDF.loc[i, col] = getSingleTimeDiff(
+                fireDF, i, recalcIncidentCols[col][0], u, recalcIncidentCols[col][1]
+            )
 
+    # for col in recalcIncidentCols:
+    #     fireDF = utils.putColAfter(fireDF, [col + "recalc"], col)
+
+    #   ----------------
+    #           Unit Recalculations
+    #   ----------------
+
+    t = "Unit Time Enroute"
+    u = "Unit Time Staged"
+    v = "Unit Time Arrived At Scene"
+
+    # --- get a list of columns that need to be recalculated
+    recalc = fireDF[
+        (
+            (~fireDF[v].isnull())
+            & (fireDF[v] != "-")
+            & (~fireDF[u].isnull())
+            & (fireDF[u] != "-")
+            & (~fireDF[t].isnull())
+            & (fireDF[t] != "-")
+        )
+    ]
+    recalc2 = recalc[((recalc[u] < recalc[v]) & (recalc[u] > recalc[t]))]
+    recalcArray = recalc2.index.tolist()
+
+    # now using U(staging time) instead of V(arrived time), recaluclate the following columns
+    #    Column name:
+    #       [  column to get diff from 'arrived time'  ,   reverse order  ]
+    recalcUnitCols = {
+        "Unit Respond to Arrival": ["Unit Time Enroute", False],
+        "Unit Dispatch to Onscene": ["Unit Time Assigned", False],
+        "Unit OnScene to Clear Call": ["Unit Time Call Cleared", True],
+        "Earliest Phone Pickup Time to Unit Arrival": [
+            "Earliest Time Phone Pickup AFD or EMS",
+            False,
+        ],
+    }
+
+    for i in recalcArray:
+        for col in recalcUnitCols:
+            fireDF.loc[i, col] = getSingleTimeDiff(
+                fireDF, i, recalcUnitCols[col][0], u, recalcUnitCols[col][1]
+            )
     # ----------------
     # Exporting and completion
     # ----------------
