@@ -471,23 +471,18 @@ def analyzeFire(fireDF):
     rt3 = "Time Spent OnScene - 1st Real Unit Arrived to Last Real Unit Call Cleared"
 
     for i in recalcArray:
-        fireDF.loc[i, rt1 + "recalc"] = getSingleTimeDiff(
+        fireDF.loc[i, rt1] = getSingleTimeDiff(
             fireDF, i, "Time First Real Unit Assigned", u
         )
-        fireDF.loc[i, rt2 + "recalc"] = getSingleTimeDiff(
+        fireDF.loc[i, rt2] = getSingleTimeDiff(
             fireDF, i, "Earliest Time Phone Pickup AFD or EMS", u
         )
-        fireDF.loc[i, nc12 + "recalc"] = getSingleTimeDiff(
+        fireDF.loc[i, nc12] = getSingleTimeDiff(
             fireDF, i, "Time First Real Unit Enroute", u
         )
-        fireDF.loc[i, rt3 + "recalc"] = getSingleTimeDiff(
+        fireDF.loc[i, rt3] = getSingleTimeDiff(
             fireDF, i, u, "Last Real Unit Clear Incident"
         )
-
-    fireDF = utils.putColAfter(fireDF, [rt1 + "recalc"], rt1)
-    fireDF = utils.putColAfter(fireDF, [rt2 + "recalc"], rt2)
-    fireDF = utils.putColAfter(fireDF, [rt3 + "recalc"], rt3)
-    fireDF = utils.putColAfter(fireDF, [nc12 + "recalc"], nc12)
 
     # ----------------
     # Exporting and completion
