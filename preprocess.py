@@ -76,8 +76,6 @@ def preprocess(fireDF, start=None, end=None):
 
     for index, colName in enumerate(time_columns_to_convert):
         pd.to_datetime(fireDF[colName], errors="raise", unit="s")
-        # group and move to front for testing
-        # fireDF = utils.putColAt(fireDF, [colName], index)
 
     # =================================================================
     # now that we have actual times... Filter to date range
@@ -111,15 +109,6 @@ def preprocess(fireDF, start=None, end=None):
         "Unit Assign To Clear Call Time",
     ]
 
-    # def tryDelta(times):
-    #     if type(times) in [float, int, np.float64]:
-    #         return times
-    #     return pd.Timedelta(str(times)) / np.timedelta64(1, "s")
-
-    # for index, colName in enumerate(timeDeltasToConvert):
-    #     fireDF[colName] = fireDF.apply(lambda x: tryDelta(x[colName]), axis=1)
-    #     # fireDF[colName] = np.vectorize(tryDelta)(fireDF[colName])
-
     fireDF = fireDF.drop(timeDeltasToConvert, axis=1)
 
     # =================================================================
@@ -131,7 +120,12 @@ def preprocess(fireDF, start=None, end=None):
     #     Drop useless data
     # =================================================================
     fireDF = fireDF.drop(
-        ["ESD02_Record", "Master Incident Without First Two Digits"],
+        [
+            "ESD02_Record",
+            "Master Incident Without First Two Digits",
+            "ignoreInStatus",
+            "Not Arrived",
+        ],
         axis=1,
     )
 
