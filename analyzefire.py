@@ -13,6 +13,7 @@ import utils
 import ConcurrentUse as cu
 import roads as rd
 import getData as data
+import timeBreakdowns as tb
 
 # Dont warn me about potentially assigning a copy
 pd.options.mode.chained_assignment = None
@@ -342,7 +343,7 @@ def analyzeFire(fireDF):
     fireDF = addIsClosestStation(fireDF)
 
     # =================================================================
-    # Time Data Extra Colulmn Creation
+    # Time Data Colulmn Creation
     # =================================================================
 
     incidentCols = {
@@ -539,6 +540,11 @@ def analyzeFire(fireDF):
             fireDF.loc[i, col] = getSingleTimeDiff(
                 fireDF, i, recalcUnitCols[col][0], u, recalcUnitCols[col][1]
             )
+
+    # =================================================================
+    #   Extra Formatting
+    # =================================================================
+    fireDF = tb.addPhPuSteps(fireDF)
     # ----------------
     # Exporting and completion
     # ----------------
