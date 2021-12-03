@@ -52,28 +52,25 @@ def addCallCount(df):
     return df
 
 
-# def addSingleVSMulti(df):
-#     """
-#     Add a column of concurrent values to a dataset
+def addSingleVSMulti(df):
+    """
+    Add a column for Single vs Multi values to a dataset
 
-#     Parameters
-#     --------------------------------
-#     Original : dataframe
-#         data to which you want to add the columns.  Must contain "Status" "Incident Call Count", and "Master Incident Number"
-#     """
+    Parameters
+    --------------------------------
+    Original : dataframe
+        data to which you want to add the columns.  Must contain "Status" and "Incident Call Count"
+    """
 
-#     def assignSingleMulti(status, incident):
-#         # incCount = df["Master Incident Number" == incident]
+    def assignSingleMulti(status, count):
+        if status in [1, "1", "C"]:
+            if count == 1:
+                return "Single"
+            return "1st Multi"
+        return "Multi"
 
-#         # if "status" in [1,'C']:
-#         #     if (length of DF with same incident number = 0): "Single"
-#         #     else "1st multi"
-#         # else multi
-
-#         return "incCount"
-
-#     df["Single_vs_Multi Units ONSC"] = df.apply(
-#         lambda row: assignSingleMulti(row["Status"], row["Master Incident Number"]),
-#         axis=1,
-#     )
-#     return df
+    df["Single_vs_Multi Units ONSC"] = df.apply(
+        lambda row: assignSingleMulti(row["Status"], row["Incident Call Count"]),
+        axis=1,
+    )
+    return df
