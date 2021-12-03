@@ -545,6 +545,8 @@ def analyzeFire(fireDF):
     #   Extra Formatting
     # =================================================================
     fireDF = tb.addPhPuSteps(fireDF)
+    fireDF = tb.addCallCount(fireDF)
+    # fireDF = tb.addSingleVSMulti(fireDF)
     # ----------------
     # Exporting and completion
     # ----------------
