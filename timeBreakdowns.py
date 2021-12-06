@@ -133,3 +133,34 @@ def addFormattedTimes(df):
         )
 
     return df
+
+
+def addMothData(df):
+    """
+    Add a 3 columns for formatted month data: Month, Year, and Quarter Year
+
+    Parameters
+    --------------------------------
+    Original : dataframe
+        data to which you want to add the columns.  Must contain: "Earliest Time Phone Pickup AFD or EMS"
+    """
+    import calendar
+
+    def formatQuarter(date):
+        return f"Q{(date.month-1)//3 + 1} {date.year}"
+
+    def formatMonth(m):
+        return f"{m}-{calendar.month_abbr[m]}"
+
+    df["Month"] = df.apply(
+        lambda row: formatMonth(row["Earliest Time Phone Pickup AFD or EMS"].month),
+        axis=1,
+    )
+    df["Year"] = df.apply(
+        lambda row: row["Earliest Time Phone Pickup AFD or EMS"].year, axis=1
+    )
+    df["Qtr Year"] = df.apply(
+        lambda row: formatQuarter(row["Earliest Time Phone Pickup AFD or EMS"]), axis=1
+    )
+
+    return df

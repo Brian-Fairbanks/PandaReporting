@@ -549,7 +549,7 @@ def analyzeFire(fireDF):
     fireDF = tb.addFormattedTimes(fireDF)
 
     # add Month / Year / Qtr Year
-    #
+    fireDF = tb.addMothData(fireDF)
 
     # add call time classifications ('Calls > 20 Min - PU to Arrive' , 'Ph_PU2_UnitArrive Time_Intervals in seconds')
     fireDF = tb.addPhPuSteps(fireDF)
@@ -559,7 +559,7 @@ def analyzeFire(fireDF):
     fireDF = tb.addSingleVSMulti(fireDF)
 
     # move Qtr Year to end to match marys data
-    # fireDF = utils.putColAt(fireDF, ["Qtr Year"], 200)
+    fireDF = utils.putColAt(fireDF, ["Qtr Year"], 200)
 
     # ----------------
     # Exporting and completion
