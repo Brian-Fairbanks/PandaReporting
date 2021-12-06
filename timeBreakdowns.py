@@ -34,6 +34,23 @@ def addPhPuSteps(df):
     df["Ph_PU2_UnitArrive Time_Intervals in seconds"] = df.apply(
         lambda row: getStep(row["Earliest Phone Pickup Time to Unit Arrival"]), axis=1
     )
+
+    df["Calls > 20 Min - PU to Arrive"] = df.apply(
+        lambda row: np.where(
+            row["Ph_PU2_UnitArrive Time_Intervals in seconds"] == "Over 20 Min",
+            "Yes",
+            "No",
+        ),
+        axis=1,
+    )
+
+    # match marys order
+    df = utils.putColAfter(
+        df,
+        ["Ph_PU2_UnitArrive Time_Intervals in seconds"],
+        "Calls > 20 Min - PU to Arrive",
+    )
+
     return df
 
 
