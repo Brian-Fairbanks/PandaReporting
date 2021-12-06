@@ -1,5 +1,6 @@
 import pandas as pd
 from pandasgui import show
+import numpy as np
 
 
 def addPhPuSteps(df):
@@ -42,12 +43,15 @@ def addCallCount(df):
     Parameters
     --------------------------------
     Original : dataframe
-        data to which you want to add the columns.  Must contain "Master Incident Number"
+        data to which you want to add the columns.  Must contain "Master Incident Number", and "Status"
     """
     valCount = df["Master Incident Number"].value_counts()
     df["Incident Call Count"] = df.apply(
         lambda row: valCount.at[row["Master Incident Number"]],
         axis=1,
+    )
+    df["Unit Response Single_vs_Multi Response Count"] = df.apply(
+        lambda row: np.where(row["Status"] in ["1", "C"], "1", "0"), axis=1
     )
     return df
 
