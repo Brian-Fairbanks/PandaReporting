@@ -1,6 +1,7 @@
 from tabulate import tabulate
 import traceback
 import numpy as np
+import pandas as pd
 import dateutil.parser as dparser
 
 
@@ -114,7 +115,7 @@ def addTimeDiff(df, nt, timeStart, timeEnd):
 
 
 def formatSeconds(seconds):
-    if seconds == "" or seconds == " ":
+    if pd.isnull(seconds):
         return ""
 
     seconds = int(float(seconds))

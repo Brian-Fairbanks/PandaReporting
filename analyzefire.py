@@ -547,6 +547,7 @@ def analyzeFire(fireDF):
     fireDF = tb.addPhPuSteps(fireDF)
     fireDF = tb.addCallCount(fireDF)
     fireDF = tb.addSingleVSMulti(fireDF)
+    fireDF = tb.addFormattedTimes(fireDF)
     # ----------------
     # Exporting and completion
     # ----------------

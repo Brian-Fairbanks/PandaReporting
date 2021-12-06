@@ -1,6 +1,7 @@
 import pandas as pd
 from pandasgui import show
 import numpy as np
+import utils
 
 
 def addPhPuSteps(df):
@@ -78,4 +79,34 @@ def addSingleVSMulti(df):
         lambda row: assignSingleMulti(row["Status"], row["Incident Call Count"]),
         axis=1,
     )
+    return df
+
+
+def addFormattedTimes(df):
+    """
+    Add a column for formatted time values to a dataset
+
+    Parameters
+    --------------------------------
+    Original : dataframe
+        data to which you want to add the columns.  Must contain:
+            "Unit Respond to Arrival"
+            "Unit Dispatch to Onscene"
+            "Unit OnScene to Clear Call"
+            "Earliest Phone Pickup Time to Unit Arrival"
+            "Unit Assign To Clear Call Time"
+    """
+    formatArray = [
+        "Unit Respond to Arrival",
+        "Unit Dispatch to Onscene",
+        "Unit OnScene to Clear Call",
+        "Earliest Phone Pickup Time to Unit Arrival",
+        "Unit Assign To Clear Call Time",
+    ]
+
+    for col in formatArray:
+        df[col + " Formatted"] = df.apply(
+            lambda row: utils.formatSeconds(row[col]), axis=1
+        )
+
     return df
