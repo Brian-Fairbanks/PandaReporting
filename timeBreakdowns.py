@@ -106,14 +106,20 @@ def addFormattedTimes(df):
     Parameters
     --------------------------------
     Original : dataframe
-        data to which you want to add the columns.  Must contain:
-            "Unit Respond to Arrival"
-            "Unit Dispatch to Onscene"
-            "Unit OnScene to Clear Call"
-            "Earliest Phone Pickup Time to Unit Arrival"
-            "Unit Assign To Clear Call Time"
+        data to which you want to add the columns.  Must contain: all time fields!
     """
     formatArray = [
+        "Earliest Time Phone Pickup to In Queue",
+        "In Queue to 1st Real Unit Assigned",
+        "Earliest Time Phone Pickup to 1st Real Unit Assigned",
+        "Incident Turnout - 1st Real Unit Assigned to 1st Real Unit Enroute",
+        "Incident Travel Time - 1st Real Unit Enroute to 1st Real Unit Arrived ",
+        "Incident First Unit Response - 1st Real Unit Assigned to 1st Real Unit Arrived",
+        "Earliest Time Phone Pickup to 1st Real Unit Arrived",
+        "Time Spent OnScene - 1st Real Unit Arrived to Last Real Unit Call Cleared",
+        "Incident Duration - Earliest Time Phone Pickup to Last Real Unit Call Cleared",
+        "In Queue to Unit Dispatch",
+        "Unit Dispatch to Respond Time",
         "Unit Respond to Arrival",
         "Unit Dispatch to Onscene",
         "Unit OnScene to Clear Call",
