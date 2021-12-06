@@ -43,15 +43,12 @@ def addCallCount(df):
     Parameters
     --------------------------------
     Original : dataframe
-        data to which you want to add the columns.  Must contain "Master Incident Number", and "Status"
+        data to which you want to add the columns.  Must contain "Master Incident Number"
     """
     valCount = df["Master Incident Number"].value_counts()
     df["Incident Call Count"] = df.apply(
         lambda row: valCount.at[row["Master Incident Number"]],
         axis=1,
-    )
-    df["Unit Response Single_vs_Multi Response Count"] = df.apply(
-        lambda row: np.where(row["Status"] in ["1", "C"], "1", "0"), axis=1
     )
     return df
 
@@ -65,6 +62,10 @@ def addSingleVSMulti(df):
     Original : dataframe
         data to which you want to add the columns.  Must contain "Status" and "Incident Call Count"
     """
+
+    df["Unit Response Single_vs_Multi Response Count"] = df.apply(
+        lambda row: np.where(row["Status"] in ["1", "C"], "1", "0"), axis=1
+    )
 
     def assignSingleMulti(status, count):
         if status in [1, "1", "C"]:
