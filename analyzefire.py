@@ -13,6 +13,7 @@ import utils
 import ConcurrentUse as cu
 import roads as rd
 import getData as data
+import timeBreakdowns as tb
 
 # Dont warn me about potentially assigning a copy
 pd.options.mode.chained_assignment = None
@@ -342,7 +343,7 @@ def analyzeFire(fireDF):
     fireDF = addIsClosestStation(fireDF)
 
     # =================================================================
-    # Time Data Extra Colulmn Creation
+    # Time Data Colulmn Creation
     # =================================================================
 
     incidentCols = {
@@ -539,6 +540,27 @@ def analyzeFire(fireDF):
             fireDF.loc[i, col] = getSingleTimeDiff(
                 fireDF, i, recalcUnitCols[col][0], u, recalcUnitCols[col][1]
             )
+
+    # =================================================================
+    #   Extra Formatting
+    # =================================================================
+
+    # format times to [HH]:mm:ss
+    fireDF = tb.addFormattedTimes(fireDF)
+
+    # add Month / Year / Qtr Year
+    fireDF = tb.addMothData(fireDF)
+
+    # add call time classifications ('Calls > 20 Min - PU to Arrive' , 'Ph_PU2_UnitArrive Time_Intervals in seconds')
+    fireDF = tb.addPhPuSteps(fireDF)
+
+    # add call count / single / multi cols
+    fireDF = tb.addCallCount(fireDF)
+    fireDF = tb.addSingleVSMulti(fireDF)
+
+    # move Qtr Year to end to match marys data
+    fireDF = utils.putColAt(fireDF, ["Qtr Year"], 200)
+
     # ----------------
     # Exporting and completion
     # ----------------
