@@ -583,6 +583,9 @@ def analyzeFire(fireDF):
     # Unit  Ph PU to UnitArrived
     # fireDF[""] = fireDF[""].apply(utils.dtFormat)
 
+    crfdf = getCRF(fireDF)
+    show(crfdf)
+
     writer = pd.ExcelWriter(
         "Output\\Output_{0}.xlsx".format(
             (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
