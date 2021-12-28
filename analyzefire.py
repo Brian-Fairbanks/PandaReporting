@@ -37,9 +37,16 @@ stationDict = data.getStations()
 # ##############################################################################################################################################
 #     Station Assignment Functions
 # ##############################################################################################################################################
+
+
 def addIsClosestStation(df):
+    def getIsClosestStation(station, closest):
+        if pd.isnull(closest):
+            return None
+        return station == closest
+
     df["Is Closest Station"] = df.apply(
-        lambda row: row["Station"] == row["Closest Station"], axis=1
+        lambda row: getIsClosestStation(row["Station"], row["Closest Station"]), axis=1
     )
     return df
 
@@ -575,6 +582,9 @@ def analyzeFire(fireDF):
     # Incident Duration - Ph PU to Clear
     # Unit  Ph PU to UnitArrived
     # fireDF[""] = fireDF[""].apply(utils.dtFormat)
+
+    crfdf = getCRF(fireDF)
+    show(crfdf)
 
     writer = pd.ExcelWriter(
         "Output\\Output_{0}.xlsx".format(

@@ -144,6 +144,8 @@ def distToStationFromNode(dest_node, fullProgress=None):
     if fullProgress is not None:
         fullProgress.update(1)
 
+    if pd.isnull(dest_node):
+        return None
     try:
         # how long is our route in meters?
         dist = nx.shortest_path_length(roadMap, station, dest_node, weight="length")
@@ -167,8 +169,9 @@ def distToStationFromNode(dest_node, fullProgress=None):
 # ##############################################################################################################################################
 
 
-def getPoint(point, pbar):
-    pbar.update(1)
+def getPoint(point, type):
+    if type not in ["ENG", "QNT"]:
+        return None
     return ox.nearest_nodes(roadMap, point.x, point.y)
 
 
@@ -186,8 +189,13 @@ def addNearestNodeToGDF(gdf):
     GDF
         copy of gdf, but with an extra row for nearest node on RoadMap
     """
-    with tqdm(total=len(gdf.index), desc="Finding nearest Nodes:") as pbar:
-        gdf["nearest node"] = np.vectorize(getPoint)(gdf.geometry, pbar)
+    tqdm.pandas(desc="Finding nearest Nodes:")
+
+    # with tqdm(total=len(gdf.index), desc="Finding nearest Nodes:") as pbar:
+    gdf["nearest node"] = gdf.progress_apply(
+        lambda row: getPoint(row.geometry, row["Unit Type"]), axis=1
+    )
+
     return gdf
 
 
@@ -342,20 +350,11 @@ def addRoadDistances(df):
     gdf = gdf.to_crs(2277)
 
     # Load road map data
-    t2 = Timer("Load Map")
-    t2.start()
     getRoads()
-    t2.end()
 
-    t3 = Timer("Add Nearest Node to GDF")
-    t3.start()
     gdf = addNearestNodeToGDF(gdf)
-    t3.end()
 
-    t4 = Timer("Finding Distance to Station")
-    t4.start()
     gdf = getArrayDistToStation(gdf)
-    t4.end()
 
     # these dont really mean anything without the context of the graph, so drop them off...
     df1 = pd.DataFrame(gdf.drop(columns=["geometry", "nearest node"]))
