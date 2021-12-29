@@ -207,12 +207,6 @@ def analyzeFire(fireDF):
     fireDF = checkFile(fireDF)
 
     # =================================================================
-    #     get Complete Response Force for each Structure Fire
-    # =================================================================
-    # crfDF = getCRF(fireDF)
-    # utils.pprint(crfDF)
-
-    # =================================================================
     #     Add unit type column to simplify analysis
     # =================================================================
     fireDF = utils.addUnitType(fireDF)
@@ -568,6 +562,15 @@ def analyzeFire(fireDF):
     # move Qtr Year to end to match marys data
     fireDF = utils.putColAt(fireDF, ["Qtr Year"], 200)
 
+    # =================================================================
+    #     get Complete Response Force for each Structure Fire
+    # =================================================================
+    crfdf = getCRF(fireDF)
+    show(crfdf)
+
+    # fireDF.join(crfdf.set_index("incident"), on="Master Incident Number")
+    fireDF = pd.merge(fireDF, crfdf, how="left", on=["Master Incident Number"])
+
     # ----------------
     # Exporting and completion
     # ----------------
@@ -582,9 +585,6 @@ def analyzeFire(fireDF):
     # Incident Duration - Ph PU to Clear
     # Unit  Ph PU to UnitArrived
     # fireDF[""] = fireDF[""].apply(utils.dtFormat)
-
-    crfdf = getCRF(fireDF)
-    show(crfdf)
 
     writer = pd.ExcelWriter(
         "Output\\Output_{0}.xlsx".format(
