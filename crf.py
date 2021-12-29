@@ -34,7 +34,7 @@ def getStructureFires(df):
 def getIncidentCRF(incident, df):
     try:
         incDF = df[(df["Master Incident Number"] == incident)]
-        print(incDF["Unit Time Arrived At Scene"])
+        # print(incDF["Unit Time Arrived At Scene"])
 
         incDF = incDF.sort_values(by=["Unit Time Arrived At Scene"])
 
@@ -50,7 +50,7 @@ def getIncidentCRF(incident, df):
 
         res0 = incDF.index[incDF["Unit Time Arrived At Scene"].notnull()].tolist()
 
-        print(res0)
+        # print(res0)
 
         # this is going to be really slow...
         for i in res0:
@@ -77,14 +77,14 @@ def getIncidentCRF(incident, df):
             else:
                 objDict["Force At CRF Time or Close"] += 2
 
-            print(
-                objDict["Force At CRF Time or Close"],
-                "/16 at ",
-                incDF.loc[
-                    i,
-                    "Unit Dispatch to Onscene",
-                ],
-            )
+            # print(
+            #     objDict["Force At CRF Time or Close"],
+            #     "/16 at ",
+            #     incDF.loc[
+            #         i,
+            #         "Unit Dispatch to Onscene",
+            #     ],
+            # )
             # TODO:  over 16.  over 17 if if a quint is assigned at all.
             if objDict["Force At CRF Time or Close"] > 15:
                 objDict["CRF Time"] = incDF.loc[
