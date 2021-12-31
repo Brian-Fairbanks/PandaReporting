@@ -34,7 +34,7 @@ def getStructureFires(df):
 def getIncidentCRF(incident, df):
     try:
         incDF = df[(df["Master Incident Number"] == incident)]
-        print(incDF["Unit Time Arrived At Scene"])
+        # print(incDF["Unit Time Arrived At Scene"])
 
         incDF = incDF.sort_values(by=["Unit Time Arrived At Scene"])
 
@@ -42,11 +42,15 @@ def getIncidentCRF(incident, df):
         # print(ret)
 
         # instanciate a force count
-        objDict = {"incident": incident, "time": "CRF never reached", "force": 0}
+        objDict = {
+            "Master Incident Number": incident,
+            "Incident CRF Time": "CRF never reached",
+            "Force At CRF Time or Close": 0,
+        }
 
         res0 = incDF.index[incDF["Unit Time Arrived At Scene"].notnull()].tolist()
 
-        print(res0)
+        # print(res0)
 
         # this is going to be really slow...
         for i in res0:
@@ -60,7 +64,7 @@ def getIncidentCRF(incident, df):
                     ],
                 )
             ):
-                objDict["force"] += 4
+                objDict["Force At CRF Time or Close"] += 4
             elif any(
                 map(
                     vehicle.__contains__,
@@ -69,21 +73,21 @@ def getIncidentCRF(incident, df):
                     ],
                 )
             ):
-                objDict["force"] += 3
+                objDict["Force At CRF Time or Close"] += 3
             else:
-                objDict["force"] += 2
+                objDict["Force At CRF Time or Close"] += 2
 
-            print(
-                objDict["force"],
-                "/16 at ",
-                incDF.loc[
-                    i,
-                    "Unit Dispatch to Onscene",
-                ],
-            )
+            # print(
+            #     objDict["Force At CRF Time or Close"],
+            #     "/16 at ",
+            #     incDF.loc[
+            #         i,
+            #         "Unit Dispatch to Onscene",
+            #     ],
+            # )
             # TODO:  over 16.  over 17 if if a quint is assigned at all.
-            if objDict["force"] > 15:
-                objDict["time"] = incDF.loc[
+            if objDict["Force At CRF Time or Close"] > 15:
+                objDict["Incident CRF Time"] = incDF.loc[
                     i,
                     "Unit Dispatch to Onscene",
                 ]
