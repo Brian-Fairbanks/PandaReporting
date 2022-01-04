@@ -21,4 +21,6 @@ Ensure you have installed Pandas, NumPy, and matplotlib
    pip install pandasgui
    pip install easygui
 
+   pip install taxicab
+
 ```
