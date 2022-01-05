@@ -12,11 +12,11 @@ from utils import gracefulCrash
 # Input a single DF, and get a table containing all the relevant information for the Complete Response Force
 def getCRF(df):
     structureFiresArray = getStructureFires(df)
-    crf = []
+    ERF = []
     for f in structureFiresArray:
-        crf.append(getIncidentCRF(f, df))
+        ERF.append(getIncidentERF(f, df))
 
-    return pd.DataFrame(crf)
+    return pd.DataFrame(ERF)
 
 
 # Sort through list, check for structure fires, and grab a list of unique IDs
@@ -30,8 +30,8 @@ def getStructureFires(df):
         gracefulCrash(ex, sys.exc_info())
 
 
-# Take a single incident, return the analyzed CRF data for said incident
-def getIncidentCRF(incident, df):
+# Take a single incident, return the analyzed ERF data for said incident
+def getIncidentERF(incident, df):
     try:
         incDF = df[(df["Master Incident Number"] == incident)]
         # print(incDF["Unit Time Arrived At Scene"])
@@ -44,8 +44,8 @@ def getIncidentCRF(incident, df):
         # instanciate a force count
         objDict = {
             "Master Incident Number": incident,
-            "Incident CRF Time": "CRF never reached",
-            "Force At CRF Time or Close": 0,
+            "Incident ERF Time": "ERF never reached",
+            "Force At ERF Time or Close": 0,
         }
 
         res0 = incDF.index[incDF["Unit Time Arrived At Scene"].notnull()].tolist()
@@ -64,7 +64,7 @@ def getIncidentCRF(incident, df):
                     ],
                 )
             ):
-                objDict["Force At CRF Time or Close"] += 4
+                objDict["Force At ERF Time or Close"] += 4
             elif any(
                 map(
                     vehicle.__contains__,
@@ -73,12 +73,12 @@ def getIncidentCRF(incident, df):
                     ],
                 )
             ):
-                objDict["Force At CRF Time or Close"] += 3
+                objDict["Force At ERF Time or Close"] += 3
             else:
-                objDict["Force At CRF Time or Close"] += 2
+                objDict["Force At ERF Time or Close"] += 2
 
             # print(
-            #     objDict["Force At CRF Time or Close"],
+            #     objDict["Force At ERF Time or Close"],
             #     "/16 at ",
             #     incDF.loc[
             #         i,
@@ -86,8 +86,8 @@ def getIncidentCRF(incident, df):
             #     ],
             # )
             # TODO:  over 16.  over 17 if if a quint is assigned at all.
-            if objDict["Force At CRF Time or Close"] > 15:
-                objDict["Incident CRF Time"] = incDF.loc[
+            if objDict["Force At ERF Time or Close"] > 16:
+                objDict["Incident ERF Time"] = incDF.loc[
                     i,
                     "Unit Dispatch to Onscene",
                 ]
@@ -122,8 +122,8 @@ def main():
     # reset numbering to associate with the ordered values
     fireDF = fireDF.reset_index(drop=True)
 
-    crfdf = getCRF(fireDF)
-    print(crfdf)
+    ERFdf = getCRF(fireDF)
+    print(ERFdf)
 
     # wait for close command
     input("\nPress enter to exit")
