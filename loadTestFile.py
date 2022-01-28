@@ -14,6 +14,7 @@ def get():
     # if ems == "":
     #     gracefulCrash("A file was not found for EMS Data")
 
+
     fireDF = pd.read_excel(fire)
     ### save an OG copy (Auto duplicate when you start working)
     # try:
