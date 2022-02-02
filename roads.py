@@ -172,6 +172,8 @@ def distToStationFromNode(dest_node, fullProgress=None):
 def getPoint(point, type):
     if type not in ["ENG", "QNT"]:
         return None
+    if pd.isnull(point.x) | pd.isnull(point.y):
+        return None
     return ox.nearest_nodes(roadMap, point.x, point.y)
 
 

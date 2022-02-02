@@ -609,6 +609,21 @@ def analyzeFire(fireDF):
     # fireDF.join(crfdf.set_index("incident"), on="Master Incident Number")
     fireDF = pd.merge(fireDF, crfdf, how="left", on=["Master Incident Number"])
 
+    # =================================================================
+    #     Column Organization
+    # =================================================================
+
+    fireDF = utils.putColAfter(
+        fireDF,
+        "Unit OnScene to Clear Call",
+        "Earliest Phone Pickup Time to Unit Arrival",
+    )
+    fireDF = utils.putColAfter(
+        fireDF,
+        "Unit OnScene to Clear Call Formatted",
+        "Earliest Phone Pickup Time to Unit Arrival Formatted",
+    )
+
     # ----------------
     # Exporting and completion
     # ----------------
