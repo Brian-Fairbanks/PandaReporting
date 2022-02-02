@@ -150,7 +150,7 @@ def addMothData(df):
         return f"Q{(date.month-1)//3 + 1} {date.year}"
 
     def formatMonth(m):
-        return f"'{m:02d}-{calendar.month_abbr[m]}"
+        return f"{m:02d}-{calendar.month_abbr[m]}"
 
     df["Month"] = df.apply(
         lambda row: formatMonth(row["Earliest Time Phone Pickup AFD or EMS"].month),

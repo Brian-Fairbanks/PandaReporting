@@ -615,12 +615,12 @@ def analyzeFire(fireDF):
 
     fireDF = utils.putColAfter(
         fireDF,
-        "Unit OnScene to Clear Call",
+        ["Unit OnScene to Clear Call"],
         "Earliest Phone Pickup Time to Unit Arrival",
     )
     fireDF = utils.putColAfter(
         fireDF,
-        "Unit OnScene to Clear Call Formatted",
+        ["Unit OnScene to Clear Call Formatted"],
         "Earliest Phone Pickup Time to Unit Arrival Formatted",
     )
 
