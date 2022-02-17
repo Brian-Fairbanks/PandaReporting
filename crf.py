@@ -46,6 +46,8 @@ def getIncidentERF(incident, df):
             "Master Incident Number": incident,
             "Incident ERF Time": "ERF never reached",
             "Force At ERF Time or Close": 0,
+            "Address": incDF.iloc[0]["Address of Incident"],
+            "Date": incDF.iloc[0]["Earliest Time Phone Pickup AFD or EMS"],
         }
 
         res0 = incDF.index[incDF["Unit Time Arrived At Scene"].notnull()].tolist()
