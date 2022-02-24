@@ -14,6 +14,7 @@ import ConcurrentUse as cu
 import roads as rd
 import getData as data
 import timeBreakdowns as tb
+import naming as n
 
 # Dont warn me about potentially assigning a copy
 pd.options.mode.chained_assignment = None
@@ -608,6 +609,26 @@ def analyzeFire(fireDF):
 
     # fireDF.join(crfdf.set_index("incident"), on="Master Incident Number")
     fireDF = pd.merge(fireDF, crfdf, how="left", on=["Master Incident Number"])
+
+    # =================================================================
+    #     Column Organization
+    # =================================================================
+
+    fireDF = utils.putColAfter(
+        fireDF,
+        ["Unit OnScene to Clear Call"],
+        "Earliest Phone Pickup Time to Unit Arrival",
+    )
+    fireDF = utils.putColAfter(
+        fireDF,
+        ["Unit OnScene to Clear Call Formatted"],
+        "Earliest Phone Pickup Time to Unit Arrival Formatted",
+    )
+
+    # ----------------
+    # finalize naming
+    # ----------------
+    fireDF = n.rename(fireDF)
 
     # ----------------
     # Exporting and completion

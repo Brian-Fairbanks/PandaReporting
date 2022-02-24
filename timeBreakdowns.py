@@ -27,7 +27,7 @@ def addPhPuSteps(df):
             return "451-600"
         if time <= 750:
             return "601-750"
-        if time <= 600:
+        if time >= 1200:
             return "Over 20 Min"
         return "Over 750"
 
@@ -150,7 +150,7 @@ def addMothData(df):
         return f"Q{(date.month-1)//3 + 1} {date.year}"
 
     def formatMonth(m):
-        return f"{m}-{calendar.month_abbr[m]}"
+        return f"{m:02d}-{calendar.month_abbr[m]}"
 
     df["Month"] = df.apply(
         lambda row: formatMonth(row["Earliest Time Phone Pickup AFD or EMS"].month),
