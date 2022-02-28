@@ -20,5 +20,6 @@ Ensure you have installed Pandas, NumPy, and matplotlib
    pip install pywin32
    pip install pandasgui
    pip install easygui
+   pip install pyodbc
 
 ```
