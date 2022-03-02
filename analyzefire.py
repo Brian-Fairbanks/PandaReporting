@@ -670,47 +670,10 @@ def analyzeFire(fireDF):
     # ----------------
 
     # show(fireDF)
+    from Database import SQLDatabase
 
-    # get array of unique incident numbers
-    uniqueIncidents = fireDF[
-        [
-            "Incident_Number",
-            "Calltaker_Agency",
-            "Address_of_Incident",
-            "City",
-            "Jurisdiction",
-            "Response_Area",
-            "Problem",
-            "Incident_Type",
-            "Response_Plan",
-            "Priority_Description",
-            "Alarm_Level",
-            "Map_Info",
-            "X_Long",
-            "Y_Lat",
-            "ESD02_Shift",
-            "Phone_Pickup_Time",
-            "Call_Entered_in_Queue",
-            "First_Unit_Assigned",
-            "First_Unit_Enroute",
-            "First_Unit_Staged",
-            "First_Unit_Arrived",
-            "Call_Closed",
-            "Last_Unit_Cleared",
-            "Incident_Call_Disposition",
-            "Incident_Call_Reason",
-            "EMS_Incident_Numbers",
-            "IsESD17",
-            "isETJ",
-            "isCOP",
-            "People_Per_Mile",
-            "Population_Classification",
-            "Closest_Station",
-        ]
-    ]
-    uniqueIncidents = uniqueIncidents.drop_duplicates(subset=["Incident_Number"])
-
-    show(uniqueIncidents)
+    db = SQLDatabase()
+    db.insertToFireIncident(fireDF)
 
     ######################################
     # show in gui just after writing
