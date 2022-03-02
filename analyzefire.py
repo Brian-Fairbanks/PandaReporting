@@ -673,7 +673,7 @@ def analyzeFire(fireDF):
     from Database import SQLDatabase
 
     db = SQLDatabase()
-    db.insertToFireIncident(fireDF)
+    db.insertDF(fireDF)
 
     ######################################
     # show in gui just after writing
