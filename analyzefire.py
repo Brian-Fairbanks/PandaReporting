@@ -295,6 +295,13 @@ def analyzeFire(fireDF):
     etj = None
 
     # =================================================================
+    #     Set District ETJ Values
+    # =================================================================
+    fireDF["isCOP"] = fireDF.apply(
+        lambda row: (row["isETJ"] + row["IsESD17"]) == 0, axis=1
+    )
+
+    # =================================================================
     #     Set pop density values Values
     # =================================================================
     import popden
@@ -605,7 +612,7 @@ def analyzeFire(fireDF):
     #     get Complete Response Force for each Structure Fire
     # =================================================================
     crfdf = getCRF(fireDF)
-    show(crfdf)
+    # show(crfdf)
 
     # fireDF.join(crfdf.set_index("incident"), on="Master Incident Number")
     fireDF = pd.merge(fireDF, crfdf, how="left", on=["Master Incident Number"])
@@ -658,9 +665,19 @@ def analyzeFire(fireDF):
     writer.save()
     # plt.savefig('saved_figure.png')
 
+    # ----------------
+    # Write to Database
+    # ----------------
+
+    # show(fireDF)
+    from Database import SQLDatabase
+
+    db = SQLDatabase()
+    db.insertDF(fireDF)
+
     ######################################
     # show in gui just after writing
-    gui = show(fireDF)
+    show(fireDF)
 
 
 ################################

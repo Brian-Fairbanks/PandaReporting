@@ -337,8 +337,10 @@ def getRoads():
 
 
 def addRoadDistances(df):
-    # df["Closest Station"] = None
-    # return df
+    df["Closest Station"] = None
+    for i in range(1, 10):
+        df[f"Distance_to_S0{i}_in_miles"] = None
+    return df
 
     import re
     import getData as data
