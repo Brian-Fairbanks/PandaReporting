@@ -15,9 +15,17 @@ def preprocess(fireDF, start=None, end=None):
         # and then go back one month for the start
         start = end - rd(months=1)
 
+    # duplicate field if EMS data exists for EMS data
+    try:
+        fireDF["Last Real Unit Clear Incident"] = fireDF["Closed_Time"]
+    except:
+        # closed_time must not exist, which means last real unit clear incident already does anyway.
+        pass
+
     # =================================================================
     # correct naming conventions
     # =================================================================
+    print(" -- renaming")
     renames = {
         "Master_Incident_Number": "Master Incident Number",
         "Last Unit Clear Incident": "Last Real Unit Clear Incident",
@@ -36,8 +44,9 @@ def preprocess(fireDF, start=None, end=None):
         "Longitude_X": "X-Long",
         "Latitude_Y": "Y_Lat",
         "Shift": "ESD02_Shift",
-        "Ph_PU_Date; Same as Ph_PU_Time": "Earliest Time Phone Pickup AFD or EMS",
+        "Ph_PU_Time": "Earliest Time Phone Pickup AFD or EMS",
         "In_Queue": "Incident Time Call Entered in Queue",
+        "Closed_Time": "Incident Time Call Closed",
         "1st_Unit_Assigned": "Time First Real Unit Assigned",
         "1st_Unit_Enroute": "Time First Real Unit Enroute",
         "1st_Unit_Staged": "Incident Time First Staged",
@@ -81,6 +90,8 @@ def preprocess(fireDF, start=None, end=None):
     # =================================================================
     # order fire data by time : - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
     # =================================================================
+    print(" -- Ordering")
+
     def getFrontline(name):
         if name == "Frontline":
             return False
@@ -116,6 +127,7 @@ def preprocess(fireDF, start=None, end=None):
     # =================================================================
     # convert strings to datetime
     # =================================================================
+    print(" -- Getting Datetimes")
     time_columns_to_convert = [
         "Earliest Time Phone Pickup AFD or EMS",
         "Incident Time Call Entered in Queue",
@@ -133,6 +145,7 @@ def preprocess(fireDF, start=None, end=None):
     # =================================================================
     # now that we have actual times... Filter to date range
     # =================================================================
+    print(" -- Filtering to Selected Date Range")
     fireDF = fireDF[
         (fireDF["Earliest Time Phone Pickup AFD or EMS"] >= start)
         & (fireDF["Earliest Time Phone Pickup AFD or EMS"] < end)
@@ -143,6 +156,7 @@ def preprocess(fireDF, start=None, end=None):
     # =================================================================
     # convert strings/dates to timeDelta
     # =================================================================
+    print(" -- Removing any Existing Time Deltas")
     timeDeltasToConvert = [
         "Earliest Time Phone Pickup to In Queue",
         "In Queue to 1st Real Unit Assigned",
@@ -162,16 +176,18 @@ def preprocess(fireDF, start=None, end=None):
         "Unit Assign To Clear Call Time",
     ]
 
-    fireDF = fireDF.drop(timeDeltasToConvert, axis=1)
+    fireDF = fireDF.drop(timeDeltasToConvert, axis=1, errors="ignore")
 
     # =================================================================
     # Reset index for order and size
     # =================================================================
+    print(" -- Resetting Index")
     fireDF = fireDF.reset_index(drop=True)
 
     # =================================================================
     #     Drop useless data
     # =================================================================
+    print(" -- Dropping Data")
     fireDF = fireDF.drop(
         [
             "ESD02_Record",
@@ -180,8 +196,10 @@ def preprocess(fireDF, start=None, end=None):
             "Not Arrived",
         ],
         axis=1,
+        errors="ignore",
     )
 
+    print(" -- Complete!")
     return fireDF
 
 
