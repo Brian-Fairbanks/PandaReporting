@@ -22,6 +22,54 @@ def preprocess(fireDF, start=None, end=None):
         "Master_Incident_Number": "Master Incident Number",
         "Last Unit Clear Incident": "Last Real Unit Clear Incident",
         "X_Long": "X-Long",
+        # fix for EMS to work properly
+        "Incident": "Master Incident Number",
+        "not in EMS": "Master Incident Without First Two Digits",
+        "Agency": "Calltaker Agency",
+        "Address": "Address of Incident",
+        "Response_Area": "Response Area",
+        "Incident_Type": "Incident Type",
+        "Response_Plan": "Response Plan",
+        "Priority_Number": "PriorityDescription",
+        "AFD Only": "Alarm Level",
+        "Mapsco": "Map_Info",
+        "Longitude_X": "X-Long",
+        "Latitude_Y": "Y_Lat",
+        "Shift": "ESD02_Shift",
+        "Ph_PU_Date; Same as Ph_PU_Time": "Earliest Time Phone Pickup AFD or EMS",
+        "In_Queue": "Incident Time Call Entered in Queue",
+        "1st_Unit_Assigned": "Time First Real Unit Assigned",
+        "1st_Unit_Enroute": "Time First Real Unit Enroute",
+        "1st_Unit_Staged": "Incident Time First Staged",
+        "1st_Unit_Arrived": "Time First Real Unit Arrived",
+        "Ph_PU_to_In_Queue": "Earliest Time Phone Pickup to In Queue",
+        "In_Queue_to_1stAssign": "In Queue to 1st Real Unit Assigned",
+        "Ph_PU_to_1stAssign": "Earliest Time Phone Pickup to 1st Real Unit Assigned",
+        "1stAssign_to_1stEnroute": "Incident Turnout - 1st Real Unit Assigned to 1st Real Unit Enroute",
+        "1stEnroute_to_1stArrive": "Incident Travel Time - 1st Real Unit Enroute to 1st Real Unit Arrived",
+        "1stAssign_to_1stArrive": "Incident First Unit Response - 1st Real Unit Assigned to 1st Real Unit Arrived",
+        "1stArrive_to_LastUnit_Cleared": "Time Spent OnScene - 1st Real Unit Arrived to Last Real Unit Call Cleared",
+        "Ph_PU_to_1stArrive": "Earliest Time Phone Pickup to 1st Real Unit Arrived",
+        "IncidentDuration_Ph_PU_to_Clear": "IncidentDuration - Earliest Time Phone Pickup to Last Real Unit Call Cleared",
+        "Final_Disposition": "Incident Call Disposition",
+        "Unit": "Radio_Name",
+        "Unit_Agency": "Department",
+        "Unit_Type": "Frontline_Status",
+        "Address_at_Assign": "Location_At_Assign_Time",
+        "Primary_Flag": "FirstArrived",
+        "Assigned": "Unit Time Assigned",
+        "Enroute": "Unit Time Enroute",
+        "Staged": "Unit Time Staged",
+        "Arrived": "Unit Time Arrived At Scene",
+        "Complete": "Unit Time Call Cleared",
+        "In Queue_to_UnitAssign": "In Queue to Unit Dispatch",
+        "UnitAssign_to_UnitEnroute": "Unit Dispatch to Respond Time",
+        "UnitEnroute_to_UnitArrive": "Unit Respond to Arrival",
+        "UnitAssign_to_UnitArrive": "Unit Dispatch to Onscene",
+        "UnitArrive_to_Clear": "Unit OnScene to Clear Call",
+        "Ph_PU_to_UnitArrive_in_seconds": "Earliest Phone Pickup to Unit Arrival",
+        "UnitDuration_Assign_to_Clear": "Unit Assign To Clear Call Time",
+        "Itemized_Unit_Disposition": "Unit Call Disposition",
     }
     fireDF = fireDF.rename(columns=renames, errors="ignore")
 
@@ -38,9 +86,14 @@ def preprocess(fireDF, start=None, end=None):
             return False
         return True
 
-    fireDF["ignoreInStatus"] = fireDF.apply(
-        lambda row: getFrontline(row["Frontline_Status"]), axis=1
-    )
+    try:
+        fireDF["ignoreInStatus"] = fireDF.apply(
+            lambda row: getFrontline(row["Frontline_Status"]), axis=1
+        )
+    except Exception as ex:
+        print(
+            f"\n------------ERROR --------------\n{ex}\n---------end ---------------\n"
+        )
 
     fireDF["Not Arrived"] = fireDF.apply(
         lambda row: pd.isnull(row["Unit Time Arrived At Scene"]), axis=1
