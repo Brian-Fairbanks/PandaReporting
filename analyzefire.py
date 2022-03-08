@@ -615,8 +615,10 @@ def analyzeFire(fireDF):
     # show(crfdf)
 
     # fireDF.join(crfdf.set_index("incident"), on="Master Incident Number")
-    fireDF = pd.merge(fireDF, crfdf, how="left", on=["Master Incident Number"])
-
+    try:
+        fireDF = pd.merge(fireDF, crfdf, how="left", on=["Master Incident Number"])
+    except:
+        print("No CRF Found")
     # =================================================================
     #     Column Organization
     # =================================================================

@@ -5,7 +5,8 @@ from dateutil.relativedelta import relativedelta as rd
 import utils
 
 
-def preprocess(fireDF, start=None, end=None):
+def preprocess(df, start=None, end=None):
+    print("Preparing for Analysis")
     # =================================================================
     # Get Date Range
     # =================================================================
@@ -15,9 +16,34 @@ def preprocess(fireDF, start=None, end=None):
         # and then go back one month for the start
         start = end - rd(months=1)
 
-    # duplicate field if EMS data exists for EMS data
+    # =================================================================
+    # Assign Destionation/File Source
+    # =================================================================
+    # This should be (maybe not the best) a way to determine EMS or Fire source data
+    # if "" in df.columns:
+    #     fileType = "ems"
+    # else:
+    #     fileType = "fire"
+
+    # # Can this be handeled better?
+    # df["Data Source"] = fileType
+
+    # =================================================================
+    # Closer match column COUNT between EMS and Fire
+    # =================================================================
+    # merge two to one Ph_PU_Time & Ph_PU_Data
+    # if fileType == "ems":
+    df["Ph_PU_Time"] = df.apply(
+        lambda row: row["Ph_PU_Date"]
+        if pd.isnull(row["Ph_PU_Time"])
+        else row["Ph_PU_Time"],
+        axis=1,
+    )
+
+    print(" -- Matching Column Contents")
+    # duplicate cell:  closed_time -> ["last real unit clear incident", "incident time call closed"]
     try:
-        fireDF["Last Real Unit Clear Incident"] = fireDF["Closed_Time"]
+        df["Last Real Unit Clear Incident"] = df["Closed_Time"]
     except:
         # closed_time must not exist, which means last real unit clear incident already does anyway.
         pass
@@ -30,7 +56,7 @@ def preprocess(fireDF, start=None, end=None):
         "Master_Incident_Number": "Master Incident Number",
         "Last Unit Clear Incident": "Last Real Unit Clear Incident",
         "X_Long": "X-Long",
-        # fix for EMS to work properly
+        # Match EMS data to working Fire column names
         "Incident": "Master Incident Number",
         "not in EMS": "Master Incident Without First Two Digits",
         "Agency": "Calltaker Agency",
@@ -80,17 +106,17 @@ def preprocess(fireDF, start=None, end=None):
         "UnitDuration_Assign_to_Clear": "Unit Assign To Clear Call Time",
         "Itemized_Unit_Disposition": "Unit Call Disposition",
     }
-    fireDF = fireDF.rename(columns=renames, errors="ignore")
+    df = df.rename(columns=renames, errors="ignore")
 
     # =================================================================
     # replace all instances of "-" with null values
     # =================================================================
-    fireDF = fireDF.replace("-", np.nan)
+    df = df.replace("-", np.nan)
 
     # =================================================================
     # order fire data by time : - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
     # =================================================================
-    print(" -- Ordering")
+    print(" -- Ordering Rows")
 
     def getFrontline(name):
         if name == "Frontline":
@@ -98,7 +124,7 @@ def preprocess(fireDF, start=None, end=None):
         return True
 
     try:
-        fireDF["ignoreInStatus"] = fireDF.apply(
+        df["ignoreInStatus"] = df.apply(
             lambda row: getFrontline(row["Frontline_Status"]), axis=1
         )
     except Exception as ex:
@@ -106,13 +132,13 @@ def preprocess(fireDF, start=None, end=None):
             f"\n------------ERROR --------------\n{ex}\n---------end ---------------\n"
         )
 
-    fireDF["Not Arrived"] = fireDF.apply(
+    df["Not Arrived"] = df.apply(
         lambda row: pd.isnull(row["Unit Time Arrived At Scene"]), axis=1
     )
 
-    fireDF = utils.putColAt(fireDF, ["ignoreInStatus", "Not Arrived"], 1)
+    df = utils.putColAt(df, ["ignoreInStatus", "Not Arrived"], 1)
 
-    fireDF = fireDF.sort_values(
+    df = df.sort_values(
         by=[
             "Master Incident Number",
             "Not Arrived",
@@ -127,7 +153,7 @@ def preprocess(fireDF, start=None, end=None):
     # =================================================================
     # convert strings to datetime
     # =================================================================
-    print(" -- Getting Datetimes")
+    print(" -- Converting Datetimes")
     time_columns_to_convert = [
         "Earliest Time Phone Pickup AFD or EMS",
         "Incident Time Call Entered in Queue",
@@ -140,24 +166,25 @@ def preprocess(fireDF, start=None, end=None):
     ]
 
     for index, colName in enumerate(time_columns_to_convert):
-        pd.to_datetime(fireDF[colName], errors="raise", unit="s")
+        pd.to_datetime(df[colName], errors="raise", unit="s")
 
     # =================================================================
     # now that we have actual times... Filter to date range
     # =================================================================
     print(" -- Filtering to Selected Date Range")
-    fireDF = fireDF[
-        (fireDF["Earliest Time Phone Pickup AFD or EMS"] >= start)
-        & (fireDF["Earliest Time Phone Pickup AFD or EMS"] < end)
-        | (fireDF["Incident Time Call Entered in Queue"] >= start)
-        & (fireDF["Incident Time Call Entered in Queue"] < end)
+    df = df[
+        (df["Earliest Time Phone Pickup AFD or EMS"] >= start)
+        & (df["Earliest Time Phone Pickup AFD or EMS"] < end)
+        | (df["Incident Time Call Entered in Queue"] >= start)
+        & (df["Incident Time Call Entered in Queue"] < end)
     ]
 
     # =================================================================
-    # convert strings/dates to timeDelta
+    # Drop timeDelta Columns, as we can calculate them ourselves
     # =================================================================
     print(" -- Removing any Existing Time Deltas")
     timeDeltasToConvert = [
+        # Known Fire Columns
         "Earliest Time Phone Pickup to In Queue",
         "In Queue to 1st Real Unit Assigned",
         "Earliest Time Phone Pickup to 1st Real Unit Assigned",
@@ -174,21 +201,40 @@ def preprocess(fireDF, start=None, end=None):
         "Unit OnScene to Clear Call",
         "Earliest Phone Pickup Time to Unit Arrival",
         "Unit Assign To Clear Call Time",
+        # Known EMS Columns
+        "Ph_PU_to_In_Queue_in_seconds",
+        "In_Queue_to_1stAssign_in_seconds",
+        "Ph_PU_to_1stAssign_in_seconds",
+        "1stAssign_to_1stEnroute_in_seconds",
+        "1stEnroute_to_1stArrive_in_seconds",
+        "1stAssign_to_1stArrive_in_seconds",
+        "1stArrive_to_LastUnit_Cleared_in_seconds",
+        "Ph_PU_to_1stArrive_in_seconds",
+        "IncidentDuration_Ph_PU_to_Clear_in_seconds_in_seconds",
+        "In Queue_to_UnitAssign_in_seconds",
+        "UnitAssign_to_UnitEnroute_in_seconds",
+        "UnitEnroute_to_UnitArrive_in_seconds",
+        "UnitAssign_to_UnitArrive_in_seconds",
+        "UnitArrive_to_Clear_in_seconds",
+        "Ph_PU_to_UnitArrive_in_seconds",
+        "UnitDuration_Assign_to_Clear_in_seconds",
+        "Depart_to_At_Destination_in_seconds",
+        "Depart_to_Cleared_Destination_in_seconds",
     ]
 
-    fireDF = fireDF.drop(timeDeltasToConvert, axis=1, errors="ignore")
+    df = df.drop(timeDeltasToConvert, axis=1, errors="ignore")
 
     # =================================================================
     # Reset index for order and size
     # =================================================================
     print(" -- Resetting Index")
-    fireDF = fireDF.reset_index(drop=True)
+    df = df.reset_index(drop=True)
 
     # =================================================================
     #     Drop useless data
     # =================================================================
-    print(" -- Dropping Data")
-    fireDF = fireDF.drop(
+    print(" -- Dropping Extra/Useless Data")
+    df = df.drop(
         [
             "ESD02_Record",
             "Master Incident Without First Two Digits",
@@ -200,7 +246,7 @@ def preprocess(fireDF, start=None, end=None):
     )
 
     print(" -- Complete!")
-    return fireDF
+    return df
 
 
 if __name__ == "__main__":
