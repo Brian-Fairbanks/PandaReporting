@@ -20,25 +20,25 @@ def preprocess(df, start=None, end=None):
     # Assign Destionation/File Source
     # =================================================================
     # This should be (maybe not the best) a way to determine EMS or Fire source data
-    # if "" in df.columns:
-    #     fileType = "ems"
-    # else:
-    #     fileType = "fire"
+    if "" in df.columns:
+        fileType = "ems"
+    else:
+        fileType = "fire"
 
-    # # Can this be handeled better?
-    # df["Data Source"] = fileType
+    # Can this be handeled better?
+    df["Data Source"] = fileType
 
     # =================================================================
     # Closer match column COUNT between EMS and Fire
     # =================================================================
     # merge two to one Ph_PU_Time & Ph_PU_Data
-    # if fileType == "ems":
-    df["Ph_PU_Time"] = df.apply(
-        lambda row: row["Ph_PU_Date"]
-        if pd.isnull(row["Ph_PU_Time"])
-        else row["Ph_PU_Time"],
-        axis=1,
-    )
+    if fileType == "ems":
+        df["Ph_PU_Time"] = df.apply(
+            lambda row: row["Ph_PU_Date"]
+            if pd.isnull(row["Ph_PU_Time"])
+            else row["Ph_PU_Time"],
+            axis=1,
+        )
 
     print(" -- Matching Column Contents")
     # duplicate cell:  closed_time -> ["last real unit clear incident", "incident time call closed"]
