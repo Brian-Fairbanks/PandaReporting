@@ -1,4 +1,5 @@
 from geopandas import geodataframe
+from pandasgui import show
 import pyproj
 import pandas as pd
 import geopandas as gpd
@@ -170,7 +171,7 @@ def distToStationFromNode(dest_node, fullProgress=None):
 
 
 def getPoint(point, type):
-    if type not in ["ENG", "QNT"]:
+    if type not in ["ENG", "QNT", "M", "MED", "MEDC"]:
         return None
     if pd.isnull(point.x) | pd.isnull(point.y):
         return None
@@ -241,9 +242,7 @@ def getArrayDistToStation(df):
 
 def addClosestStations(df):
     import re  # make sure that we can run regular expressions.
-    from pandasgui import show
 
-    show(df)
     names = [f"Distance to {i} in miles" for i in stationDict]
     df["Closest Station"] = df[names].idxmin(axis=1)
 
@@ -354,6 +353,7 @@ def addRoadDistances(df):
     geometry = [Point(xy) for xy in zip(df["X-Long"], df["Y_Lat"])]
     gdf = GeoDataFrame(df, crs="EPSG:4326", geometry=geometry)
     gdf = gdf.to_crs(2277)
+    show(gdf)
 
     # Load road map data
     getRoads()
@@ -361,6 +361,8 @@ def addRoadDistances(df):
     gdf = addNearestNodeToGDF(gdf)
 
     gdf = getArrayDistToStation(gdf)
+
+    show(gdf)
 
     # these dont really mean anything without the context of the graph, so drop them off...
     df1 = pd.DataFrame(gdf.drop(columns=["geometry", "nearest node"]))

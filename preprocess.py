@@ -20,7 +20,7 @@ def preprocess(df, start=None, end=None):
     # Assign Destionation/File Source
     # =================================================================
     # This should be (maybe not the best) a way to determine EMS or Fire source data
-    if "" in df.columns:
+    if "Ph_PU_Time" in df.columns:
         fileType = "ems"
     else:
         fileType = "fire"
