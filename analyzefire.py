@@ -456,16 +456,16 @@ def analyzeFire(fireDF):
             "Unit Time Assigned",
             "Unit Time Arrived At Scene",
         ],
-        "Unit OnScene to Clear Call": [
-            "Unit Time Arrived At Scene",
-            "Unit Time Call Cleared",
-        ],
         "Earliest Phone Pickup Time to Unit Arrival": [
             "Earliest Time Phone Pickup AFD or EMS",
             "Unit Time Arrived At Scene",
         ],
         "Unit Assign To Clear Call Time": [
             "Unit Time Assigned",
+            "Unit Time Call Cleared",
+        ],
+        "Unit OnScene to Clear Call": [
+            "Unit Time Arrived At Scene",
             "Unit Time Call Cleared",
         ],
     }
@@ -623,16 +623,16 @@ def analyzeFire(fireDF):
     #     Column Organization
     # =================================================================
 
-    fireDF = utils.putColAfter(
-        fireDF,
-        ["Unit OnScene to Clear Call"],
-        "Earliest Phone Pickup Time to Unit Arrival",
-    )
-    fireDF = utils.putColAfter(
-        fireDF,
-        ["Unit OnScene to Clear Call Formatted"],
-        "Earliest Phone Pickup Time to Unit Arrival Formatted",
-    )
+    # fireDF = utils.putColAfter(
+    #     fireDF,
+    #     ["Unit OnScene to Clear Call"],
+    #     "Earliest Phone Pickup Time to Unit Arrival",
+    # )
+    # fireDF = utils.putColAfter(
+    #     fireDF,
+    #     ["Unit OnScene to Clear Call Formatted"],
+    #     "Earliest Phone Pickup Time to Unit Arrival Formatted",
+    # )
 
     # ----------------
     # finalize naming

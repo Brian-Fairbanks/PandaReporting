@@ -171,7 +171,7 @@ def distToStationFromNode(dest_node, fullProgress=None):
 
 
 def getPoint(point, type):
-    if type not in ["ENG", "QNT", "M", "MED", "MEDC"]:
+    if type not in ["ENG", "MED"]:
         return None
     if pd.isnull(point.x) | pd.isnull(point.y):
         return None
@@ -196,7 +196,7 @@ def addNearestNodeToGDF(gdf):
 
     # with tqdm(total=len(gdf.index), desc="Finding nearest Nodes:") as pbar:
     gdf["nearest node"] = gdf.progress_apply(
-        lambda row: getPoint(row.geometry, row["Unit Type"]), axis=1
+        lambda row: getPoint(row.geometry, row["Unit Bucket"]), axis=1
     )
 
     return gdf
@@ -341,7 +341,7 @@ def addRoadDistances(df):
     df["Closest Station"] = None
     for i in range(1, 10):
         df[f"Distance to S0{i} in miles"] = None
-    # return df
+    return df
 
     import re
     import getData as data

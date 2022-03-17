@@ -54,7 +54,7 @@ CREATE TABLE [FireUnits] (
   [Unit_Cancel_Reason] varchar(40),
   [Unit_Type] varchar(24),
   [Bucket_Type] varchar(24),
-  [Concurrent_Usage] integer,
+  [Unit_Usage_At_Time_of_Alarm] integer,
   [Assigned_at_Station] bit,
   [Distance_to_S01_in_miles] float,
   [Distance_to_S02_in_miles] float,
