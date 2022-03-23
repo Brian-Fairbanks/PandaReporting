@@ -1,6 +1,7 @@
 output.xlsx
 ~$output.xlsx
 
+.venv
 .vscode
 __pycache__/
 *.pyc
