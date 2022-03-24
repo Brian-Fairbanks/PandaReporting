@@ -22,3 +22,17 @@ Ensure you have installed Pandas, NumPy, and matplotlib
 
 Install MS Sql
 schemas.sql included in root to set up the database
+
+pip install -U black
+
+pip install pandas
+
+pip install pandasgui
+pip install pypiwin32
+pip install openpyxl
+
+pip install tabulate -
+
+pip install easygui
+
+pip install xlsxwriter

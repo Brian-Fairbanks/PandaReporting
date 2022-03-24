@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from pandasgui import show
+# from pandasgui import show
 import utils as u
 from timer import Timer
 
@@ -92,7 +92,7 @@ def main():
     # test the function
     df = addConcurrentUse(df, "Unit Time Assigned", "Unit Time Call Cleared")
     # show the results
-    show(df)
+    # show(df)
 
 
 if __name__ == "__main__":

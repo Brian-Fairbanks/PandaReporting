@@ -2,7 +2,7 @@ import pyodbc
 import sqlalchemy
 from sqlalchemy.engine import URL
 import pandas as pd
-from pandasgui import show
+# from pandasgui import show
 from tqdm import tqdm
 
 

@@ -7,6 +7,13 @@ __pycache__/
 *.pyc
 *.pyo
 
+analyzefire.exe
+analyzefire.spec
+
+build/
+dist/
+
+
 *.xlsx
 
 APIData.txt

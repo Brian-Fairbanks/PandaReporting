@@ -2,16 +2,16 @@
 import datetime
 
 # Dependancies
-from pandasgui import show
+# from pandasgui import show
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
 # Sibling Modules
-from crf import getCRF
+import crf
 import utils
 import ConcurrentUse as cu
-import roads as rd
+
+# import roads as rd
 import getData as data
 import timeBreakdowns as tb
 import naming as n
@@ -222,92 +222,91 @@ def analyzeFire(fireDF):
     #     Set District 17 Values
     # =================================================================
 
-    from shapely.geometry import Point
-    import geopandas as gpd
+    # from shapely.geometry import Point
+    # # import geopandas as gpd
 
-    # Set up boundaries for ESD17
-    ##############################################################
-    print("loading esd shape:")
-    esd17 = gpd.read_file("Shape\\esd17.shp")
-    # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
-    esd17.set_crs(epsg=2277, inplace=True)
-    # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
-    esd17 = esd17.to_crs(4326)
+    # # Set up boundaries for ESD17
+    # ##############################################################
+    # print("loading esd shape:")
+    # esd17 = gpd.read_file("Shape\\esd17.shp")
+    # # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
+    # esd17.set_crs(epsg=2277, inplace=True)
+    # # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
+    # esd17 = esd17.to_crs(4326)
 
-    # Assign values for esd17
-    ##############################################################
-    print("assigning ESD17 status:")
+    # # Assign values for esd17
+    # ##############################################################
+    # print("assigning ESD17 status:")
 
-    def isESD(jur, lon, lat):
-        if jur != "ESD02":
-            # print(lat, lon, "is not in esd17")
-            return False
-        plot = Point(lon, lat)
-        if (esd17.contains(plot)).any():
-            # print(lat, lon, "is in esd17")
-            return True
-        # print(lat, lon, "is not in esd17")
-        return False
+    # def isESD(jur, lon, lat):
+    #     if jur != "ESD02":
+    #         # print(lat, lon, "is not in esd17")
+    #         return False
+    #     plot = Point(lon, lat)
+    #     if (esd17.contains(plot)).any():
+    #         # print(lat, lon, "is in esd17")
+    #         return True
+    #     # print(lat, lon, "is not in esd17")
+    #     return False
 
-    fireDF["IsESD17"] = np.vectorize(isESD)(
-        fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"]
-    )
+    # fireDF["IsESD17"] = np.vectorize(isESD)(
+    #     fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"]
+    # )
 
-    # Clear data
-    esd17 = None
+    # # Clear data
+    # esd17 = None
 
-    # =================================================================
-    #     Set District ETJ Values
-    # =================================================================
+    # # =================================================================
+    # #     Set District ETJ Values
+    # # =================================================================
 
-    from shapely.geometry import Point
-    import geopandas as gpd
+    # from shapely.geometry import Point
+    # import geopandas as gpd
 
-    # Set up boundaries for ESD17
-    ##############################################################
-    print("loading esd shape:")
-    etj = gpd.read_file("Shape\\notETJ.shp")
-    # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
-    etj.set_crs(epsg=2277, inplace=True)
-    # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
-    etj = etj.to_crs(4326)
+    # # Set up boundaries for ESD17
+    # ##############################################################
+    # print("loading esd shape:")
+    # etj = gpd.read_file("Shape\\notETJ.shp")
+    # # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
+    # etj.set_crs(epsg=2277, inplace=True)
+    # # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
+    # etj = etj.to_crs(4326)
 
-    # Assign values for etj
-    ##############################################################
-    print("assigning ETJ status:")
+    # # Assign values for etj
+    # ##############################################################
+    # print("assigning ETJ status:")
 
-    def isETJ(jur, lon, lat):
-        if jur != "ESD02":
-            # print(lat, lon, "is not in etj")
-            return False
-        plot = Point(lon, lat)
-        if (etj.contains(plot)).any():
-            # print(lat, lon, "is in etj")
-            return False
-        # print(lat, lon, "is not in etj")
-        return True
+    # def isETJ(jur, lon, lat):
+    #     if jur != "ESD02":
+    #         # print(lat, lon, "is not in etj")
+    #         return False
+    #     plot = Point(lon, lat)
+    #     if (etj.contains(plot)).any():
+    #         # print(lat, lon, "is in etj")
+    #         return False
+    #     # print(lat, lon, "is not in etj")
+    #     return True
 
-    fireDF["isETJ"] = np.vectorize(isETJ)(
-        fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"]
-    )
+    # fireDF["isETJ"] = np.vectorize(isETJ)(
+    #     fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"]
+    # )
 
-    # Clear data
-    etj = None
+    # # Clear data
+    # etj = None
 
-    # =================================================================
-    #     Set District ETJ Values
-    # =================================================================
-    fireDF["isCOP"] = fireDF.apply(
-        lambda row: (row["isETJ"] + row["IsESD17"]) == 0, axis=1
-    )
+    # # =================================================================
+    # #     Set District ETJ Values
+    # # =================================================================
+    # fireDF["isCOP"] = fireDF.apply(
+    #     lambda row: (row["isETJ"] + row["IsESD17"]) == 0, axis=1
+    # )
 
     # =================================================================
     #     Set pop density values Values
     # =================================================================
-    import popden
+    # import popden
 
-    fireDF = popden.addPopDen(fireDF)
-    # (getMapscoGrid)(fireDF["X-Long"], fireDF["Y_Lat"])
+    # fireDF = popden.addPopDen(fireDF)
 
     # =================================================================
     #     Set Status for each call
@@ -381,13 +380,12 @@ def analyzeFire(fireDF):
     # =================================================================
     #     Calculate Station Distances
     # =================================================================
-    fireDF = rd.addRoadDistances(fireDF)
+    # fireDF = rd.addRoadDistances(fireDF)
 
     # =================================================================
     #     add Is Sent From Closest Station
     # =================================================================
-    # TODO: add Is Sent From Closest Station
-    fireDF = addIsClosestStation(fireDF)
+    # fireDF = addIsClosestStation(fireDF)
 
     # =================================================================
     # Time Data Colulmn Creation
@@ -611,7 +609,7 @@ def analyzeFire(fireDF):
     # =================================================================
     #     get Complete Response Force for each Structure Fire
     # =================================================================
-    crfdf = getCRF(fireDF)
+    crfdf = crf.getCRF(fireDF)
     # show(crfdf)
 
     # fireDF.join(crfdf.set_index("incident"), on="Master Incident Number")
@@ -672,14 +670,14 @@ def analyzeFire(fireDF):
     # ----------------
 
     # show(fireDF)
-    from Database import SQLDatabase
+    # from Database import SQLDatabase
 
-    db = SQLDatabase()
+    # db = SQLDatabase()
     # db.insertDF(fireDF)
 
     ######################################
     # show in gui just after writing
-    show(fireDF)
+    # show(fireDF)
 
 
 ################################

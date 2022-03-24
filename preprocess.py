@@ -252,7 +252,7 @@ def preprocess(df, start=None, end=None):
 if __name__ == "__main__":
     # load test files
     import loadTestFile
-    from pandasgui import show
+    # from pandasgui import show
 
     df = loadTestFile.get()
-    show(df)
+    # show(df)

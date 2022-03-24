@@ -1,4 +1,4 @@
-from geopandas import geodataframe
+from geopandas import GeoDataFrame
 from pandasgui import show
 import pyproj
 import pandas as pd
@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 from os.path import exists
 import traceback
 import numpy as np
-from geopandas import GeoDataFrame
 from timer import Timer
 
 from tqdm import tqdm
