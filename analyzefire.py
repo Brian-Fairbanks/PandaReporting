@@ -1,5 +1,7 @@
 # Built in
 import datetime
+from os import path
+from os import makedirs
 
 # Dependancies
 # from pandasgui import show
@@ -651,18 +653,26 @@ def analyzeFire(fireDF):
     # Incident Duration - Ph PU to Clear
     # Unit  Ph PU to UnitArrived
     # fireDF[""] = fireDF[""].apply(utils.dtFormat)
+    from os import path
+    from os import makedirs
 
-    writer = pd.ExcelWriter(
-        "Output\\Output_{0}.xlsx".format(
-            (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
-        ),
+    fp = "./testfolder"
+    if not (path.exists(fp)):
+        makedirs(fp)
+
+    time = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
+    outputFileName = f"{fp}\\Output_{time}.xlsx"
+
+    with pd.ExcelWriter(
+        outputFileName,
         engine="xlsxwriter",
         datetime_format="mm/dd/yyyy hh:mm:ss",
         date_format="mm/dd/yyyy",
-    )
+    ) as writer:
+        fireDF.to_excel(writer)
+        writer.save()
 
-    fireDF.to_excel(writer)
-    writer.save()
+    input(f"File has been exported to {fp} .  Press enter to exit.")
     # plt.savefig('saved_figure.png')
 
     # ----------------
