@@ -8,6 +8,10 @@ from os import makedirs
 import pandas as pd
 import numpy as np
 
+# Geodata Dependancies
+from shapely.geometry import Point
+import geopandas as gpd
+
 # Sibling Modules
 import crf
 import utils
@@ -25,17 +29,6 @@ pd.options.mode.chained_assignment = None
 locations = data.getLocations()
 reserveUnits = data.getReserves()
 stationDict = data.getStations()
-
-
-# Create a Pandas Excel writer using XlsxWriter as the engine.
-# Also set the default datetime and date formats.
-
-# writer = pd.ExcelWriter(
-#     "Output.xlsx",
-#     engine="xlsxwriter",
-#     datetime_format="mmm d yyyy hh:mm:ss",
-#     date_format="mmmm dd yyyy",
-# )
 
 # ##############################################################################################################################################
 #     Station Assignment Functions
@@ -224,39 +217,36 @@ def analyzeFire(fireDF):
     #     Set District 17 Values
     # =================================================================
 
-    # from shapely.geometry import Point
-    # # import geopandas as gpd
+    # Set up boundaries for ESD17
+    ##############################################################
+    print("loading esd shape:")
+    esd17 = gpd.read_file("Shape\\esd17.shp")
+    # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
+    esd17.set_crs(epsg=2277, inplace=True)
+    # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
+    esd17 = esd17.to_crs(4326)
 
-    # # Set up boundaries for ESD17
-    # ##############################################################
-    # print("loading esd shape:")
-    # esd17 = gpd.read_file("Shape\\esd17.shp")
-    # # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
-    # esd17.set_crs(epsg=2277, inplace=True)
-    # # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
-    # esd17 = esd17.to_crs(4326)
+    # Assign values for esd17
+    ##############################################################
+    print("assigning ESD17 status:")
 
-    # # Assign values for esd17
-    # ##############################################################
-    # print("assigning ESD17 status:")
+    def isESD(jur, lon, lat):
+        if jur != "ESD02":
+            # print(lat, lon, "is not in esd17")
+            return False
+        plot = Point(lon, lat)
+        if (esd17.contains(plot)).any():
+            # print(lat, lon, "is in esd17")
+            return True
+        # print(lat, lon, "is not in esd17")
+        return False
 
-    # def isESD(jur, lon, lat):
-    #     if jur != "ESD02":
-    #         # print(lat, lon, "is not in esd17")
-    #         return False
-    #     plot = Point(lon, lat)
-    #     if (esd17.contains(plot)).any():
-    #         # print(lat, lon, "is in esd17")
-    #         return True
-    #     # print(lat, lon, "is not in esd17")
-    #     return False
+    fireDF["IsESD17"] = np.vectorize(isESD)(
+        fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"]
+    )
 
-    # fireDF["IsESD17"] = np.vectorize(isESD)(
-    #     fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"]
-    # )
-
-    # # Clear data
-    # esd17 = None
+    # Clear data
+    esd17 = None
 
     # # =================================================================
     # #     Set District ETJ Values
@@ -647,12 +637,9 @@ def analyzeFire(fireDF):
     # using builtin function vs using ExcelWriter class
     # fireDF.to_excel("Output{0}.xlsx".format((datetime.datetime.now()).strftime("%H-%M-%S")))
 
-    # convert specific rows to format {h}:mm:ss format
+    # Create a Pandas Excel writer using XlsxWriter as the engine.
+    # Also set the default datetime and date formats.
 
-    # Incident 1st Enroute to 1stArrived Time
-    # Incident Duration - Ph PU to Clear
-    # Unit  Ph PU to UnitArrived
-    # fireDF[""] = fireDF[""].apply(utils.dtFormat)
     from os import path
     from os import makedirs
 
@@ -673,7 +660,6 @@ def analyzeFire(fireDF):
         writer.save()
 
     input(f"File has been exported to {fp} .  Press enter to exit.")
-    # plt.savefig('saved_figure.png')
 
     # ----------------
     # Write to Database
