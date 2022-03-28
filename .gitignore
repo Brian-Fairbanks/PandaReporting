@@ -1,6 +1,10 @@
 output.xlsx
 ~$output.xlsx
 
+analyzefire.spec
+build/
+
+
 .venv
 .vscode
 __pycache__/
