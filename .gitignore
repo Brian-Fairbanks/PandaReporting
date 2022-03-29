@@ -14,3 +14,7 @@ APIData.txt
 cache
 
 *graphml*
+
+.venv/
+analyzefire.spec
+build/
