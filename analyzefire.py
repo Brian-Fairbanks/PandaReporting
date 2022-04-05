@@ -670,10 +670,10 @@ def analyzeFire(fireDF):
     # ----------------
 
     # show(fireDF)
-    from Database import SQLDatabase
+    # from Database import SQLDatabase
 
-    db = SQLDatabase()
-    db.insertDF(fireDF)
+    # db = SQLDatabase()
+    # db.insertDF(fireDF)
 
     ######################################
     # show in gui just after writing
