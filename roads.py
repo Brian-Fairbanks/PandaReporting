@@ -228,7 +228,7 @@ def getArrayDistToStation(df):
                 desc=f"Calculating distance to {curStat}:",
                 leave=False,
             )
-            df["Distance to {0} in miles".format(curStat)] = df.progress_apply(
+            df[f"Distance_to_S0{curStat}_in_miles"] = df.progress_apply(
                 lambda x: distToStationFromNode(
                     x["nearest node"],
                     stationBar,
@@ -340,7 +340,7 @@ def addRoadDistances(df):
     df["Closest Station"] = None
     for i in range(1, 10):
         df[f"Distance_to_S0{i}_in_miles"] = None
-    return df
+    # return df
 
     import re
     import getData as data
