@@ -150,6 +150,30 @@ def getStations(fireDF):
     return fireDF
 
 
+def addFirstArrived(df):
+    # df["FirstArrived"] = df[
+    #     df["Unit Time Arrived At Scene"] == df["Time First Real Unit Arrived"]
+    # ]
+    df["FirstArrived"] = False
+    # get array of unique Incidents
+    unique_incidents = df["Master Incident Number"].unique()
+    # for each incident, get array of calls
+    for incident in unique_incidents:
+        incident_data = df[df["Master Incident Number"] == incident]
+        # show(incident_data)
+        try:
+            # get earliest arrival (either index of earliest, or null if not exits)
+            first = incident_data[
+                incident_data["Unit Time Arrived At Scene"]
+                == incident_data["Unit Time Arrived At Scene"].min()
+            ].index[0]
+            # and set earliest arrival of all for incident as 'FirstArrived'
+            df.loc[first, "FirstArrived"] = True
+        except:
+            pass
+    return df
+
+
 # ##############################################################################################################################################
 #     Main Code
 # ##############################################################################################################################################
@@ -169,6 +193,13 @@ def analyzeFire(fireDF):
     Dataframe:
         A larger dataframe with additional information gleamed from the passed file.
     """
+    # =================================================================
+    #    Confirm creation of FirstArrived column
+    # =================================================================
+    if "FirstArrived" in fireDF:
+        pass
+    else:
+        addFirstArrived(fireDF)
     # =================================================================
     #     Match esri formatting for first arrived
     # =================================================================
@@ -695,4 +726,4 @@ if __name__ == "__main__":
 
     df = loadTestFile.get()
     # run test file
-    analyzeFire(df) 
+    analyzeFire(df)

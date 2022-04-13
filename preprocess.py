@@ -91,7 +91,7 @@ def preprocess(df, start=None, end=None):
         "Unit_Agency": "Department",
         "Unit_Type": "Frontline_Status",
         "Address_at_Assign": "Location_At_Assign_Time",
-        "Primary_Flag": "FirstArrived",
+        # "Primary_Flag": "FirstArrived",
         "Assigned": "Unit Time Assigned",
         "Enroute": "Unit Time Enroute",
         "Staged": "Unit Time Staged",
