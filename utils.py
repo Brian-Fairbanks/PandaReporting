@@ -134,12 +134,15 @@ def dtformat(x):
 
 
 def getUnitType(name):
-    # get unit type from the name
+    try:
+        # get unit type from the name
 
-    # Remove RR from unit name, then round rock units should conform just fine to the others
-    name = name.replace("RR", "")
-    # then return whats left sans digits
-    return "".join([d for d in str(name) if not d.isdigit()])
+        # Remove RR from unit name, then round rock units should conform just fine to the others
+        name = name.replace("RR", "")
+        # then return whats left sans digits
+        return "".join([d for d in str(name) if not d.isdigit()])
+    except:
+        return f"ERROR: {name}"
 
 
 def addUnitType(orig):
