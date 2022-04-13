@@ -229,7 +229,7 @@ def getArrayDistToStation(df):
                 desc=f"Calculating distance to {curStat}:",
                 leave=False,
             )
-            df["Distance to {0} in miles".format(curStat)] = df.progress_apply(
+            df[f"Distance_to_S0{curStat}_in_miles"] = df.progress_apply(
                 lambda x: distToStationFromNode(
                     x["nearest node"],
                     stationBar,

@@ -695,4 +695,4 @@ if __name__ == "__main__":
 
     df = loadTestFile.get()
     # run test file
-    analyzeFire(df)
+    analyzeFire(df) 
