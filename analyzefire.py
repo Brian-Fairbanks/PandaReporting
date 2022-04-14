@@ -102,8 +102,8 @@ def getStations(fireDF):
         (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"] == "QNT261"),  # 6
         (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].str.contains("BAT20")),
             # account for instances where vehicle is filling in for another.  We will need to deterimine which station it is filling in for based on the location at time of assignment
-        (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].isin(reserveUnits)),
-        (fireDF[az] == "ESD02 - Pflugerville"),
+        (fireDF[az].isin(["ESD02 - Pflugerville", "ESD02"])) & (fireDF["Radio_Name"].isin(reserveUnits)),
+        (fireDF[az].isin(["ESD02 - Pflugerville", "ESD02"])),
         # fmt: on
     ]
     choices = [

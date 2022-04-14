@@ -341,6 +341,7 @@ def addRoadDistances(df):
     df["Closest Station"] = None
     for i in range(1, 10):
         df[f"Distance to S0{i} in miles"] = None
+    # toggle the below return to bypass (skip) this section
     # return df
 
     import re
@@ -361,7 +362,7 @@ def addRoadDistances(df):
 
     gdf = getArrayDistToStation(gdf)
 
-    show(gdf)
+    # show(gdf)
 
     # these dont really mean anything without the context of the graph, so drop them off...
     df1 = pd.DataFrame(gdf.drop(columns=["geometry", "nearest node"]))

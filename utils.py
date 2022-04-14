@@ -142,7 +142,7 @@ def getUnitType(name):
         # then return whats left sans digits
         return "".join([d for d in str(name) if not d.isdigit()])
     except:
-        return f"ERROR: {name}"
+        return None
 
 
 def addUnitType(orig):
