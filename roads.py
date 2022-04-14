@@ -196,7 +196,7 @@ def addNearestNodeToGDF(gdf):
 
     # with tqdm(total=len(gdf.index), desc="Finding nearest Nodes:") as pbar:
     gdf["nearest node"] = gdf.progress_apply(
-        lambda row: getPoint(row.geometry, row["Unit Bucket"]), axis=1
+        lambda row: getPoint(row.geometry, row["Bucket Type"]), axis=1
     )
 
     return gdf
@@ -229,7 +229,7 @@ def getArrayDistToStation(df):
                 desc=f"Calculating distance to {curStat}:",
                 leave=False,
             )
-            df[f"Distance_to_S0{curStat}_in_miles"] = df.progress_apply(
+            df[f"Distance to {curStat} in miles"] = df.progress_apply(
                 lambda x: distToStationFromNode(
                     x["nearest node"],
                     stationBar,
@@ -341,7 +341,7 @@ def addRoadDistances(df):
     df["Closest Station"] = None
     for i in range(1, 10):
         df[f"Distance to S0{i} in miles"] = None
-    return df
+    # return df
 
     import re
     import getData as data
@@ -353,7 +353,6 @@ def addRoadDistances(df):
     geometry = [Point(xy) for xy in zip(df["X-Long"], df["Y_Lat"])]
     gdf = GeoDataFrame(df, crs="EPSG:4326", geometry=geometry)
     gdf = gdf.to_crs(2277)
-    show(gdf)
 
     # Load road map data
     getRoads()
