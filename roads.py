@@ -1,4 +1,5 @@
 from geopandas import geodataframe
+from pandasgui import show
 import pyproj
 import pandas as pd
 import geopandas as gpd
@@ -170,7 +171,7 @@ def distToStationFromNode(dest_node, fullProgress=None):
 
 
 def getPoint(point, type):
-    if type not in ["ENG", "QNT"]:
+    if type not in ["ENG", "MED"]:
         return None
     if pd.isnull(point.x) | pd.isnull(point.y):
         return None
@@ -195,7 +196,7 @@ def addNearestNodeToGDF(gdf):
 
     # with tqdm(total=len(gdf.index), desc="Finding nearest Nodes:") as pbar:
     gdf["nearest node"] = gdf.progress_apply(
-        lambda row: getPoint(row.geometry, row["Unit Type"]), axis=1
+        lambda row: getPoint(row.geometry, row["Bucket Type"]), axis=1
     )
 
     return gdf
@@ -228,7 +229,7 @@ def getArrayDistToStation(df):
                 desc=f"Calculating distance to {curStat}:",
                 leave=False,
             )
-            df[f"Distance_to_S0{curStat}_in_miles"] = df.progress_apply(
+            df[f"Distance to {curStat} in miles"] = df.progress_apply(
                 lambda x: distToStationFromNode(
                     x["nearest node"],
                     stationBar,
@@ -339,7 +340,8 @@ def getRoads():
 def addRoadDistances(df):
     df["Closest Station"] = None
     for i in range(1, 10):
-        df[f"Distance_to_S0{i}_in_miles"] = None
+        df[f"Distance to S0{i} in miles"] = None
+    # toggle the below return to bypass (skip) this section
     # return df
 
     import re
@@ -359,6 +361,8 @@ def addRoadDistances(df):
     gdf = addNearestNodeToGDF(gdf)
 
     gdf = getArrayDistToStation(gdf)
+
+    # show(gdf)
 
     # these dont really mean anything without the context of the graph, so drop them off...
     df1 = pd.DataFrame(gdf.drop(columns=["geometry", "nearest node"]))

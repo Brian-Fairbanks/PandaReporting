@@ -38,9 +38,11 @@ def addConcurrentUse(orig, startName, endName):
     orig["Concurrent Usage"] = np.NaN
 
     # limit the dictionary as much as possible, since this will go quite slow
-    # start with jsut our jurisdiction
+    # start with just our jurisdiction
     # distArr = orig.index[(orig["Jurisdiction"].isin(["ESD02", "ESD17"]))].tolist()
-    distArr = orig.index[(orig["Department"].isin(["ESD02 - Pflugerville"]))].tolist()
+    distArr = orig.index[
+        (orig["Department"].isin(["ESD02 - Pflugerville", "ESD02"]))
+    ].tolist()
 
     for ind in distArr:
         # get start and end time of incident

@@ -134,8 +134,15 @@ def dtformat(x):
 
 
 def getUnitType(name):
-    # get unit type from the name
-    return "".join([d for d in str(name) if not d.isdigit()])
+    try:
+        # get unit type from the name
+
+        # Remove RR from unit name, then round rock units should conform just fine to the others
+        name = name.replace("RR", "")
+        # then return whats left sans digits
+        return "".join([d for d in str(name) if not d.isdigit()])
+    except:
+        return None
 
 
 def addUnitType(orig):
@@ -145,7 +152,17 @@ def addUnitType(orig):
 
 
 def getUnitBucket(type):
-    buckets = {"BT": "ENG", "ENG": "ENG", "QNT": "ENG"}
+    buckets = {
+        "BT": "ENG",
+        "ENG": "ENG",
+        "QNT": "ENG",
+        "RS": "ENG",
+        "TK": "ENG",
+        "LAD": "ENG",
+        "M": "MED",
+        "MED": "MED",
+        "MEDC": "MED",
+    }
     if type not in buckets:
         return type
     return buckets[type]

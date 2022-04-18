@@ -12,6 +12,8 @@ from utils import gracefulCrash
 # Input a single DF, and get a table containing all the relevant information for the Complete Response Force
 def getCRF(df):
     structureFiresArray = getStructureFires(df)
+    if structureFiresArray == None:
+        return None
     ERF = []
     for f in structureFiresArray:
         ERF.append(getIncidentERF(f, df))
@@ -27,6 +29,7 @@ def getStructureFires(df):
         # remove duplicates
         return list(set(incnums))
     except Exception as ex:
+        return None
         gracefulCrash(ex, sys.exc_info())
 
 

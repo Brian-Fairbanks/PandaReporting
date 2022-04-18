@@ -5,7 +5,6 @@ import datetime
 from pandasgui import show
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
 # Sibling Modules
 from crf import getCRF
@@ -102,8 +101,8 @@ def getStations(fireDF):
         (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"] == "QNT261"),  # 6
         (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].str.contains("BAT20")),
             # account for instances where vehicle is filling in for another.  We will need to deterimine which station it is filling in for based on the location at time of assignment
-        (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].isin(reserveUnits)),
-        (fireDF[az] == "ESD02 - Pflugerville"),
+        (fireDF[az].isin(["ESD02 - Pflugerville", "ESD02"])) & (fireDF["Radio_Name"].isin(reserveUnits)),
+        (fireDF[az].isin(["ESD02 - Pflugerville", "ESD02"])),
         # fmt: on
     ]
     choices = [
@@ -150,6 +149,30 @@ def getStations(fireDF):
     return fireDF
 
 
+def addFirstArrived(df):
+    # df["FirstArrived"] = df[
+    #     df["Unit Time Arrived At Scene"] == df["Time First Real Unit Arrived"]
+    # ]
+    df["FirstArrived"] = False
+    # get array of unique Incidents
+    unique_incidents = df["Master Incident Number"].unique()
+    # for each incident, get array of calls
+    for incident in unique_incidents:
+        incident_data = df[df["Master Incident Number"] == incident]
+        # show(incident_data)
+        try:
+            # get earliest arrival (either index of earliest, or null if not exits)
+            first = incident_data[
+                incident_data["Unit Time Arrived At Scene"]
+                == incident_data["Unit Time Arrived At Scene"].min()
+            ].index[0]
+            # and set earliest arrival of all for incident as 'FirstArrived'
+            df.loc[first, "FirstArrived"] = True
+        except:
+            pass
+    return df
+
+
 # ##############################################################################################################################################
 #     Main Code
 # ##############################################################################################################################################
@@ -169,6 +192,13 @@ def analyzeFire(fireDF):
     Dataframe:
         A larger dataframe with additional information gleamed from the passed file.
     """
+    # =================================================================
+    #    Confirm creation of FirstArrived column
+    # =================================================================
+    if "FirstArrived" in fireDF:
+        pass
+    else:
+        addFirstArrived(fireDF)
     # =================================================================
     #     Match esri formatting for first arrived
     # =================================================================
@@ -381,6 +411,7 @@ def analyzeFire(fireDF):
     # =================================================================
     #     Calculate Station Distances
     # =================================================================
+    print(" -- adding road checks")
     fireDF = rd.addRoadDistances(fireDF)
 
     # =================================================================
@@ -456,16 +487,16 @@ def analyzeFire(fireDF):
             "Unit Time Assigned",
             "Unit Time Arrived At Scene",
         ],
-        "Unit OnScene to Clear Call": [
-            "Unit Time Arrived At Scene",
-            "Unit Time Call Cleared",
-        ],
         "Earliest Phone Pickup Time to Unit Arrival": [
             "Earliest Time Phone Pickup AFD or EMS",
             "Unit Time Arrived At Scene",
         ],
         "Unit Assign To Clear Call Time": [
             "Unit Time Assigned",
+            "Unit Time Call Cleared",
+        ],
+        "Unit OnScene to Clear Call": [
+            "Unit Time Arrived At Scene",
             "Unit Time Call Cleared",
         ],
     }
@@ -615,22 +646,24 @@ def analyzeFire(fireDF):
     # show(crfdf)
 
     # fireDF.join(crfdf.set_index("incident"), on="Master Incident Number")
-    fireDF = pd.merge(fireDF, crfdf, how="left", on=["Master Incident Number"])
-
+    try:
+        fireDF = pd.merge(fireDF, crfdf, how="left", on=["Master Incident Number"])
+    except:
+        print("No CRF Found")
     # =================================================================
     #     Column Organization
     # =================================================================
 
-    fireDF = utils.putColAfter(
-        fireDF,
-        ["Unit OnScene to Clear Call"],
-        "Earliest Phone Pickup Time to Unit Arrival",
-    )
-    fireDF = utils.putColAfter(
-        fireDF,
-        ["Unit OnScene to Clear Call Formatted"],
-        "Earliest Phone Pickup Time to Unit Arrival Formatted",
-    )
+    # fireDF = utils.putColAfter(
+    #     fireDF,
+    #     ["Unit OnScene to Clear Call"],
+    #     "Earliest Phone Pickup Time to Unit Arrival",
+    # )
+    # fireDF = utils.putColAfter(
+    #     fireDF,
+    #     ["Unit OnScene to Clear Call Formatted"],
+    #     "Earliest Phone Pickup Time to Unit Arrival Formatted",
+    # )
 
     # ----------------
     # finalize naming
