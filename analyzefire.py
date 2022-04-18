@@ -5,7 +5,6 @@ import datetime
 from pandasgui import show
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
 # Sibling Modules
 from crf import getCRF

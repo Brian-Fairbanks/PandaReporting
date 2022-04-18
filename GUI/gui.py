@@ -71,6 +71,7 @@ def addFiles():
                 # read the file
                 fileArray[file] = pd.read_excel(excel_filename)
                 # sort the array
+                # preprocess file
                 fileArray[file] = fc.sort(fileArray[file])
                 fileArray[file] = checkFile(fileArray[file])
 
