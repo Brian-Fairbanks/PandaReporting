@@ -328,7 +328,9 @@ def analyzeFire(fireDF):
     #     Set District ETJ Values
     # =================================================================
     fireDF["isCOP"] = fireDF.apply(
-        lambda row: (row["isETJ"] + row["IsESD17"]) == 0, axis=1
+        lambda row: ((row["Jurisdiction"] != "ESD02") + row["isETJ"] + row["IsESD17"])
+        == 0,
+        axis=1,
     )
 
     # =================================================================
