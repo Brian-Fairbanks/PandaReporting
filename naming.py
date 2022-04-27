@@ -98,7 +98,7 @@ renames = {
     "Single_vs_Multi Units ONSC": "Single_vs_Multi_Units_ONSC",
     "Qtr Year": "Qtr_Year",
     "Incident ERF Time": "Incident_ERF_Time",
-    "Force At ERF Time or Close": "Force_At_ERF_Time_or_Close",
+    "Force At ERF Time or Close": "Force_At_ERF_Time_of_Close",
 }
 
 

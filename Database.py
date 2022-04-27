@@ -54,6 +54,15 @@ class SQLDatabase:
                 "People_Per_Mile",
                 "Population_Classification",
                 "Closest_Station",
+                "Distance_to_S01_in_miles",
+                "Distance_to_S02_in_miles",
+                "Distance_to_S03_in_miles",
+                "Distance_to_S04_in_miles",
+                "Distance_to_S05_in_miles",
+                "Distance_to_S06_in_miles",
+                "Distance_to_S07_in_miles",
+                "Distance_to_S08_in_miles",
+                "Distance_to_S09_in_miles",
             ]
         ]
         uniqueIncidents = uniqueIncidents.drop_duplicates(subset=["Incident_Number"])
@@ -90,10 +99,6 @@ class SQLDatabase:
                 "Bucket_Type",
                 "Concurrent_Usage",
                 "Assigned_at_Station",
-                "Distance_to_S01_in_miles",
-                "Distance_to_S02_in_miles",
-                "Distance_to_S03_in_miles",
-                "Distance_to_S04_in_miles",
             ]
         ]
         # unitCalls = unitCalls.drop_duplicates(subset=["Incident_Number"])

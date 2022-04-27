@@ -652,6 +652,12 @@ def analyzeFire(fireDF):
         fireDF = pd.merge(fireDF, crfdf, how="left", on=["Master Incident Number"])
     except:
         print("No CRF Found")
+
+    # ----------------
+    # finalize naming
+    # ----------------
+    fireDF = n.rename(fireDF)
+
     # =================================================================
     #     Column Organization
     # =================================================================
@@ -666,11 +672,11 @@ def analyzeFire(fireDF):
     #     ["Unit OnScene to Clear Call Formatted"],
     #     "Earliest Phone Pickup Time to Unit Arrival Formatted",
     # )
-
-    # ----------------
-    # finalize naming
-    # ----------------
-    fireDF = n.rename(fireDF)
+    fireDF = utils.putColAfter(
+        fireDF,
+        ["Incident_Call_Count"],
+        "Force_At_ERF_Time_or_Close",
+    )
 
     # ----------------
     # Exporting and completion
