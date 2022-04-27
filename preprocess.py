@@ -33,6 +33,10 @@ def preprocess(df, start=None, end=None):
     # =================================================================
     # merge two to one Ph_PU_Time & Ph_PU_Data
     if fileType == "ems":
+        df["Ph_Pu_Was_Null"] = df.apply(
+            lambda row: bool(pd.isnull(row["Ph_PU_Time"])),
+            axis=1,
+        )
         df["Ph_PU_Time"] = df.apply(
             lambda row: row["Ph_PU_Date"]
             if pd.isnull(row["Ph_PU_Time"])
