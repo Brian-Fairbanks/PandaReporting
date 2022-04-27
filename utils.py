@@ -171,3 +171,26 @@ def getUnitBucket(type):
 def addBucketType(orig):
     orig["Bucket Type"] = orig.apply(lambda x: getUnitBucket(x["Unit Type"]), axis=1)
     return orig
+
+
+def longComSub(st1, st2):
+    if pd.isnull(st1) or pd.isnull(st2):
+        return None
+    st1 = st1.lower()
+    st2 = st2.lower()
+    ans = ""
+    for a in range(len(st1)):
+        for b in range(len(st2)):
+            curStr = []
+            k = 0
+            while ((a + k) < len(st1) and (b + k) < len(st2)) and st1[a + k] == st2[
+                b + k
+            ]:
+                # print(
+                #     f"{a}:{st1[a+k]}  -  {b}:{st2[b+k]}  -  {k}:{st1[a+k]}  =  {curStr}"
+                # )
+                curStr += st2[b + k]
+                k += 1
+            if len(ans) <= len(curStr):
+                ans = curStr
+    return ans

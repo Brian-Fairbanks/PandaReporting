@@ -622,7 +622,7 @@ def analyzeFire(fireDF):
             )
 
     # =================================================================
-    #   Extra Formatting
+    #   Extra Time Formatted Columns
     # =================================================================
 
     # format times to [HH]:mm:ss
@@ -642,6 +642,17 @@ def analyzeFire(fireDF):
     fireDF = utils.putColAt(fireDF, ["Qtr Year"], 200)
 
     # =================================================================
+    #     TESTING TESTING TESTING TESTING for walk up checks
+    # =================================================================
+
+    fireDF["location_substring"] = df.apply(
+        lambda row: utils.longComSub(
+            row["Location_At_Assign_Time"], row["Address of Incident"]
+        ),
+        axis=1,
+    )
+
+    # =================================================================
     #     get Complete Response Force for each Structure Fire
     # =================================================================
     crfdf = getCRF(fireDF)
@@ -653,11 +664,10 @@ def analyzeFire(fireDF):
     except:
         print("No CRF Found")
 
-    # ----------------
+    # =================================================================
     # finalize naming
-    # ----------------
+    # =================================================================
     fireDF = n.rename(fireDF)
-
     # =================================================================
     #     Column Organization
     # =================================================================
@@ -672,10 +682,11 @@ def analyzeFire(fireDF):
     #     ["Unit OnScene to Clear Call Formatted"],
     #     "Earliest Phone Pickup Time to Unit Arrival Formatted",
     # )
+
     fireDF = utils.putColAfter(
         fireDF,
-        ["Incident_Call_Count"],
-        "Force_At_ERF_Time_or_Close",
+        ["Incident_Call_Count", "location_substring"],
+        "Force_At_ERF_Time_of_Close",
     )
 
     # ----------------
@@ -718,6 +729,7 @@ def analyzeFire(fireDF):
 
     ######################################
     # show in gui just after writing
+    print("Complete")
     show(fireDF)
 
 
