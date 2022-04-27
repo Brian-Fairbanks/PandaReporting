@@ -192,13 +192,17 @@ def analyzeFire(fireDF):
     Dataframe:
         A larger dataframe with additional information gleamed from the passed file.
     """
+
+    dataSource = None
     # =================================================================
     #    Confirm creation of FirstArrived column
     # =================================================================
+    # file should have this column already, ems should need it.  Log this step.
     if "FirstArrived" in fireDF:
-        pass
+        dataSource = "fire"
     else:
         addFirstArrived(fireDF)
+        dataSource = "ems"
     # =================================================================
     #     Match esri formatting for first arrived
     # =================================================================
@@ -290,9 +294,6 @@ def analyzeFire(fireDF):
     #     Set District ETJ Values
     # =================================================================
 
-    from shapely.geometry import Point
-    import geopandas as gpd
-
     # Set up boundaries for ESD17
     ##############################################################
     print("loading esd shape:")
@@ -332,6 +333,33 @@ def analyzeFire(fireDF):
         == 0,
         axis=1,
     )
+
+    # =================================================================
+    #     Add Fire Response Areas to EMS Data
+    # =================================================================
+    print("loading response areas:")
+    responseArea = gpd.read_file("Shape\\AFD_Response_Areas.shp")
+    # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
+    responseArea.set_crs(epsg=2277, inplace=True)
+    # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
+    responseArea = responseArea.to_crs(4326)
+
+    def getResponseArea(lon, lat):
+        plot = Point(lon, lat)
+        try:
+            mapInd = (responseArea.index[responseArea.contains(plot)])[0]
+            return responseArea.loc[mapInd, "RESPONSE_A"]
+        except:
+            return None
+
+    if "Response_Area" not in fireDF:
+        fireDF["Response_Area"] = fireDF.apply(
+            lambda x: getResponseArea(x["X-Long"], x["Y_Lat"]),
+            axis=1,
+        )
+    # Clear data
+    responseArea = None
+    show(fireDF)
 
     # =================================================================
     #     Set pop density values Values
@@ -662,6 +690,7 @@ def analyzeFire(fireDF):
     try:
         fireDF = pd.merge(fireDF, crfdf, how="left", on=["Master Incident Number"])
     except:
+        fireDF["Force_At_ERF_Time_of_Close"] = None
         print("No CRF Found")
 
     # =================================================================
