@@ -173,7 +173,12 @@ def addBucketType(orig):
     return orig
 
 
-def longComSub(st1, st2):
+def longComSub(st1: str, st2: str):
+    """
+    Calculate the longest common substring between 2 given strings.  Returns None if not match, or either value are not strings.
+    param st1: String
+    param st2: String
+    """
     if pd.isnull(st1) or pd.isnull(st2):
         return None
     st1 = st1.lower()
@@ -194,3 +199,46 @@ def longComSub(st1, st2):
             if len(ans) <= len(curStr):
                 ans = curStr
     return ans
+
+
+def addWalkUp(df: pd.DataFrame):
+    """
+    Add column to determine if a unit "walked up":
+
+    data frame must contain the following columns:
+        Location_At_Assign_Time ,
+        Address of Incident ,
+        Unit Dispatch to Respond Time   ,
+        Unit Respond to Arrival
+    """
+    # calculation to determine if an individual unit is a walkup
+    def getWalkTimes(t1, t2, substr):
+        try:
+            if abs(t1) < 2 or abs(t2) < 2 or len(substr) > 5:
+                return True
+        except:
+            pass
+        return False
+
+    # add column for common substring for every rows starting/ending locations
+    df["location_substring"] = df.apply(
+        lambda row: longComSub(
+            row["Location_At_Assign_Time"], row["Address of Incident"]
+        ),
+        axis=1,
+    )
+
+    # add column for final decision on is Walkup
+    df["is_walkup"] = df.apply(
+        lambda row: getWalkTimes(
+            row["Unit Dispatch to Respond Time"],  # assign -> enroute
+            row["Unit Respond to Arrival"],  # enroute -> arrived
+            row["location_substring"],
+        ),
+        axis=1,
+    )
+
+    return df
+
+
+addWalkUp()

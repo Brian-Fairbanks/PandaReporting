@@ -359,7 +359,6 @@ def analyzeFire(fireDF):
         )
     # Clear data
     responseArea = None
-    show(fireDF)
 
     # =================================================================
     #     Set pop density values Values
@@ -673,12 +672,7 @@ def analyzeFire(fireDF):
     #     TESTING TESTING TESTING TESTING for walk up checks
     # =================================================================
 
-    fireDF["location_substring"] = df.apply(
-        lambda row: utils.longComSub(
-            row["Location_At_Assign_Time"], row["Address of Incident"]
-        ),
-        axis=1,
-    )
+    fireDF = utils.addWalkUp(fireDF)
 
     # =================================================================
     #     get Complete Response Force for each Structure Fire
