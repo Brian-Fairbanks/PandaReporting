@@ -352,8 +352,8 @@ def analyzeFire(fireDF):
         except:
             return None
 
-    if "Response_Area" not in fireDF:
-        fireDF["Response_Area"] = fireDF.apply(
+    if "Response Area" not in fireDF:
+        fireDF["Response Area"] = fireDF.apply(
             lambda x: getResponseArea(x["X-Long"], x["Y_Lat"]),
             axis=1,
         )

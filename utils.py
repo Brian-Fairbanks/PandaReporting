@@ -239,6 +239,3 @@ def addWalkUp(df: pd.DataFrame):
     )
 
     return df
-
-
-addWalkUp()
