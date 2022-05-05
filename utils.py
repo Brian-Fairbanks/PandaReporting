@@ -161,7 +161,8 @@ def getUnitBucket(type):
         "LAD": "ENG",
         "M": "MED",
         "MED": "MED",
-        "MEDC": "MED",
+        # MED COM!  remove
+        # "MEDC": "MED",
     }
     if type not in buckets:
         return type
@@ -214,7 +215,7 @@ def addWalkUp(df: pd.DataFrame):
     # calculation to determine if an individual unit is a walkup
     def getWalkTimes(t1, t2, substr):
         try:
-            if abs(t1) < 2 or abs(t2) < 2 or len(substr) > 5:
+            if (abs(t1) < 5 and abs(t2) < 5) and len(substr) > 5:
                 return True
         except:
             pass

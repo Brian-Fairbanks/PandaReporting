@@ -446,7 +446,6 @@ def analyzeFire(fireDF):
     # =================================================================
     #     add Is Sent From Closest Station
     # =================================================================
-    # TODO: add Is Sent From Closest Station
     fireDF = addIsClosestStation(fireDF)
 
     # =================================================================
@@ -678,14 +677,13 @@ def analyzeFire(fireDF):
     #     get Complete Response Force for each Structure Fire
     # =================================================================
     crfdf = getCRF(fireDF)
-    # show(crfdf)
 
     # fireDF.join(crfdf.set_index("incident"), on="Master Incident Number")
     try:
         fireDF = pd.merge(fireDF, crfdf, how="left", on=["Master Incident Number"])
     except:
         fireDF["Force_At_ERF_Time_of_Close"] = None
-        print("No CRF Found")
+        print("No ERF Found")
 
     # =================================================================
     # finalize naming
@@ -694,17 +692,6 @@ def analyzeFire(fireDF):
     # =================================================================
     #     Column Organization
     # =================================================================
-
-    # fireDF = utils.putColAfter(
-    #     fireDF,
-    #     ["Unit OnScene to Clear Call"],
-    #     "Earliest Phone Pickup Time to Unit Arrival",
-    # )
-    # fireDF = utils.putColAfter(
-    #     fireDF,
-    #     ["Unit OnScene to Clear Call Formatted"],
-    #     "Earliest Phone Pickup Time to Unit Arrival Formatted",
-    # )
 
     fireDF = utils.putColAfter(
         fireDF,

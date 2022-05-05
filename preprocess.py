@@ -32,8 +32,10 @@ def preprocess(df, start=None, end=None):
     # Closer match column COUNT between EMS and Fire
     # =================================================================
     # merge two to one Ph_PU_Time & Ph_PU_Data
+    # if the data was null, then we need to mark this.
+    # Likely also the best time to check fire for the same thing: the call came from another department, and was 'delayed' before we were made aware.
     if fileType == "ems":
-        df["Ph_Pu_Was_Null"] = df.apply(
+        df["call_delayed"] = df.apply(
             lambda row: bool(pd.isnull(row["Ph_PU_Time"])),
             axis=1,
         )
@@ -41,6 +43,11 @@ def preprocess(df, start=None, end=None):
             lambda row: row["Ph_PU_Date"]
             if pd.isnull(row["Ph_PU_Time"])
             else row["Ph_PU_Time"],
+            axis=1,
+        )
+    else:
+        df["call_delayed"] = df.apply(
+            lambda row: bool(row["Calltaker Agency"] in ["APD", "TCSO", "PPD"]),
             axis=1,
         )
 
