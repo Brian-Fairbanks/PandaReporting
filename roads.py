@@ -22,7 +22,7 @@ from tqdm import tqdm
 
 station = ""
 roadMap = ""
-bypass = True
+bypass = False
 distBuf = 10000  # 10 for testing, so everything goes much faster.  Actual data should be 10000 (~6.2 miles)
 
 
@@ -245,7 +245,13 @@ def addClosestStations(df):
     import re  # make sure that we can run regular expressions.
 
     names = [f"Distance to {i} in miles" for i in stationDict]
+    # get row name with shortest distance
     df["Closest Station"] = df[names].idxmin(axis=1)
+
+    # get value of shortest distance, compare against .05 miles.
+    df["is_walkup"] = df[names].min(axis=1) < 0.05
+
+    show(df)
 
     def tryRegex(x):
         try:

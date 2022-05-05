@@ -229,14 +229,4 @@ def addWalkUp(df: pd.DataFrame):
         axis=1,
     )
 
-    # add column for final decision on is Walkup
-    df["is_walkup"] = df.apply(
-        lambda row: getWalkTimes(
-            row["Unit Dispatch to Respond Time"],  # assign -> enroute
-            row["Unit Respond to Arrival"],  # enroute -> arrived
-            row["location_substring"],
-        ),
-        axis=1,
-    )
-
     return df
