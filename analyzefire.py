@@ -294,7 +294,7 @@ def analyzeFire(fireDF):
     #     Set District ETJ Values
     # =================================================================
 
-    # Set up boundaries for ESD17
+    # Set up boundaries for ETJ
     ##############################################################
     print("loading esd shape:")
     etj = gpd.read_file("Shape\\notETJ.shp")
@@ -326,13 +326,35 @@ def analyzeFire(fireDF):
     etj = None
 
     # =================================================================
-    #     Set District ETJ Values
+    #     Set District COP Values
     # =================================================================
-    fireDF["isCOP"] = fireDF.apply(
-        lambda row: ((row["Jurisdiction"] != "ESD02") + row["isETJ"] + row["IsESD17"])
-        == 0,
-        axis=1,
+    # Set up boundaries for cop
+    ##############################################################
+    print("loading COP shape:")
+    cop = gpd.read_file("Shape\\City_Limits.shp")
+    # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
+    cop.set_crs(epsg=2277, inplace=True)
+    # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
+    cop = cop.to_crs(4326)
+
+    # Assign values for cop
+    ##############################################################
+    print("assigning cop status:")
+
+    def isCOP(jur, lon, lat):
+        plot = Point(lon, lat)
+        if (cop.contains(plot)).any():
+            # print(lat, lon, "is in cop")
+            return True
+        # print(lat, lon, "is not in cop")
+        return False
+
+    fireDF["isCOP"] = np.vectorize(isCOP)(
+        fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"] 
     )
+
+    # Clear data
+    cop = None
 
     # =================================================================
     #     Add Fire Response Areas to EMS Data
@@ -666,12 +688,6 @@ def analyzeFire(fireDF):
 
     # move Qtr Year to end to match marys data
     fireDF = utils.putColAt(fireDF, ["Qtr Year"], 200)
-
-    # =================================================================
-    #     TESTING TESTING TESTING TESTING for walk up checks
-    # =================================================================
-
-    fireDF = utils.addWalkUp(fireDF)
 
     # =================================================================
     #     get Complete Response Force for each Structure Fire
