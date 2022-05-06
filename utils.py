@@ -200,33 +200,3 @@ def longComSub(st1: str, st2: str):
             if len(ans) <= len(curStr):
                 ans = curStr
     return ans
-
-
-def addWalkUp(df: pd.DataFrame):
-    """
-    Add column to determine if a unit "walked up":
-
-    data frame must contain the following columns:
-        Location_At_Assign_Time ,
-        Address of Incident ,
-        Unit Dispatch to Respond Time   ,
-        Unit Respond to Arrival
-    """
-    # calculation to determine if an individual unit is a walkup
-    def getWalkTimes(t1, t2, substr):
-        try:
-            if (abs(t1) < 5 and abs(t2) < 5) and len(substr) > 5:
-                return True
-        except:
-            pass
-        return False
-
-    # add column for common substring for every rows starting/ending locations
-    df["location_substring"] = df.apply(
-        lambda row: longComSub(
-            row["Location_At_Assign_Time"], row["Address of Incident"]
-        ),
-        axis=1,
-    )
-
-    return df

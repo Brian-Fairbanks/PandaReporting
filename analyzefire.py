@@ -671,7 +671,7 @@ def analyzeFire(fireDF):
     #     TESTING TESTING TESTING TESTING for walk up checks
     # =================================================================
 
-    # fireDF = utils.addWalkUp(fireDF)
+    fireDF = utils.addWalkUp(fireDF)
 
     # =================================================================
     #     get Complete Response Force for each Structure Fire
