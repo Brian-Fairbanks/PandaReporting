@@ -297,7 +297,7 @@ def analyzeFire(fireDF):
     # Set up boundaries for ETJ
     ##############################################################
     print("loading esd shape:")
-    etj = gpd.read_file("Shape\\notETJ.shp")
+    etj = gpd.read_file("Shape\\ETJ.shp")
     # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
     etj.set_crs(epsg=2277, inplace=True)
     # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
@@ -307,20 +307,13 @@ def analyzeFire(fireDF):
     ##############################################################
     print("assigning ETJ status:")
 
-    def isETJ(jur, lon, lat):
-        if jur != "ESD02":
-            # print(lat, lon, "is not in etj")
-            return False
+    def isETJ(lon, lat):
         plot = Point(lon, lat)
         if (etj.contains(plot)).any():
-            # print(lat, lon, "is in etj")
-            return False
-        # print(lat, lon, "is not in etj")
-        return True
+            return True
+        return False
 
-    fireDF["isETJ"] = np.vectorize(isETJ)(
-        fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"]
-    )
+    fireDF["isETJ"] = np.vectorize(isETJ)(fireDF["X-Long"], fireDF["Y_Lat"])
 
     # Clear data
     etj = None
@@ -341,17 +334,13 @@ def analyzeFire(fireDF):
     ##############################################################
     print("assigning cop status:")
 
-    def isCOP(jur, lon, lat):
+    def isCOP(lon, lat):
         plot = Point(lon, lat)
         if (cop.contains(plot)).any():
-            # print(lat, lon, "is in cop")
             return True
-        # print(lat, lon, "is not in cop")
         return False
 
-    fireDF["isCOP"] = np.vectorize(isCOP)(
-        fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"] 
-    )
+    fireDF["isCOP"] = np.vectorize(isCOP)(fireDF["X-Long"], fireDF["Y_Lat"])
 
     # Clear data
     cop = None
