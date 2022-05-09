@@ -251,8 +251,6 @@ def addClosestStations(df):
     # get value of shortest distance, compare against .05 miles.
     df["is_walkup"] = df[names].min(axis=1) < 0.05
 
-    show(df)
-
     def tryRegex(x):
         try:
             return re.search("(?<=Distance to )(.*)(?= in miles)", x).group(0)

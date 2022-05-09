@@ -700,7 +700,7 @@ def analyzeFire(fireDF):
 
     fireDF = utils.putColAfter(
         fireDF,
-        ["Incident_Call_Count", "location_substring"],
+        ["Incident_Call_Count"],
         "Force_At_ERF_Time_of_Close",
     )
 
