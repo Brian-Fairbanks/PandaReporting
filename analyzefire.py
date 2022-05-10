@@ -203,6 +203,7 @@ def analyzeFire(fireDF):
     else:
         addFirstArrived(fireDF)
         dataSource = "ems"
+
     # =================================================================
     #     Match esri formatting for first arrived
     # =================================================================
@@ -246,6 +247,12 @@ def analyzeFire(fireDF):
     # =================================================================
     fireDF = utils.addUnitType(fireDF)
     fireDF = utils.addBucketType(fireDF)
+
+    # =================================================================
+    #     Remove COMM units
+    # =================================================================
+    fireDF = fireDF[~fireDF["Unit Type"].isin(["MEDC", "FTAC"])]
+    show(fireDF)
 
     # =================================================================
     #     Calculate Concurrent Use for Each Unit
