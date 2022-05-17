@@ -249,12 +249,6 @@ def analyzeFire(fireDF):
     fireDF = utils.addBucketType(fireDF)
 
     # =================================================================
-    #     Remove COMM units
-    # =================================================================
-    fireDF = fireDF[~fireDF["Unit Type"].isin(["MEDC", "FTAC"])]
-    show(fireDF)
-
-    # =================================================================
     #     Calculate Concurrent Use for Each Unit
     # =================================================================
     fireDF = cu.addConcurrentUse(fireDF, "Unit Time Assigned", "Unit Time Call Cleared")
@@ -417,11 +411,21 @@ def analyzeFire(fireDF):
     # Overwrite 0 with X on canceled calls
     # get array of indexes with 0
     res0 = fireDF.index[fireDF["Status"] == "0"].tolist()
+
     # this is going to be really slow...
+    # this will also break if referencing an incident removed by
     for i in res0:
+        print(f"{i} : ", fireDF.loc[i, "Master Incident Number"])
         fireDF.loc[i, "Status"] = (
             "X" if ((fireDF.loc[i - 1, "Status"] in (["X", "C"]))) else "0"
         )
+
+    # =================================================================
+    #     Remove COMM units / Information Only
+    # =================================================================
+    fireDF = fireDF[
+        ~fireDF["Unit Type"].isin(["MEDC", "FTAC", "TEST", "ALARMT", "COM", "CNTRL"])
+    ]
 
     # =================================================================
     #     Recalculate Shift Data
