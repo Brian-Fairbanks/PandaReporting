@@ -17,6 +17,51 @@ def preprocess(df, start=None, end=None):
         start = end - rd(months=1)
 
     # =================================================================
+    # Ensure that old EMS files will work with even PRE-RENAME-FUNCTIONS (this seems like bad practice...)
+    # =================================================================
+    prepreprocess = {
+        # Why was this file set up so differently!?!?
+        "Agency: ": "Agency",
+        "Jurisdiction: ": "Jurisdiction",
+        "Problem: ": "Problem",
+        "Ph PU Time": "Ph_PU_Time",
+        "1st Unit Assigned": "1st_Unit_Assigned",
+        "1st Unit Enroute": "1st_Unit_Enroute",
+        "1st Unit Staged": "1st_Unit_Staged",
+        "1st Unit Arrived": "1st_Unit_Arrived",
+        "Closed Time": "Closed_Time",
+        "In Queue": "In_Queue",
+        "2nd Unit Assigned": "2nd_Unit_Assigned",
+        "2nd Unit Enroute": "2nd_Unit_Enroute",
+        "2nd Unit Staged": "2nd_Unit_Staged",
+        "2nd Unit Arrived": "2nd_Unit_Arrived",
+        "Closed Time": "Closed_Time",
+        "In Queue": "In_Queue",
+        "Incident Duration Ph PU to Clear": "Incident_Duration_Ph_PU_to_Clear",
+        "In Queue to Unit Assign ": "In_Queue_to_Unit_Assign_",
+        "Ph PU to Unit Assign": "Ph_PU_to_Unit_Assign",
+        "Unit Assign to Unit Enroute": "Unit_Assign_to_Unit_Enroute",
+        "Unit Enroute to Unit Arrive": "Unit_Enroute_to_Unit_Arrive",
+        "Unit Assign to Unit Arrive": "Unit_Assign_to_Unit_Arrive",
+        "Unit Duration Assign to Clear": "Unit_Duration_Assign_to_Clear",
+        "Ph PU to UnitArrive": "Ph_PU_to_UnitArrive",
+    }
+    df = df.rename(columns=prepreprocess, errors="ignore")
+
+    # ##########################################################################################
+    # TODO: correct this: add better calculations
+    # ##########################################################################################
+    # ##########################################################################################
+
+    if "Unit_Type" not in df.columns:
+        # there has to be a way to calculate this when not given
+        df["Unit_Type"] = "Frontline"
+
+    if "Unit_Agency" not in df.columns:
+        # there has to be a way to calculate this when not given
+        df["Unit_Agency"] = df["Agency"]
+
+    # =================================================================
     # Assign Destionation/File Source
     # =================================================================
     # This should be (maybe not the best) a way to determine EMS or Fire source data
@@ -139,14 +184,14 @@ def preprocess(df, start=None, end=None):
             lambda row: getFrontline(row["Frontline_Status"]), axis=1
         )
     except Exception as ex:
+        df["ignoreInStatus"] = None
         print(
-            f"\n------------ERROR --------------\n{ex}\n---------end ---------------\n"
+            f"\n\t\t------------ERROR --------------\n\t\t{ex}\n\t\t---------end ---------------\n"
         )
 
     df["Not Arrived"] = df.apply(
         lambda row: pd.isnull(row["Unit Time Arrived At Scene"]), axis=1
     )
-
     df = utils.putColAt(df, ["ignoreInStatus", "Not Arrived"], 1)
 
     df = df.sort_values(

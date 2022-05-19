@@ -70,11 +70,13 @@ def getLocAtAssign(station, address):
 
 
 def addLocAtAssignToDF(df):
-
-    df["Assigned at Station"] = df.apply(
-        lambda row: getLocAtAssign(row["Station"], row["Location_At_Assign_Time"]),
-        axis=1,
-    )
+    if "Location_At_Assign_Time" in df.columns:
+        df["Assigned at Station"] = df.apply(
+            lambda row: getLocAtAssign(row["Station"], row["Location_At_Assign_Time"]),
+            axis=1,
+        )
+    else:
+        df["Assigned at Station"] = "Unknown"
     return df
 
 
@@ -90,6 +92,7 @@ def getStations(fireDF):
     az = "Department"
     ba = "Frontline_Status"
 
+    ourNames = ["AUSTIN-TRAVIS COUNTY EMS", "ESD02 - Pflugerville", "ESD02"]
     conditions = [
         # fmt: off
         (fireDF["Frontline_Status"] == "Not a unit"),  # 0
@@ -100,9 +103,10 @@ def getStations(fireDF):
         (fireDF[az] == "ESD02 - Pflugerville") & (fireDF[ba].isin(["Other", "Command"])),
         (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"] == "QNT261"),  # 6
         (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].str.contains("BAT20")),
-            # account for instances where vehicle is filling in for another.  We will need to deterimine which station it is filling in for based on the location at time of assignment
-        (fireDF[az].isin(["ESD02 - Pflugerville", "ESD02"])) & (fireDF["Radio_Name"].isin(reserveUnits)),
-        (fireDF[az].isin(["ESD02 - Pflugerville", "ESD02"])),
+            # account for instances where vehicle is filling in for another.  
+            # We will need to deterimine which station it is filling in for based on the location at time of assignment
+        (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"].isin(reserveUnits)),
+        (fireDF[az].isin(ourNames)),
         # fmt: on
     ]
     choices = [
@@ -119,7 +123,7 @@ def getStations(fireDF):
         "S0" + fireDF["Radio_Name"].str[-2],
     ]
 
-    fireDF["Station"] = np.select(conditions, choices, default=fireDF["Department"])
+    fireDF["Station"] = np.select(conditions, choices, default="Unknown")
 
     # correct reserved units, as I have spent far too long trying to do this all as one part
     #    ----------------------------
@@ -274,7 +278,7 @@ def analyzeFire(fireDF):
     print("assigning ESD17 status:")
 
     def isESD(jur, lon, lat):
-        if jur != "ESD02":
+        if jur not in ["ESD02", "PFLUGERVILLE - ESD TSCO"]:
             # print(lat, lon, "is not in esd17")
             return False
         plot = Point(lon, lat)
@@ -415,7 +419,6 @@ def analyzeFire(fireDF):
     # this is going to be really slow...
     # this will also break if referencing an incident removed by
     for i in res0:
-        print(f"{i} : ", fireDF.loc[i, "Master Incident Number"])
         fireDF.loc[i, "Status"] = (
             "X" if ((fireDF.loc[i - 1, "Status"] in (["X", "C"]))) else "0"
         )
