@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime as dt
 from dateutil.relativedelta import relativedelta as rd
 import utils
+from pandasgui import show
 
 
 def preprocess(df, start=None, end=None):
@@ -53,16 +54,16 @@ def preprocess(df, start=None, end=None):
     # ##########################################################################################
     # ##########################################################################################
 
-    if "Unit_Type" not in df.columns:
+    if "Unit_Type" not in df.columns and "Frontline_Status" not in df.columns:
         # there has to be a way to calculate this when not given
         df["Unit_Type"] = "Frontline"
 
-    if "Unit_Agency" not in df.columns:
+    if "Unit_Agency" not in df.columns and "Agency" in df.columns:
         # there has to be a way to calculate this when not given
         df["Unit_Agency"] = df["Agency"]
 
     # =================================================================
-    # Assign Destionation/File Source
+    # Assign Destination/File Source
     # =================================================================
     # This should be (maybe not the best) a way to determine EMS or Fire source data
     if "Ph_PU_Time" in df.columns:
