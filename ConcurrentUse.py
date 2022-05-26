@@ -74,6 +74,11 @@ def addConcurrentUse(orig, startName, endName):
 
     return orig  # .astype({"Concurrent Usage": "Int64"})
 
+def timeConcurrency(df):
+    
+
+
+
 
 ## Main - Used for testing, and will be ignored on import.
 def main():
@@ -93,6 +98,7 @@ def main():
 
     # test the function
     df = addConcurrentUse(df, "Unit Time Assigned", "Unit Time Call Cleared")
+    df = timeConcurrency(df)
     # show the results
     show(df)
 
