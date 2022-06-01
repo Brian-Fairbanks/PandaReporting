@@ -43,21 +43,21 @@ def addConcurrentUse(orig, startName, endName):
     # set up timeInterval for easier overlap detection
 
     # dont crash the program when no close is given please...
-    # def makeInterval(start, end):
-    #     interval = pd.Interval(0, 0, closed="neither")
-    #     try:
-    #         interval = pd.Interval(start, end, closed="both")
-    #     except Exception as e:
-    #         print(e)
-    #     return interval
+    def makeInterval(start, end):
+        interval = pd.Interval(0, 0, closed="neither")
+        try:
+            interval = pd.Interval(start, end, closed="both")
+        except Exception as e:
+            print(e)
+        return interval
 
-    # orig["Time_Interval"] = orig.apply(
-    #     lambda row: makeInterval(row[startName], row[endName]), axis=1
-    # )
+    orig["Time_Interval"] = orig.apply(
+        lambda row: makeInterval(row[startName], row[endName]), axis=1
+    )
 
     # Set up columns to reveal specific time overlap
-    # for x in range(6):
-    #     orig[f"Time_{x}_Active"] = 0
+    for x in range(6):
+        orig[f"Time_{x}_Active"] = 0
     #  -----------------------------------------------------------------------
 
     # limit the dictionary as much as possible, since this will go quite slow
@@ -95,10 +95,17 @@ def addConcurrentUse(orig, startName, endName):
 
             # ---------------- SECONDARY - TIME IN RANGE CALCULATIONS ---------------
             # =======================================================================
-            # orig = getTimes(orig, ind, orig.loc[ind, "Time_Interval"], bucketType)
+            orig = getTimes(orig, ind, orig.loc[ind, "Time_Interval"], bucketType)
             # =======================================================================
             pbar.update(1)
 
+    # remove the new useless interval column
+    orig = orig.drop(
+        [
+            "Time_Interval",
+        ],
+        axis=1,
+    )
     return orig  # .astype({"Concurrent Usage": "Int64"})
 
 
@@ -154,7 +161,7 @@ def getTimes(df, ind, interval, bucket):
 
     for x in timeDict:
         # store each time as seconds into the rows new fields
-        df.loc[ind, f"Time_{x}_Active"] = timeDict[x] / np.timedelta64(1, "s")
+        df.loc[ind, f"Time_{x}_Active"] = timeDict[x]  # / np.timedelta64(1, "s")
 
     return df
 

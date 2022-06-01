@@ -256,7 +256,6 @@ def analyzeFire(fireDF):
     #     Calculate Concurrent Use for Each Unit
     # =================================================================
     fireDF = cu.addConcurrentUse(fireDF, "Unit Time Assigned", "Unit Time Call Cleared")
-
     # =================================================================
     #     Set District 17 Values
     # =================================================================
@@ -383,6 +382,8 @@ def analyzeFire(fireDF):
 
     fireDF = popden.addPopDen(fireDF)
     # (getMapscoGrid)(fireDF["X-Long"], fireDF["Y_Lat"])
+
+    print("Adding Status:")
 
     # =================================================================
     #     Set Status for each call
