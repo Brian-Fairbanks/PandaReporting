@@ -255,7 +255,7 @@ def analyzeFire(fireDF):
     # =================================================================
     #     Calculate Concurrent Use for Each Unit
     # =================================================================
-    fireDF = cu.addConcurrentUse(fireDF, "Unit Time Assigned", "Unit Time Call Cleared")
+    # fireDF = cu.addConcurrentUse(fireDF, "Unit Time Assigned", "Unit Time Call Cleared")
 
     # =================================================================
     #     Set District 17 Values
@@ -540,16 +540,16 @@ def analyzeFire(fireDF):
             "Unit Time Assigned",
             "Unit Time Arrived At Scene",
         ],
+        "Unit OnScene to Clear Call": [
+            "Unit Time Arrived At Scene",
+            "Unit Time Call Cleared",
+        ],
         "Earliest Phone Pickup Time to Unit Arrival": [
             "Earliest Time Phone Pickup AFD or EMS",
             "Unit Time Arrived At Scene",
         ],
         "Unit Assign To Clear Call Time": [
             "Unit Time Assigned",
-            "Unit Time Call Cleared",
-        ],
-        "Unit OnScene to Clear Call": [
-            "Unit Time Arrived At Scene",
             "Unit Time Call Cleared",
         ],
     }
@@ -608,12 +608,12 @@ def analyzeFire(fireDF):
             "Time First Real Unit Assigned",
             False,
         ],
-        "Earliest Time Phone Pickup to 1st Real Unit Arrived": [
-            "Earliest Time Phone Pickup AFD or EMS",
-            False,
-        ],
         "Incident Travel Time - 1st Real Unit Enroute to 1st Real Unit Arrived ": [
             "Time First Real Unit Enroute",
+            False,
+        ],
+        "Earliest Time Phone Pickup to 1st Real Unit Arrived": [
+            "Earliest Time Phone Pickup AFD or EMS",
             False,
         ],
         "Time Spent OnScene - 1st Real Unit Arrived to Last Real Unit Call Cleared": [
