@@ -159,7 +159,7 @@ def preprocess(df, start=None, end=None):
         "UnitEnroute_to_UnitArrive": "Unit Respond to Arrival",
         "UnitAssign_to_UnitArrive": "Unit Dispatch to Onscene",
         "UnitArrive_to_Clear": "Unit OnScene to Clear Call",
-        "Ph_PU_to_UnitArrive_in_seconds": "Earliest Phone Pickup to Unit Arrival",
+        "Ph_PU_to_UnitArrive_in_seconds": "Earliest Phone Pickup Time to Unit Arrival",
         "UnitDuration_Assign_to_Clear": "Unit Assign To Clear Call Time",
         "Itemized_Unit_Disposition": "Unit Call Disposition",
     }
