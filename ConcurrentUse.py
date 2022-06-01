@@ -3,6 +3,7 @@ import pandas as pd
 from pandasgui import show
 import utils as u
 from timer import Timer
+from tqdm import tqdm
 
 
 def recalcDict(arr, time):
@@ -37,47 +38,125 @@ def addConcurrentUse(orig, startName, endName):
     # create the column with a obviously default number
     orig["Concurrent Usage"] = np.NaN
 
+    # ---------------- SECONDARY - TIME IN RANGE CALCULATIONS ---------------
+    # =======================================================================
+    # set up timeInterval for easier overlap detection
+
+    # dont crash the program when no close is given please...
+    # def makeInterval(start, end):
+    #     interval = pd.Interval(0, 0, closed="neither")
+    #     try:
+    #         interval = pd.Interval(start, end, closed="both")
+    #     except Exception as e:
+    #         print(e)
+    #     return interval
+
+    # orig["Time_Interval"] = orig.apply(
+    #     lambda row: makeInterval(row[startName], row[endName]), axis=1
+    # )
+
+    # Set up columns to reveal specific time overlap
+    # for x in range(6):
+    #     orig[f"Time_{x}_Active"] = 0
+    #  -----------------------------------------------------------------------
+
     # limit the dictionary as much as possible, since this will go quite slow
     # start with just our jurisdiction
     # distArr = orig.index[(orig["Jurisdiction"].isin(["ESD02", "ESD17"]))].tolist()
     distArr = orig.index[
         (orig["Department"].isin(["ESD02 - Pflugerville", "ESD02"]))
     ].tolist()
+    with tqdm(total=len(distArr), desc=f"Getting Concurrency") as pbar:
+        for ind in distArr:
+            # get start and end time of incident
+            startTime = orig.loc[ind, startName]
+            endTime = orig.loc[ind, endName]
 
-    for ind in distArr:
-        # get start and end time of incident
-        startTime = orig.loc[ind, startName]
-        endTime = orig.loc[ind, endName]
+            # get bucket type from the name
+            # use the column if it exists, since this work should already be done.
+            try:
+                bucketType = str(orig.loc[ind, "Bucket Type"])
+            except:
+                bucketType = u.getUnitBucket(u.getUnitType(orig.loc[ind, "Radio_Name"]))
 
-        # get bucket type from the name
-        # bucketType = "".join(
-        #     [d for d in str(orig.loc[ind, "Radio_Name"]) if not d.isdigit()]
-        # )
-        # use the column if it exists, since this work should already be done.
-        try:
-            bucketType = str(orig.loc[ind, "Bucket Type"])
-        except:
-            bucketType = u.getUnitBucket(u.getUnitType(orig.loc[ind, "Radio_Name"]))
+            # store end time for this type into the dictionary
+            bucketDict[bucketType] = [endTime] + (
+                bucketDict[bucketType] if bucketType in bucketDict else []
+            )
 
-        # store end time for this type into the dictionary
-        bucketDict[bucketType] = [endTime] + (
-            bucketDict[bucketType] if bucketType in bucketDict else []
-        )
+            # remove those that are already finished
+            recalcDict(bucketDict, startTime)
 
-        # remove those that are already finished
-        recalcDict(bucketDict, startTime)
+            # store current count as concurrent usage
+            orig.loc[ind, "Concurrent Usage"] = (
+                len(bucketDict[bucketType])
+                - 1  # remove on since this one is being counted
+            )
 
-        # store current count as concurrent usage
-        orig.loc[ind, "Concurrent Usage"] = (
-            len(bucketDict[bucketType]) - 1  # remove on since this one is being counted
-        )
+            # ---------------- SECONDARY - TIME IN RANGE CALCULATIONS ---------------
+            # =======================================================================
+            # orig = getTimes(orig, ind, orig.loc[ind, "Time_Interval"], bucketType)
+            # =======================================================================
+            pbar.update(1)
 
     return orig  # .astype({"Concurrent Usage": "Int64"})
 
-def timeConcurrency(df):
-    
 
+# ===================================
+#       SECONDARY - TIME IN RANGE CALCULATIONS
+# ===================================
+def getTimes(df, ind, interval, bucket):
+    """
+    Get get all time breakdowns for a specific passed row of the passed DF
+    """
+    # filter on same bucket
+    commonTimes = df[df["Bucket Type"] == bucket]
 
+    # filter that on overlap times
+    commonTimes = commonTimes[
+        commonTimes.apply(lambda row: interval.overlaps(row["Time_Interval"]), axis=1)
+    ]
+
+    # this should never actually happen afterall, you should ALWAYS find yourself.
+    # if commonTimes.empty:
+    #     return df
+
+    # get list of all overlapping start/end points
+    timeList = (
+        commonTimes["Unit Time Assigned"].tolist()
+        + commonTimes["Unit Time Call Cleared"].tolist()
+    )
+
+    timeList.sort()
+
+    # use the list to group out concurrency
+    # -----------------------
+    inc = df.loc[ind, "Master Incident Number"]
+    # print(f"----- {inc}: {timeList} -----")
+    timeDict = {}
+    prevTime = timeList[0]
+    # create a breakdown of
+
+    for time in timeList:
+        timeRange = time - prevTime
+
+        setLength = (
+            commonTimes[
+                commonTimes.apply(lambda row: time in row["Time_Interval"], axis=1)
+            ].shape[0]
+            - 1
+        )
+        # print(f"{time}: {timeRange} - {setLength}")
+        try:
+            timeDict[setLength] += timeRange
+        except:
+            timeDict[setLength] = timeRange
+
+    for x in timeDict:
+        # store each time as seconds into the rows new fields
+        df.loc[ind, f"Time_{x}_Active"] = timeDict[x] / np.timedelta64(1, "s")
+
+    return df
 
 
 ## Main - Used for testing, and will be ignored on import.
@@ -87,18 +166,23 @@ def main():
     df = loadTestFile.get()
 
     # remove data not useful for the testing
-    limit = [
-        "Master Incident Number",
-        "Department",
-        "Radio_Name",
-        "Unit Time Assigned",
-        "Unit Time Call Cleared",
-    ]
+    # limit = [
+    #     "Master Incident Number",
+    #     "Department",
+    #     "Radio_Name",
+    #     "Unit Time Assigned",
+    #     "Unit Time Call Cleared",
+    # ]
     # df = df[limit]
+
+    # =================================================================
+    #     Add unit type column to simplify analysis
+    # =================================================================
+    df = u.addUnitType(df)
+    df = u.addBucketType(df)
 
     # test the function
     df = addConcurrentUse(df, "Unit Time Assigned", "Unit Time Call Cleared")
-    df = timeConcurrency(df)
     # show the results
     show(df)
 

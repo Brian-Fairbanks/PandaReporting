@@ -255,7 +255,7 @@ def analyzeFire(fireDF):
     # =================================================================
     #     Calculate Concurrent Use for Each Unit
     # =================================================================
-    # fireDF = cu.addConcurrentUse(fireDF, "Unit Time Assigned", "Unit Time Call Cleared")
+    fireDF = cu.addConcurrentUse(fireDF, "Unit Time Assigned", "Unit Time Call Cleared")
 
     # =================================================================
     #     Set District 17 Values
