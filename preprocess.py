@@ -68,6 +68,8 @@ def preprocess(df, start=None, end=None):
     # This should be (maybe not the best) a way to determine EMS or Fire source data
     if "Ph_PU_Time" in df.columns:
         fileType = "ems"
+        # good time to ensure that response_area columns match
+        df = df.rename(columns={"Response_Area": "AFD Response Box"}, errors="ignore")
     else:
         fileType = "fire"
 

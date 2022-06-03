@@ -100,9 +100,13 @@ def getStations(fireDF):
         (fireDF[az] == "AFD"),
         (fireDF[az] == "ESD12 - Manor") & (fireDF[ba] == "Other"),
         (fireDF[az] == "ESD12 - Manor"),
-        (fireDF[az] == "ESD02 - Pflugerville") & (fireDF[ba].isin(["Other", "Command"])),
-        (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"] == "QNT261"),  # 6
-        (fireDF[az] == "ESD02 - Pflugerville") & (fireDF["Radio_Name"].str.contains("BAT20")),
+        (fireDF[az].isin(ourNames)) & (fireDF[ba].isin(["Other", "Command"])),
+        (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"] == "QNT261"),  # 6
+        (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"].str.contains("BAT20")),
+        (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"].str.contains("MED271")),
+        (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"].str.contains("MED281")),
+        (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"].str.contains("MED270")),
+        (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"].str.contains("MED280")),
             # account for instances where vehicle is filling in for another.  
             # We will need to deterimine which station it is filling in for based on the location at time of assignment
         (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"].isin(reserveUnits)),
@@ -118,6 +122,10 @@ def getStations(fireDF):
         "ADMIN",
         "S05",  # 6
         "S01",
+        "S03",
+        "S02",
+        "S04",
+        "S03",
         # mark instances of reserved units, so we can run an extra filter on these in a moment
         "Reserve Unit",
         "S0" + fireDF["Radio_Name"].str[-2],

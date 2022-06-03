@@ -46,7 +46,7 @@ def addConcurrentUse(orig, startName, endName):
     def makeInterval(start, end):
         interval = pd.Interval(0, 0, closed="neither")
         try:
-            interval = pd.Interval(start, end, closed="both")
+            interval = pd.Interval(start, end, closed="right")
         except Exception as e:
             print(e)
         return interval
@@ -123,7 +123,6 @@ def getTimes(df, ind, interval, bucket):
     commonTimes = commonTimes[
         commonTimes.apply(lambda row: interval.overlaps(row["Time_Interval"]), axis=1)
     ]
-
     # this should never actually happen afterall, you should ALWAYS find yourself.
     # if commonTimes.empty:
     #     return df
@@ -135,16 +134,31 @@ def getTimes(df, ind, interval, bucket):
     )
 
     timeList.sort()
+    # remove everything before this units start and everything after this unit end
+    # after opening set to eliminate overlap issues, the original interval now needs to be added in manually
+    tempTime = [interval.left]
+    for x in timeList:
+        if (x in interval) and (x not in tempTime):
+            tempTime.append(x)
+
+    # WTF is this list not sorted?
+
+    # print(f"---------------------------------------------------------\n{timeList}")
+    # print(f"\nfiltered:\n{tempTime}\n\n")
 
     # use the list to group out concurrency
     # -----------------------
     inc = df.loc[ind, "Master Incident Number"]
-    # print(f"----- {inc}: {timeList} -----")
+    print(
+        f"==================================================================================\n----- {inc}: \n{interval}\n\n{timeList}"
+    )
+    timeList = tempTime
+
     timeDict = {}
     prevTime = timeList[0]
     # create a breakdown of
-
-    for time in timeList:
+    # skip the first, as it should always be 0 seconds
+    for time in timeList[1:]:
         timeRange = time - prevTime
 
         setLength = (
@@ -153,15 +167,19 @@ def getTimes(df, ind, interval, bucket):
             ].shape[0]
             - 1
         )
-        # print(f"{time}: {timeRange} - {setLength}")
+        print(f"  {str(time):<30}: {str(timeRange):<23}-   {setLength}")
         try:
             timeDict[setLength] += timeRange
         except:
             timeDict[setLength] = timeRange
+        prevTime = time
 
+    print(timeDict)
     for x in timeDict:
         # store each time as seconds into the rows new fields
-        df.loc[ind, f"Time_{x}_Active"] = timeDict[x]  # / np.timedelta64(1, "s")
+        df.loc[ind, f"Time_{x}_Active"] = timeDict[x] / np.timedelta64(1, "s")
+
+    show(commonTimes)
 
     return df
 
