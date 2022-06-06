@@ -149,9 +149,9 @@ def getTimes(df, ind, interval, bucket):
     # use the list to group out concurrency
     # -----------------------
     inc = df.loc[ind, "Master Incident Number"]
-    print(
-        f"==================================================================================\n----- {inc}: \n{interval}\n\n{timeList}"
-    )
+    # print(
+    #     f"==================================================================================\n----- {inc}: \n{interval}\n\n{timeList}"
+    # )
     timeList = tempTime
 
     timeDict = {}
@@ -167,19 +167,19 @@ def getTimes(df, ind, interval, bucket):
             ].shape[0]
             - 1
         )
-        print(f"  {str(time):<30}: {str(timeRange):<23}-   {setLength}")
+        # print(f"  {str(time):<30}: {str(timeRange):<23}-   {setLength}")
         try:
             timeDict[setLength] += timeRange
         except:
             timeDict[setLength] = timeRange
         prevTime = time
 
-    print(timeDict)
+    # print(timeDict)
     for x in timeDict:
         # store each time as seconds into the rows new fields
-        df.loc[ind, f"Time_{x}_Active"] = timeDict[x] / np.timedelta64(1, "s")
+        df.loc[ind, f"Time_{x}_Active"] = int(timeDict[x] / np.timedelta64(1, "s"))
 
-    show(commonTimes)
+    # show(commonTimes)
 
     return df
 
