@@ -14,7 +14,8 @@ def get():
     # file = "04 April ESD02 Raw Data.xlsx"
     # file = "EMS Report Data 2021.xlsx"
     # file = "November 2021 - April 2022 Fire Data.xlsx"
-    file = "05 April ESD02 EMS Data.xlsx"
+    # file = "05 April ESD02 EMS Data.xlsx"
+    file = "Fire Jan 2020 - May 2022 Raw Data.xlsx"
     # file = "May 22 ESD02 Raw Data.xlsx"
     # file = "04 April ESD02 EMS data.xlsx"
     startTime = pd.to_datetime("1/1/05 00:00:00")

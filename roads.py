@@ -22,7 +22,7 @@ from tqdm import tqdm
 
 station = ""
 roadMap = ""
-bypass = False
+bypass = True
 distBuf = 10000  # 10 for testing, so everything goes much faster.  Actual data should be 10000 (~6.2 miles)
 
 
