@@ -20,9 +20,9 @@ from tqdm import tqdm
 
 # This really is acting more like a class than a set of functions, but I really need to look into proper class declaration for python 3 ...
 
-station = ""
+stationNode = ""
 roadMap = ""
-bypass = True
+bypass = False
 distBuf = 10000  # 10 for testing, so everything goes much faster.  Actual data should be 10000 (~6.2 miles)
 
 
@@ -36,7 +36,7 @@ def toCrs(lat, lon):
     return transform(project, wgs84_pt)
 
 
-def setStation(coords):
+def setStation(station):
     """
     sets a current station on the map
 
@@ -52,7 +52,12 @@ def setStation(coords):
     Nearest node id to location
     """
     global roadMap
-    global station
+    global stationNode
+    global stationSet
+
+    stationSet = station
+
+    coords = station["gps"]
 
     point = toCrs(coords[1], coords[0])
 
@@ -63,8 +68,8 @@ def setStation(coords):
     # print(point)
     # print(roadMap.nodes[node], "\n===============================\n")
 
-    station = node
-    return station
+    stationNode = node
+    return stationNode
 
 
 def distToStationFromGPS(lat, lon):
@@ -84,7 +89,7 @@ def distToStationFromGPS(lat, lon):
     Float
         shortest distance along roadways between passed location and station
     """
-    global station
+    global stationNode
 
     # get the nearest network node to each point
     point = toCrs(lon, lat)
@@ -108,16 +113,16 @@ def distToStationFromGPS(lat, lon):
     try:
         # how long is our route in meters?
         # dist = ox.shortest_path(roadMap, station, dest_node, weight="length")
-        dist = nx.shortest_path_length(roadMap, station, dest_node, weight="length")
+        dist = nx.shortest_path_length(roadMap, stationNode, dest_node, weight="length")
         # print("shortest path is:", dist)
     except:
-        if station == "":
+        if stationNode == "":
             print(
                 "You have likely just attempted to find the distance from a station, without first setting a station (setStation(lat,lon))"
             )
         else:
             print(
-                "error getting distance between: ", station, " & ", dest_node
+                "error getting distance between: ", stationNode, " & ", dest_node
             )  ## usually the map is to small and a connection cannot be found
             traceback.print_stack()
         return None
@@ -126,7 +131,7 @@ def distToStationFromGPS(lat, lon):
     return distInMiles
 
 
-def distToStationFromNode(dest_node, fullProgress=None):
+def distToStationFromNode(dest_node, bucket, fullProgress=None):
     """
     returns the distance from a passed map node -
     requires a station be set.  May crash if no station is set.
@@ -143,16 +148,30 @@ def distToStationFromNode(dest_node, fullProgress=None):
     Float
         shortest distance along roadways between passed location and station
     """
+    # Update overall progress bar
     if fullProgress is not None:
         fullProgress.update(1)
 
+    # dont bother trying empty nodes
     if pd.isnull(dest_node):
         return None
+
+    # exclude stations without ambos from med calls
+    # print(bucket, stationSet["hasEMS"], end=": ")
+    if bucket in ["MED"] and not stationSet["hasEMS"]:
+        # print("has no ambos")
+        return np.inf
+
+    # # exclude stations without ENGs from eng calls
+    # if bucket in ["ENG"] and not stationSet["hasFire"]:
+    #     # print("has no trucks")
+    #     return None
+
     try:
         # how long is our route in meters?
-        dist = nx.shortest_path_length(roadMap, station, dest_node, weight="length")
+        dist = nx.shortest_path_length(roadMap, stationNode, dest_node, weight="length")
     except:
-        if station == "":
+        if stationNode == "":
             print(
                 "You have likely just attempted to find the distance from a station, without first setting a station (setStation(lat,lon))"
             )
@@ -233,6 +252,7 @@ def getArrayDistToStation(df):
             df[f"Distance to {curStat} in miles"] = df.progress_apply(
                 lambda x: distToStationFromNode(
                     x["nearest node"],
+                    x["Bucket Type"],
                     stationBar,
                 ),
                 axis=1,
@@ -356,7 +376,7 @@ def addRoadDistances(df):
     global stationDict
     stationDict = data.getStations()
 
-    # add geometry to map, and convert to FIPS
+    # add geometry to newly created GeoDataFrame, and convert to FIPS
     geometry = [Point(xy) for xy in zip(df["X-Long"], df["Y_Lat"])]
     gdf = GeoDataFrame(df, crs="EPSG:4326", geometry=geometry)
     gdf = gdf.to_crs(2277)
@@ -370,12 +390,15 @@ def addRoadDistances(df):
 
     # show(gdf)
 
-    # these dont really mean anything without the context of the graph, so drop them off...
-    df1 = pd.DataFrame(gdf.drop(columns=["geometry", "nearest node"]))
+    # these dont really mean anything without the context of the graph, so drop them off... and then garbage collect gdf
+    df = pd.DataFrame(gdf.drop(columns=["geometry", "nearest node"]))
+    gdf = None
+    # add Closest Station column
+    df = addClosestStations(df)
 
-    # TODO: add Closest Station column
-    df1 = addClosestStations(df1)
-    return df1
+    # remove infininity number applied to invalid Location_At_Assign_Time
+    df.replace(np.inf, None, inplace=True)
+    return df
 
 
 ################################
@@ -457,9 +480,12 @@ def testNearestNodes():
 def testStandAlone():
     import loadTestFile
     from pandasgui import show
+    import utils
 
     df = loadTestFile.get()
     df = df.head(150)
+    df = utils.addUnitType(df)
+    df = utils.addBucketType(df)
     gdf = addRoadDistances(df)
     show(gdf)
 
