@@ -5,6 +5,8 @@ import utils as u
 from timer import Timer
 from tqdm import tqdm
 
+ourDepartment = ["ESD02 - Pflugerville", "ESD02"]
+
 
 def recalcDict(arr, time):
     # print("=========================\n", arr)
@@ -63,9 +65,7 @@ def addConcurrentUse(orig, startName, endName):
     # limit the dictionary as much as possible, since this will go quite slow
     # start with just our jurisdiction
     # distArr = orig.index[(orig["Jurisdiction"].isin(["ESD02", "ESD17"]))].tolist()
-    distArr = orig.index[
-        (orig["Department"].isin(["ESD02 - Pflugerville", "ESD02"]))
-    ].tolist()
+    distArr = orig.index[(orig["Department"].isin(ourDepartment))].tolist()
     with tqdm(total=len(distArr), desc=f"Getting Concurrency") as pbar:
         for ind in distArr:
             # get start and end time of incident
@@ -117,7 +117,9 @@ def getTimes(df, ind, interval, bucket):
     Get get all time breakdowns for a specific passed row of the passed DF
     """
     # filter on same bucket
-    commonTimes = df[df["Bucket Type"] == bucket]
+    commonTimes = df[
+        (df["Bucket Type"] == bucket) & (df["Department"].isin(ourDepartment))
+    ]
 
     # filter that on overlap times
     commonTimes = commonTimes[
