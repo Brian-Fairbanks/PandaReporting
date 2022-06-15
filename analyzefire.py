@@ -760,10 +760,10 @@ def analyzeFire(fireDF):
     # ----------------
 
     # show(fireDF)
-    # from Database import SQLDatabase
+    from Database import SQLDatabase
 
-    # db = SQLDatabase()
-    # db.insertDF(fireDF)
+    db = SQLDatabase()
+    db.insertDF(fireDF)
 
     ######################################
     # show in gui just after writing
@@ -785,3 +785,4 @@ if __name__ == "__main__":
     df = loadTestFile.get()
     # run test file
     analyzeFire(df)
+ 

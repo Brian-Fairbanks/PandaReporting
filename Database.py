@@ -37,6 +37,7 @@ class SQLDatabase:
                 "X_Long",
                 "Y_Lat",
                 "ESD02_Shift",
+                "call_delayed",
                 "Phone_Pickup_Time",
                 "Call_Entered_in_Queue",
                 "First_Unit_Assigned",
@@ -99,6 +100,16 @@ class SQLDatabase:
                 "Bucket_Type",
                 "Concurrent_Usage",
                 "Assigned_at_Station",
+                "Time_0_Active",
+                "Time_1_Active",
+                "Time_2_Active",
+                "Time_3_Active",
+                "Time_4_Active",
+                "Time_5_Active",
+                "Time_6_Active",
+                "Time_7_Active",
+                "Time_8_Active",
+                "Time_9_Active",
             ]
         ]
         # unitCalls = unitCalls.drop_duplicates(subset=["Incident_Number"])
