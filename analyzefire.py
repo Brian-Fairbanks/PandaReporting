@@ -240,6 +240,14 @@ def analyzeFire(fireDF):
         dataSource = "ems"
 
     # =================================================================
+    #    Match Incident Number Format - drop anything not a number
+    # =================================================================
+    show(fireDF)
+    fireDF["Master Incident Number"] = fireDF.apply(
+        lambda x: "".join(c for c in str(x["Master Incident Number"]) if c.isdigit()),
+        axis=1,
+    )
+    # =================================================================
     #    Add Response Status Information
     # =================================================================
     fireDF["Response_Status"] = None
