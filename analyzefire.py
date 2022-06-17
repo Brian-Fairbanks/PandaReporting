@@ -710,6 +710,7 @@ def analyzeFire(fireDF):
     try:
         fireDF = pd.merge(fireDF, crfdf, how="left", on=["Master Incident Number"])
     except:
+        fireDF["Incident_ERF_Time"] = None
         fireDF["Force_At_ERF_Time_of_Close"] = None
         print("No ERF Found")
 
