@@ -483,7 +483,7 @@ def analyzeFire(fireDF):
     fireDF = addIsClosestStation(fireDF)
 
     # =================================================================
-    # Time Data Colulmn Creation
+    # Time delta/interval Colulmn Creation
     # =================================================================
 
     incidentCols = {
@@ -539,6 +539,10 @@ def analyzeFire(fireDF):
     )
 
     unitCols = {
+        "Phone_Pickup_to_Unit_Assigned": [
+            "Earliest Time Phone Pickup AFD or EMS",
+            "Unit Time Assigned",
+        ],
         "In Queue to Unit Dispatch": [
             "Incident Time Call Entered in Queue",
             "Unit Time Assigned",
