@@ -185,6 +185,30 @@ def addFirstArrived(df):
     return df
 
 
+def formatPriority(val):
+    """takes a string, removes any alpha characters, and prepend priority with P.
+    Returns this new value"""
+    if pd.isnull(val):
+        return None
+    ret = "P" + "".join(c for c in str(val) if c.isdigit())
+    # print(f"{val}  :  {ret}")
+    return ret
+
+
+def reprocessPriority(df):
+    # preserve the original data
+    df["Priority_Description_Orig"] = df["PriorityDescription"]
+    df = utils.putColAfter(df, ["Priority_Description_Orig"], "PriorityDescription")
+
+    # format priority_description column
+    df["PriorityDescription"] = df.apply(
+        lambda x: formatPriority(x["PriorityDescription"]),
+        axis=1,
+    )
+
+    return df
+
+
 # ##############################################################################################################################################
 #     Main Code
 # ##############################################################################################################################################
@@ -213,8 +237,25 @@ def analyzeFire(fireDF):
     if "FirstArrived" in fireDF:
         dataSource = "fire"
     else:
-        addFirstArrived(fireDF)
         dataSource = "ems"
+
+    # =================================================================
+    #    Add Response Status Information
+    # =================================================================
+    fireDF["Response_Status"] = None
+    # status does not exist yet, column organization is put at the end of this file
+
+    # TODO: handle seperation of Response/Response Status as needed
+    # This will require further discussion with Mary
+
+    # =================================================================
+    #    Fire/EMS Specific Handles
+    # =================================================================
+    if dataSource == "fire":
+        pass
+    else:
+        fireDF = reprocessPriority(fireDF)
+        fireDF = addFirstArrived(fireDF)
 
     # =================================================================
     #     Match esri formatting for first arrived
@@ -375,7 +416,7 @@ def analyzeFire(fireDF):
         except:
             return None
 
-    if "Response Area" not in fireDF:
+    if "AFD Response Box" not in fireDF:
         fireDF["AFD Response Box"] = fireDF.apply(
             lambda x: getResponseArea(x["X-Long"], x["Y_Lat"]),
             axis=1,
@@ -722,6 +763,7 @@ def analyzeFire(fireDF):
     # finalize naming
     # =================================================================
     fireDF = n.rename(fireDF)
+
     # =================================================================
     #     Column Organization
     # =================================================================
@@ -731,6 +773,7 @@ def analyzeFire(fireDF):
         ["Incident_Call_Count"],
         "Force_At_ERF_Time_of_Close",
     )
+    fireDF = utils.putColAfter(fireDF, ["Response_Status"], "Status")
 
     # ----------------
     # Exporting and completion
