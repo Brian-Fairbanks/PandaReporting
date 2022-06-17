@@ -64,6 +64,10 @@ class SQLDatabase:
                 "Distance_to_S07_in_miles",
                 "Distance_to_S08_in_miles",
                 "Distance_to_S09_in_miles",
+                "Incident_Call_Count",
+                "Incident_ERF_Time",
+                "Force_At_ERF_Time_of_Close",
+
             ]
         ]
         uniqueIncidents = uniqueIncidents.drop_duplicates(subset=["Incident_Number"])

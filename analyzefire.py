@@ -376,7 +376,7 @@ def analyzeFire(fireDF):
             return None
 
     if "Response Area" not in fireDF:
-        fireDF["Response Area"] = fireDF.apply(
+        fireDF["AFD Response Box"] = fireDF.apply(
             lambda x: getResponseArea(x["X-Long"], x["Y_Lat"]),
             axis=1,
         )
@@ -760,10 +760,10 @@ def analyzeFire(fireDF):
     # ----------------
 
     # show(fireDF)
-    from Database import SQLDatabase
+    # from Database import SQLDatabase
 
-    db = SQLDatabase()
-    db.insertDF(fireDF)
+    # db = SQLDatabase()
+    # db.insertDF(fireDF)
 
     ######################################
     # show in gui just after writing
@@ -785,4 +785,3 @@ if __name__ == "__main__":
     df = loadTestFile.get()
     # run test file
     analyzeFire(df)
- 
