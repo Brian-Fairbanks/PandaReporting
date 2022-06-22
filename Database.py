@@ -80,6 +80,70 @@ class SQLDatabase:
 
         self.insertToTable(uniqueIncidents, "FireIncidents")
 
+    def insertToEMSIncident(self, df):
+        # get array of unique incident numbers
+        uniqueIncidents = df[
+            [
+                "Incident_Number",
+                "Incident_Status",
+                "Calltaker_Agency",
+                "Address_of_Incident",
+                "Location_Name",
+                "Apartment",
+                "City",
+                "State",
+                "Zip",
+                "County",
+                "Jurisdiction",
+                "AFD_Response_Box",
+                "Problem",
+                "Incident_Type",
+                "Response_Plan",
+                "Base_Response#",
+                "Priority",
+                "Priority_Description",
+                "Priority_Description_Orig",
+                "Map_Info",
+                "X_Long",
+                "Y_Lat",
+                "ESD02_Shift",
+                "call_delayed",
+                "Phone_Pickup_Time",
+                "Ph_PU_Date",
+                "Call_Entered_in_Queue",
+                "First_Unit_Assigned",
+                "First_Unit_Enroute",
+                "First_Unit_Staged",
+                "First_Unit_Arrived",
+                "Call_Closed",
+                "Last_Unit_Cleared",
+                "Incident_Call_Disposition",
+                "EMD_Code",
+                "IsESD17",
+                "isETJ",
+                "isCOP",
+                "People_Per_Mile",
+                "Population_Classification",
+                "Closest_Station",
+                "Distance_to_S01_in_miles",
+                "Distance_to_S02_in_miles",
+                "Distance_to_S03_in_miles",
+                "Distance_to_S04_in_miles",
+                "Distance_to_S05_in_miles",
+                "Distance_to_S06_in_miles",
+                "Distance_to_S07_in_miles",
+                "Distance_to_S08_in_miles",
+                "Distance_to_S09_in_miles",
+                "Incident_Call_Count",
+                "Incident_ERF_Time",
+                "Force_At_ERF_Time_of_Close",
+            ]
+        ]
+        uniqueIncidents = uniqueIncidents.drop_duplicates(subset=["Incident_Number"])
+        # show(uniqueIncidents)
+
+        self.insertToTable(uniqueIncidents, "EMSIncidents")
+
     def insertToFireUnits(self, df):
         # get array of unique incident numbers
         unitCalls = df[
@@ -125,6 +189,68 @@ class SQLDatabase:
         # show(unitCalls)
         self.insertToTable(unitCalls, "FireUnits")
 
+    def insertToEMSUnits(self, df):
+        # get array of unique incident numbers
+        unitCalls = df[
+            [
+                "Station",
+                "Status",
+                "Response_Status",
+                "Incident_Number",
+                "Unit",
+                "Department",
+                "Frontline_Status",
+                "Location_At_Assign_Time",
+                "Longitude_at_Assign",
+                "Latitude_at_Assign",
+                "Primary_Flag",
+                "FirstArrived",
+                "Unit_Assigned",
+                "Unit_Enroute",
+                "Unit_Staged",
+                "Unit_Arrived",
+                "At_Patient",
+                "Delay_Avail",
+                "Unit_Cleared",
+                "Unit_Disposition",
+                "Unit_Type",
+                "Bucket_Type",
+                "Assigned_at_Station",
+                "Is_Closest_Station",
+                "Unit_Usage_At_Time_of_Alarm",
+                "Time_0_Active",
+                "Time_1_Active",
+                "Time_2_Active",
+                "Time_3_Active",
+                "Time_4_Active",
+                "Time_5_Active",
+                "Time_6_Active",
+                "Time_7_Active",
+                "Time_8_Active",
+                "Time_9_Active",
+                "Transport_Count",
+                "Destination_Name",
+                "Destination_Address",
+                "Destination_City",
+                "Destination_State",
+                "Destination_Zip",
+                "Time_Depart_Scene",
+                "Time_At_Destination",
+                "Time_Cleared_Destination",
+                "Transport_Mode",
+                "Transport_Protocol",
+                "Single_vs_Multi_Units_ONSC",
+            ]
+        ]
+        # replace all instances of "yes" and "no" with "0,1"
+        unitCalls.replace("Yes", 1, inplace=True)
+        unitCalls.replace("No", 0, inplace=True)
+        # unitCalls = unitCalls.drop_duplicates(subset=["Incident_Number"])
+        # unitCalls["First_Assign"] = unitCalls["First_Assign"] == "Yes"
+        # unitCalls["FirstArrived"] = unitCalls["FirstArrived"] == "Yes"
+        # show(unitCalls)
+        self.insertToTable(unitCalls, "EMSUnits")
+
     # since pandas to_sql will not allow for upserts on primary key violations
     # we will go ahead and write a much slower alternative
     def insertToTable(self, df, table):
@@ -160,8 +286,8 @@ class SQLDatabase:
     # main reason for this... run all included functions
     def insertDF(self, df):
         if df.loc[0, "Data_Source"] == "ems":
-            print("EMS does not have any functions here!")
-            pass
+            self.insertToEMSIncident(df)
+            self.insertToEMSUnits(df)
         else:
             self.insertToFireIncident(df)
             self.insertToFireUnits(df)
