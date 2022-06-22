@@ -242,7 +242,6 @@ def analyzeFire(fireDF):
     # =================================================================
     #    Match Incident Number Format - drop anything not a number
     # =================================================================
-    show(fireDF)
     fireDF["Master Incident Number"] = fireDF.apply(
         lambda x: "".join(c for c in str(x["Master Incident Number"]) if c.isdigit()),
         axis=1,
@@ -616,6 +615,17 @@ def analyzeFire(fireDF):
         ],
     }
 
+    # Add some EMS Specific columns
+    if dataSource == "ems":
+        unitCols["Depart_to_At_Destination"] = [
+            "Time_Depart_Scene",
+            "Time_At_Destination",
+        ]
+        unitCols["Depart_to_Cleared_Destination"] = [
+            "Time_Depart_Scene",
+            "Time_Cleared_Destination",
+        ]
+
     # Create TimeDelta Columns
     for col in unitCols:
         fireDF = utils.addTimeDiff(fireDF, col, unitCols[col][0], unitCols[col][1])
@@ -816,10 +826,10 @@ def analyzeFire(fireDF):
     # ----------------
 
     # show(fireDF)
-    # from Database import SQLDatabase
+    from Database import SQLDatabase
 
-    # db = SQLDatabase()
-    # db.insertDF(fireDF)
+    db = SQLDatabase()
+    db.insertDF(fireDF)
 
     ######################################
     # show in gui just after writing

@@ -70,7 +70,7 @@ def preprocess(df, start=None, end=None):
         fileType = "ems"
     else:
         # as good a time as any to ensure response_area columns ACTUALLY mean the same thing
-        df = df.rename(columns={"Response_Area": "AFD Response Box"}, errors="ignore")
+        df = df.rename(columns={"Response Area": "AFD Response Box"}, errors="ignore")
         fileType = "fire"
 
     # Can this be handeled better?

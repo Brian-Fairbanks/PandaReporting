@@ -17,6 +17,7 @@ renames = {
     "X-Long": "X_Long",
     "Y_Lat": "Y_Lat",
     "ESD02_Shift": "ESD02_Shift",
+    "AFD Response Box": "AFD_Response_Box",
     "Earliest Time Phone Pickup AFD or EMS": "Phone_Pickup_Time",
     "Incident Time Call Entered in Queue": "Call_Entered_in_Queue",
     "Time First Real Unit Assigned": "First_Unit_Assigned",

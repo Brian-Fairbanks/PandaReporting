@@ -58,7 +58,7 @@ def addConcurrentUse(orig, startName, endName):
     )
 
     # Set up columns to reveal specific time overlap
-    for x in range(6):
+    for x in range(10):
         orig[f"Time_{x}_Active"] = 0
     #  -----------------------------------------------------------------------
 

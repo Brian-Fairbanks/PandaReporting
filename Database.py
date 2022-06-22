@@ -27,7 +27,8 @@ class SQLDatabase:
                 "Address_of_Incident",
                 "City",
                 "Jurisdiction",
-                "Response_Area",
+                # "Response_Area",
+                "AFD_Response_Box",
                 "Problem",
                 "Incident_Type",
                 "Response_Plan",
@@ -67,7 +68,6 @@ class SQLDatabase:
                 "Incident_Call_Count",
                 "Incident_ERF_Time",
                 "Force_At_ERF_Time_of_Close",
-
             ]
         ]
         uniqueIncidents = uniqueIncidents.drop_duplicates(subset=["Incident_Number"])
@@ -102,8 +102,8 @@ class SQLDatabase:
                 "Unit_Cancel_Reason",
                 "Unit_Type",
                 "Bucket_Type",
-                "Concurrent_Usage",
                 "Assigned_at_Station",
+                "Unit_Usage_At_Time_of_Alarm",
                 "Time_0_Active",
                 "Time_1_Active",
                 "Time_2_Active",
@@ -116,10 +116,13 @@ class SQLDatabase:
                 "Time_9_Active",
             ]
         ]
+        # replace all instances of "yes" and "no" with "0,1"
+        unitCalls.replace("Yes", 1, inplace=True)
+        unitCalls.replace("No", 0, inplace=True)
         # unitCalls = unitCalls.drop_duplicates(subset=["Incident_Number"])
-        unitCalls["First_Assign"] = unitCalls["First_Assign"] == "Yes"
-        unitCalls["FirstArrived"] = unitCalls["FirstArrived"] == "Yes"
-        show(unitCalls)
+        # unitCalls["First_Assign"] = unitCalls["First_Assign"] == "Yes"
+        # unitCalls["FirstArrived"] = unitCalls["FirstArrived"] == "Yes"
+        # show(unitCalls)
         self.insertToTable(unitCalls, "FireUnits")
 
     # since pandas to_sql will not allow for upserts on primary key violations
@@ -156,8 +159,14 @@ class SQLDatabase:
 
     # main reason for this... run all included functions
     def insertDF(self, df):
-        self.insertToFireIncident(df)
-        self.insertToFireUnits(df)
+        if df.loc[0, "Data_Source"] == "ems":
+            print("EMS does not have any functions here!")
+            pass
+        else:
+            self.insertToFireIncident(df)
+            self.insertToFireUnits(df)
+
+        return None
 
 
 # =================================================================
