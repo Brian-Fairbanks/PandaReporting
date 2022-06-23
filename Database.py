@@ -10,7 +10,15 @@ class SQLDatabase:
     """a connection to a SQL Database, and associated functions for insertion of required data"""
 
     def __init__(self):
-        connectionString = "DRIVER={SQL Server};SERVER=CRM22G3;DATABASE=master;"
+        # drvr = "{SQL Server}"
+        # srvr = "CRM22G3"
+        # dtbs = "master"
+
+        drvr = "{SQL Server}"
+        srvr = "PFL-APP04"
+        dtbs = "UNIT_RUN_DATA"
+
+        connectionString = f"DRIVER={drvr};SERVER={srvr};DATABASE={dtbs};"
         connection_url = URL.create(
             "mssql+pyodbc", query={"odbc_connect": connectionString}
         )
