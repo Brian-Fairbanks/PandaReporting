@@ -65,6 +65,8 @@ class SQLDatabase:
                 "Distance_to_S07_in_miles",
                 "Distance_to_S08_in_miles",
                 "Distance_to_S09_in_miles",
+                "is_walkup",
+                "Is_Closest_Station",
                 "Incident_Call_Count",
                 "Incident_ERF_Time",
                 "Force_At_ERF_Time_of_Close",
@@ -134,6 +136,7 @@ class SQLDatabase:
                 "Distance_to_S07_in_miles",
                 "Distance_to_S08_in_miles",
                 "Distance_to_S09_in_miles",
+                "is_walkup",
                 "Incident_Call_Count",
                 "Incident_ERF_Time",
                 "Force_At_ERF_Time_of_Close",
@@ -152,11 +155,13 @@ class SQLDatabase:
                 "Unit",
                 "Station",
                 "Status",
+                "Response_Status",
                 "Department",
                 "Frontline_Status",
                 "Location_At_Assign_Time",
                 "First_Assign",
                 "FirstArrived",
+                "First_Arrived_Esri",
                 "Unit_Assigned",
                 "Unit_Enroute",
                 "Unit_Staged",
@@ -178,14 +183,13 @@ class SQLDatabase:
                 "Time_7_Active",
                 "Time_8_Active",
                 "Time_9_Active",
+                "Single_vs_Multi_Units_ONSC",
             ]
         ]
         # replace all instances of "yes" and "no" with "0,1"
         unitCalls.replace("Yes", 1, inplace=True)
         unitCalls.replace("No", 0, inplace=True)
-        # unitCalls = unitCalls.drop_duplicates(subset=["Incident_Number"])
-        # unitCalls["First_Assign"] = unitCalls["First_Assign"] == "Yes"
-        # unitCalls["FirstArrived"] = unitCalls["FirstArrived"] == "Yes"
+
         # show(unitCalls)
         self.insertToTable(unitCalls, "FireUnits")
 
@@ -268,7 +272,8 @@ class SQLDatabase:
                     name=table, if_exists="append", con=self.engine, index=False
                 )
             except sqlalchemy.exc.IntegrityError:
-                skipped.append(f"{df.iloc[i][0]} - {df.iloc[i][1]}")
+                inc = df.iloc[i]["Incident_Number"]
+                skipped.append(f"{inc} - {df.iloc[i][1]}")
                 pass
         if len(skipped) > 0:
             print(

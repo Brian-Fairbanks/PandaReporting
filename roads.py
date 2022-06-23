@@ -368,6 +368,7 @@ def addRoadDistances(df):
         df[f"Distance to S0{i} in miles"] = None
     # toggle the below return to bypass (skip) this section
     if bypass:
+        df["is_walkup"] = None
         return df
 
     import re

@@ -440,7 +440,6 @@ def analyzeFire(fireDF):
     # (getMapscoGrid)(fireDF["X-Long"], fireDF["Y_Lat"])
 
     print("Adding Status:")
-
     # =================================================================
     #     Set Status for each call
     # =================================================================
@@ -817,8 +816,8 @@ def analyzeFire(fireDF):
         date_format="mm/dd/yyyy",
     )
 
-    fireDF.to_excel(writer)
-    writer.save()
+    # fireDF.to_excel(writer)
+    # writer.save()
     # plt.savefig('saved_figure.png')
 
     # ----------------
@@ -826,6 +825,19 @@ def analyzeFire(fireDF):
     # ----------------
 
     # show(fireDF)
+
+    # Ensure that NotNull Data cannot be null
+    fireDF["Unit"] = fireDF["Unit"].fillna(value="UNKNOWN")
+
+    def fillTime(assigned, phpu):
+        if pd.isnull(assigned):
+            return phpu
+        return assigned
+
+    fireDF["Unit_Assigned"] = fireDF.apply(
+        lambda row: fillTime(row["Unit_Assigned"], row["Phone_Pickup_Time"]), axis=1
+    )
+
     from Database import SQLDatabase
 
     db = SQLDatabase()
