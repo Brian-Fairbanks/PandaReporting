@@ -259,7 +259,8 @@ def analyzeFire(fireDF):
     #    Fire/EMS Specific Handles
     # =================================================================
     if dataSource == "fire":
-        pass
+        fireDF["FirstArrived_Orig"] = fireDF["FirstArrived"]
+        fireDF = addFirstArrived(fireDF)
     else:
         fireDF = reprocessPriority(fireDF)
         fireDF = addFirstArrived(fireDF)
@@ -527,12 +528,13 @@ def analyzeFire(fireDF):
     # =================================================================
     #     add Is Sent From Closest Station
     # =================================================================
+    print(" -- adding Closest Station")
     fireDF = addIsClosestStation(fireDF)
 
     # =================================================================
     # Time delta/interval Colulmn Creation
     # =================================================================
-
+    print(" -- adding Time Deltas")
     incidentCols = {
         "Earliest Time Phone Pickup to In Queue": [
             "Earliest Time Phone Pickup AFD or EMS",
@@ -807,14 +809,14 @@ def analyzeFire(fireDF):
     # Unit  Ph PU to UnitArrived
     # fireDF[""] = fireDF[""].apply(utils.dtFormat)
 
-    writer = pd.ExcelWriter(
-        "Output\\Output_{0}.xlsx".format(
-            (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
-        ),
-        engine="xlsxwriter",
-        datetime_format="mm/dd/yyyy hh:mm:ss",
-        date_format="mm/dd/yyyy",
-    )
+    # writer = pd.ExcelWriter(
+    #     "Output\\Output_{0}.xlsx".format(
+    #         (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
+    #     ),
+    #     engine="xlsxwriter",
+    #     datetime_format="mm/dd/yyyy hh:mm:ss",
+    #     date_format="mm/dd/yyyy",
+    # )
 
     # fireDF.to_excel(writer)
     # writer.save()
@@ -846,7 +848,7 @@ def analyzeFire(fireDF):
     ######################################
     # show in gui just after writing
     print("Complete")
-    show(fireDF)
+    # show(fireDF)
 
 
 ################################
