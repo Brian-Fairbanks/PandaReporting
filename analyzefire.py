@@ -840,10 +840,15 @@ def analyzeFire(fireDF):
         lambda row: fillTime(row["Unit_Assigned"], row["Phone_Pickup_Time"]), axis=1
     )
 
-    from Database import SQLDatabase
+    # from Database import SQLDatabase
 
-    db = SQLDatabase()
-    db.insertDF(fireDF)
+    # db = SQLDatabase()
+    # db.insertDF(fireDF)
+
+    from esriOverwrite import EsriDatabase
+
+    esriDF = EsriDatabase.formatDFForEsri(fireDF)
+    show(esriDF)
 
     ######################################
     # show in gui just after writing

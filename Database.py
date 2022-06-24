@@ -10,13 +10,13 @@ class SQLDatabase:
     """a connection to a SQL Database, and associated functions for insertion of required data"""
 
     def __init__(self):
-        # drvr = "{SQL Server}"
-        # srvr = "CRM22G3"
-        # dtbs = "master"
-
         drvr = "{SQL Server}"
-        srvr = "PFL-APP04"
-        dtbs = "UNIT_RUN_DATA"
+        srvr = "CRM22G3"
+        dtbs = "master"
+
+        # drvr = "{SQL Server}"
+        # srvr =
+        # dtbs =
 
         connectionString = f"DRIVER={drvr};SERVER={srvr};DATABASE={dtbs};"
         connection_url = URL.create(
@@ -74,7 +74,6 @@ class SQLDatabase:
                 "Distance_to_S08_in_miles",
                 "Distance_to_S09_in_miles",
                 "is_walkup",
-                "Is_Closest_Station",
                 "Incident_Call_Count",
                 "Incident_ERF_Time",
                 "Force_At_ERF_Time_of_Close",
@@ -180,6 +179,7 @@ class SQLDatabase:
                 "Unit_Type",
                 "Bucket_Type",
                 "Assigned_at_Station",
+                "Is_Closest_Station",
                 "Unit_Usage_At_Time_of_Alarm",
                 "Time_0_Active",
                 "Time_1_Active",

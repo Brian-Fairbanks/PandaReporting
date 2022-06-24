@@ -22,7 +22,7 @@ from tqdm import tqdm
 
 stationNode = ""
 roadMap = ""
-bypass = True
+bypass = False
 distBuf = 10000  # 10 for testing, so everything goes much faster.  Actual data should be 10000 (~6.2 miles)
 
 
@@ -384,8 +384,11 @@ def addRoadDistances(df):
 
     # Load road map data
     getRoads()
+    print("Roads Gathered:\n\n")
 
     gdf = addNearestNodeToGDF(gdf)
+
+    print("Nearest Nodes Identified:\n\n")
 
     gdf = getArrayDistToStation(gdf)
 
