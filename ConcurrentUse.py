@@ -117,11 +117,13 @@ def getTimes(df, ind, interval, bucket):
     Get get all time breakdowns for a specific passed row of the passed DF
     """
     # filter on same bucket
-    commonTimes = df[
-        (df["Bucket Type"] == bucket) & (df["Department"].isin(ourDepartment))
+    nearbyInd = df[abs(df.index - ind) < 15]
+    commonTimes = nearbyInd[
+        (nearbyInd["Bucket Type"] == bucket)
+        & (nearbyInd["Department"].isin(ourDepartment))
     ]
 
-    # filter that on overlap times
+    # filter that on overlap times - lets use only those within 20
     commonTimes = commonTimes[
         commonTimes.apply(lambda row: interval.overlaps(row["Time_Interval"]), axis=1)
     ]
