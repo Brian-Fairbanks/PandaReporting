@@ -81,7 +81,7 @@ class EsriDatabase:
         pass
 
     def connect(self):
-
+        load_dotenv()
         # config = {"AGORGURL", AGUSERNAME, AGPASSWORD}
         your_org_url = getenv("AGORGURL")
         username = getenv("AGUSERNAME")

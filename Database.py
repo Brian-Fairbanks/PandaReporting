@@ -13,11 +13,13 @@ class SQLDatabase:
     """a connection to a SQL Database, and associated functions for insertion of required data"""
 
     def __init__(self):
+        load_dotenv()
         drvr = getenv("DBDRVR")
         srvr = getenv("DBSRVR")
         dtbs = getenv("DBDTBS")
 
         connectionString = f"DRIVER={drvr};SERVER={srvr};DATABASE={dtbs};"
+        print(connectionString)
         connection_url = URL.create(
             "mssql+pyodbc", query={"odbc_connect": connectionString}
         )
