@@ -242,14 +242,41 @@ def analyzeFire(fireDF):
     # =================================================================
     #    Match Incident Number Format - drop anything not a number
     # =================================================================
-    fireDF["Master Incident Number"] = fireDF.apply(
-        lambda x: "".join(c for c in str(x["Master Incident Number"]) if c.isdigit()),
-        axis=1,
-    )
+    # fireDF["Master Incident Number"] = fireDF.apply(
+    #     lambda x: "".join(c for c in str(x["Master Incident Number"]) if c.isdigit()),
+    #     axis=1,
+    # )
     # =================================================================
     #    Add Response Status Information
     # =================================================================
-    fireDF["Response_Status"] = None
+    # fireDF["Response_Status"] = None
+
+    def get_response_status(uonsc, ustaged, uenroute, uassigned):
+        # "ONSC" - "Unit arrived on scene"
+        if pd.notnull(uonsc):
+            return "ONSC"
+        # "STAGED" - "Unit staged, but never arrived"
+        if pd.notnull(ustaged):
+            return "STAGED"
+        # "ENROUTE ONLY" - "Unit enroute only, but never arrived"
+        if pd.notnull(uenroute):
+            return "EMROUTE ONLY"
+        # "NEVER ENROUTE" - "Never enroute"
+        if pd.notnull(uassigned):
+            return "NEVER ENROUTE"
+        # "NEVER ASSIGNED" - no units were ever assigned
+        return "NEVER ASSIGNED"
+
+    fireDF["Response_Status"] = fireDF.apply(
+        lambda row: get_response_status(
+            row["Unit Time Arrived At Scene"],
+            row["Unit Time Staged"],
+            row["Unit Time Enroute"],
+            row["Unit Time Assigned"],
+        ),
+        axis=1,
+    )
+
     # status does not exist yet, column organization is put at the end of this file
 
     # TODO: handle seperation of Response/Response Status as needed
@@ -840,15 +867,18 @@ def analyzeFire(fireDF):
         lambda row: fillTime(row["Unit_Assigned"], row["Phone_Pickup_Time"]), axis=1
     )
 
-    # from Database import SQLDatabase
+    from Database import SQLDatabase
 
-    # db = SQLDatabase()
-    # db.insertDF(fireDF)
+    db = SQLDatabase()
+    db.insertDF(fireDF)
 
     from esriOverwrite import EsriDatabase
 
-    esriDF = EsriDatabase.formatDFForEsri(fireDF)
-    show(esriDF)
+    # esriDF = EsriDatabase.formatDFForEsri(fireDF)
+    # edb = EsriDatabase()
+    # edb.connect()
+    # edb.appendDF(fireDF)
+    # show(esriDF)
 
     ######################################
     # show in gui just after writing

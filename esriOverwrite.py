@@ -1,6 +1,8 @@
 import pandas as pd
 from arcgis import GIS
 from arcgis.features import GeoAccessor, FeatureLayer
+from dotenv import load_dotenv
+from os import getenv
 
 EsriTableArray = [
     "Incident_Number",
@@ -79,19 +81,22 @@ class EsriDatabase:
         pass
 
     def connect(self):
-        your_org_url = "https://tcesd2.maps.arcgis.com"
-        username = ""
-        password = ""
+
+        # config = {"AGORGURL", AGUSERNAME, AGPASSWORD}
+        your_org_url = getenv("AGORGURL")
+        username = getenv("AGUSERNAME")
+        password = getenv("AGPASSWORD")
 
         gis = GIS(your_org_url, username, password)
-        table_url = "https://services9.arcgis.com/dcfjRs7Bq0KG7jYq/arcgis/rest/services/Esri_Auto_Import_from_Python_Test/FeatureServer/0"
+        # table_url = "https://services9.arcgis.com/dcfjRs7Bq0KG7jYq/arcgis/rest/services/Esri_Auto_Import_from_Python_Test/FeatureServer/0"        #Test Table URL
+        table_url = "https://services9.arcgis.com/dcfjRs7Bq0KG7jYq/arcgis/rest/services/Fire_EMS_Run_Data/FeatureServer/0"
         self.tbl = FeatureLayer(table_url, gis=gis)  # works for tables
 
     def empty(self):
         self.tbl.manager.truncate()  # truncate table
 
     def appendDF(self, df):
-        df = self.formatDFForEsri(df)
+        df = formatDFForEsri(df)
         adds = df.spatial.to_featureset()
         self.tbl.edit_features(adds=adds)
 
@@ -99,19 +104,23 @@ class EsriDatabase:
         self.empty()
         self.appendDF(df)
 
-    def formatDFForEsri(df):
-        emsOnlyCols = [
-            "Transport_Mode",
-            "Transport_Protocol",
-            "Depart_to_At_Destination",
-            "Depart_to_Cleared_Destination ",
-            "EMD_Code",
-        ]
-        for col in emsOnlyCols:
-            if col not in df.columns:
-                df[col] = None
-        df = df[EsriTableArray]
-        return df
+
+# end of class
+
+
+def formatDFForEsri(df):
+    emsOnlyCols = [
+        "Transport_Mode",
+        "Transport_Protocol",
+        "Depart_to_At_Destination",
+        "Depart_to_Cleared_Destination ",
+        "EMD_Code",
+    ]
+    for col in emsOnlyCols:
+        if col not in df.columns:
+            df[col] = None
+    df = df[EsriTableArray]
+    return df
 
 
 # read from CSV file

@@ -5,18 +5,17 @@ import pandas as pd
 from pandasgui import show
 from tqdm import tqdm
 
+from dotenv import load_dotenv
+from os import getenv
+
 
 class SQLDatabase:
     """a connection to a SQL Database, and associated functions for insertion of required data"""
 
     def __init__(self):
-        drvr = "{SQL Server}"
-        srvr = "CRM22G3"
-        dtbs = "master"
-
-        # drvr = "{SQL Server}"
-        # srvr =
-        # dtbs =
+        drvr = getenv("DBDRVR")
+        srvr = getenv("DBSRVR")
+        dtbs = getenv("DBDTBS")
 
         connectionString = f"DRIVER={drvr};SERVER={srvr};DATABASE={dtbs};"
         connection_url = URL.create(
@@ -217,6 +216,7 @@ class SQLDatabase:
                 "Latitude_at_Assign",
                 "Primary_Flag",
                 "FirstArrived",
+                "First_Arrived_Esri",
                 "Unit_Assigned",
                 "Unit_Enroute",
                 "Unit_Staged",

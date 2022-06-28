@@ -170,6 +170,9 @@ def getTimes(df, ind, interval, bucket):
             - 1
         )
         # print(f"  {str(time):<30}: {str(timeRange):<23}-   {setLength}")
+        # max out the time to be 9+ units
+        if setLength > 9:
+            setLength = 9
         try:
             timeDict[setLength] += timeRange
         except:

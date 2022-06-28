@@ -19,6 +19,10 @@ Ensure you have installed Pandas, NumPy, and matplotlib
    pip install pyodbc
    pip install sqlalchemy
 
+   pip install arcgis
+   pip install python-dotenv
+
+
 ```
 
 Install MS Sql
