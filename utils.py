@@ -161,7 +161,8 @@ def getUnitBucket(type):
         "LAD": "ENG",
         "M": "MED",
         "MED": "MED",
-        "MEDC": "MED",
+        # MED COM!  remove
+        # "MEDC": "MED",
     }
     if type not in buckets:
         return type
@@ -171,3 +172,31 @@ def getUnitBucket(type):
 def addBucketType(orig):
     orig["Bucket Type"] = orig.apply(lambda x: getUnitBucket(x["Unit Type"]), axis=1)
     return orig
+
+
+def longComSub(st1: str, st2: str):
+    """
+    Calculate the longest common substring between 2 given strings.  Returns None if not match, or either value are not strings.
+    param st1: String
+    param st2: String
+    """
+    if pd.isnull(st1) or pd.isnull(st2):
+        return None
+    st1 = st1.lower()
+    st2 = st2.lower()
+    ans = ""
+    for a in range(len(st1)):
+        for b in range(len(st2)):
+            curStr = []
+            k = 0
+            while ((a + k) < len(st1) and (b + k) < len(st2)) and st1[a + k] == st2[
+                b + k
+            ]:
+                # print(
+                #     f"{a}:{st1[a+k]}  -  {b}:{st2[b+k]}  -  {k}:{st1[a+k]}  =  {curStr}"
+                # )
+                curStr += st2[b + k]
+                k += 1
+            if len(ans) <= len(curStr):
+                ans = curStr
+    return ans

@@ -1,4 +1,5 @@
 renames = {
+    "Data Source": "Data_Source",
     "Station": "Station",
     "Status": "Status",
     "Master Incident Number": "Incident_Number",
@@ -16,6 +17,7 @@ renames = {
     "X-Long": "X_Long",
     "Y_Lat": "Y_Lat",
     "ESD02_Shift": "ESD02_Shift",
+    "AFD Response Box": "AFD_Response_Box",
     "Earliest Time Phone Pickup AFD or EMS": "Phone_Pickup_Time",
     "Incident Time Call Entered in Queue": "Call_Entered_in_Queue",
     "Time First Real Unit Assigned": "First_Unit_Assigned",
@@ -70,6 +72,11 @@ renames = {
     "Distance to S02 in miles": "Distance_to_S02_in_miles",
     "Distance to S03 in miles": "Distance_to_S03_in_miles",
     "Distance to S04 in miles": "Distance_to_S04_in_miles",
+    "Distance to S05 in miles": "Distance_to_S05_in_miles",
+    "Distance to S06 in miles": "Distance_to_S06_in_miles",
+    "Distance to S07 in miles": "Distance_to_S07_in_miles",
+    "Distance to S08 in miles": "Distance_to_S08_in_miles",
+    "Distance to S09 in miles": "Distance_to_S09_in_miles",
     "Closest Station": "Closest_Station",
     "Is Closest Station": "Is_Closest_Station",
     "Earliest Time Phone Pickup to In Queue Formatted": "Phone_Pickup_to_In_Queue_Formatted",
@@ -98,7 +105,7 @@ renames = {
     "Single_vs_Multi Units ONSC": "Single_vs_Multi_Units_ONSC",
     "Qtr Year": "Qtr_Year",
     "Incident ERF Time": "Incident_ERF_Time",
-    "Force At ERF Time or Close": "Force_At_ERF_Time_or_Close",
+    "Force At ERF Time or Close": "Force_At_ERF_Time_of_Close",
 }
 
 

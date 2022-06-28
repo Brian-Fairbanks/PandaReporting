@@ -17,11 +17,17 @@ def getCellFix(orig, df, changeArray, error):
 
     for ind, row in df.iterrows():
         # messagebox.showinfo("error: {0}".format(ind), str(row))
+        defCol = "Incident Time Call Entered in Queue"
+        if error == "":
+            defCol = "Incident_Number"
         getInp = easygui.enterbox(
             msg=f"{error}:\n {str(row)}",
             title=row["Master Incident Number"],
-            default=row["Incident Time Call Entered in Queue"],
+            default=orig.loc[ind, defCol],
         )
+
+        # getInp = orig.loc[ind, "Incident Time Call Entered in Queue"]
+
         # directly set result.  We should try and make sure that the types match, right?
         orig.loc[ind, changeArray] = getInp
     return orig

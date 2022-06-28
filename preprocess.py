@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime as dt
 from dateutil.relativedelta import relativedelta as rd
 import utils
+from pandasgui import show
 
 
 def preprocess(df, start=None, end=None):
@@ -17,12 +18,59 @@ def preprocess(df, start=None, end=None):
         start = end - rd(months=1)
 
     # =================================================================
-    # Assign Destionation/File Source
+    # Ensure that old EMS files will work with even PRE-RENAME-FUNCTIONS (this seems like bad practice...)
+    # =================================================================
+    prepreprocess = {
+        # Why was this file set up so differently!?!?
+        "Agency: ": "Agency",
+        "Jurisdiction: ": "Jurisdiction",
+        "Problem: ": "Problem",
+        "Ph PU Time": "Ph_PU_Time",
+        "1st Unit Assigned": "1st_Unit_Assigned",
+        "1st Unit Enroute": "1st_Unit_Enroute",
+        "1st Unit Staged": "1st_Unit_Staged",
+        "1st Unit Arrived": "1st_Unit_Arrived",
+        "Closed Time": "Closed_Time",
+        "In Queue": "In_Queue",
+        "2nd Unit Assigned": "2nd_Unit_Assigned",
+        "2nd Unit Enroute": "2nd_Unit_Enroute",
+        "2nd Unit Staged": "2nd_Unit_Staged",
+        "2nd Unit Arrived": "2nd_Unit_Arrived",
+        "Closed Time": "Closed_Time",
+        "In Queue": "In_Queue",
+        "Incident Duration Ph PU to Clear": "Incident_Duration_Ph_PU_to_Clear",
+        "In Queue to Unit Assign ": "In_Queue_to_Unit_Assign_",
+        "Ph PU to Unit Assign": "Ph_PU_to_Unit_Assign",
+        "Unit Assign to Unit Enroute": "Unit_Assign_to_Unit_Enroute",
+        "Unit Enroute to Unit Arrive": "Unit_Enroute_to_Unit_Arrive",
+        "Unit Assign to Unit Arrive": "Unit_Assign_to_Unit_Arrive",
+        "Unit Duration Assign to Clear": "Unit_Duration_Assign_to_Clear",
+        "Ph PU to UnitArrive": "Ph_PU_to_UnitArrive",
+    }
+    df = df.rename(columns=prepreprocess, errors="ignore")
+
+    # ##########################################################################################
+    # TODO: correct this: add better calculations
+    # ##########################################################################################
+    # ##########################################################################################
+
+    if "Unit_Type" not in df.columns and "Frontline_Status" not in df.columns:
+        # there has to be a way to calculate this when not given
+        df["Unit_Type"] = "Frontline"
+
+    if "Unit_Agency" not in df.columns and "Agency" in df.columns:
+        # there has to be a way to calculate this when not given
+        df["Unit_Agency"] = df["Agency"]
+
+    # =================================================================
+    # Assign Destination/File Source
     # =================================================================
     # This should be (maybe not the best) a way to determine EMS or Fire source data
     if "Ph_PU_Time" in df.columns:
         fileType = "ems"
     else:
+        # as good a time as any to ensure response_area columns ACTUALLY mean the same thing
+        df = df.rename(columns={"Response Area": "AFD Response Box"}, errors="ignore")
         fileType = "fire"
 
     # Can this be handeled better?
@@ -32,11 +80,22 @@ def preprocess(df, start=None, end=None):
     # Closer match column COUNT between EMS and Fire
     # =================================================================
     # merge two to one Ph_PU_Time & Ph_PU_Data
+    # if the data was null, then we need to mark this.
+    # Likely also the best time to check fire for the same thing: the call came from another department, and was 'delayed' before we were made aware.
     if fileType == "ems":
+        df["call_delayed"] = df.apply(
+            lambda row: bool(pd.isnull(row["Ph_PU_Time"])),
+            axis=1,
+        )
         df["Ph_PU_Time"] = df.apply(
             lambda row: row["Ph_PU_Date"]
             if pd.isnull(row["Ph_PU_Time"])
             else row["Ph_PU_Time"],
+            axis=1,
+        )
+    else:
+        df["call_delayed"] = df.apply(
+            lambda row: bool(row["Calltaker Agency"] in ["APD", "TCSO", "PPD"]),
             axis=1,
         )
 
@@ -102,7 +161,7 @@ def preprocess(df, start=None, end=None):
         "UnitEnroute_to_UnitArrive": "Unit Respond to Arrival",
         "UnitAssign_to_UnitArrive": "Unit Dispatch to Onscene",
         "UnitArrive_to_Clear": "Unit OnScene to Clear Call",
-        "Ph_PU_to_UnitArrive_in_seconds": "Earliest Phone Pickup to Unit Arrival",
+        "Ph_PU_to_UnitArrive_in_seconds": "Earliest Phone Pickup Time to Unit Arrival",
         "UnitDuration_Assign_to_Clear": "Unit Assign To Clear Call Time",
         "Itemized_Unit_Disposition": "Unit Call Disposition",
     }
@@ -128,14 +187,14 @@ def preprocess(df, start=None, end=None):
             lambda row: getFrontline(row["Frontline_Status"]), axis=1
         )
     except Exception as ex:
+        df["ignoreInStatus"] = None
         print(
-            f"\n------------ERROR --------------\n{ex}\n---------end ---------------\n"
+            f"\n\t\t------------ERROR --------------\n\t\t{ex}\n\t\t---------end ---------------\n"
         )
 
     df["Not Arrived"] = df.apply(
         lambda row: pd.isnull(row["Unit Time Arrived At Scene"]), axis=1
     )
-
     df = utils.putColAt(df, ["ignoreInStatus", "Not Arrived"], 1)
 
     df = df.sort_values(

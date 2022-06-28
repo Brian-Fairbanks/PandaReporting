@@ -47,7 +47,7 @@ def getIncidentERF(incident, df):
         # instanciate a force count
         objDict = {
             "Master Incident Number": incident,
-            "Incident ERF Time": "ERF never reached",
+            "Incident ERF Time": None,
             "Force At ERF Time or Close": 0,
             "Address": incDF.iloc[0]["Address of Incident"],
             "Date": incDF.iloc[0]["Earliest Time Phone Pickup AFD or EMS"],

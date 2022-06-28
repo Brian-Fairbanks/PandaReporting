@@ -7,11 +7,11 @@ except:
 
 
 def checkFile(df):
-    print(" -- Starting File Checks --")
+    print("Starting File Checks")
     curError = "Error unknown"
 
     # check 0 ----------------------------------------------------------------------
-    curError = "missing 'Earliest Time Phone Pickup AFD or EMS': "
+    curError = " -- missing 'Earliest Time Phone Pickup AFD or EMS': "
     print(curError, end="")
     c0 = fc.check0(df)
     if c0 is not None:
@@ -20,7 +20,7 @@ def checkFile(df):
         print("passed")
 
     # check 1 ----------------------------------------------------------------------
-    curError = "'Missing First Arrived Status: "
+    curError = " -- 'Missing First Arrived Status: "
     print(curError, end="")
     c1 = fc.check1(df)
     if c1 is not None:
@@ -29,7 +29,7 @@ def checkFile(df):
         print("passed")
 
     # check 2 ----------------------------------------------------------------------
-    curError = "'Missing Arrival Time: "
+    curError = " -- 'Missing Arrival Time: "
     print(curError, end="")
     c2 = fc.check2(df)
     if c2 is not None:
@@ -38,7 +38,7 @@ def checkFile(df):
         print("passed")
 
     # check 3 ----------------------------------------------------------------------
-    curError = "'Earliest Time Phone Pickup AFD or EMS"
+    curError = " -- 'Earliest Time Phone Pickup AFD or EMS': "
     print(curError, end="")
     c3 = fc.check3(df)
     if c3 is not None:

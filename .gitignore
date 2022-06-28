@@ -23,3 +23,5 @@ cache
 .venv/
 analyzefire.spec
 build/
+
+.env
