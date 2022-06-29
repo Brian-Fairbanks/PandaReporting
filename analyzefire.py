@@ -681,26 +681,7 @@ def analyzeFire(fireDF):
     #           Incident Recalculations
     #   ----------------
 
-    # get a list of units that needs to be recalculated  staged = arrived_on_scene if ((first_real_unit was staged prior to arrival) & (real unit was not staged prior to Enroute))
-    t = "Time First Real Unit Enroute"
-    u = "Incident Time First Staged"
-    v = "Time First Real Unit Arrived"
-
-    # --- get a list of columns that need to be recalculated
-    recalc = fireDF[
-        (
-            (~fireDF[v].isnull())
-            & (fireDF[v] != "-")
-            & (~fireDF[u].isnull())
-            & (fireDF[u] != "-")
-            & (~fireDF[t].isnull())
-            & (fireDF[t] != "-")
-        )
-    ]
-    recalc2 = recalc[((recalc[u] < recalc[v]) & (recalc[u] > recalc[t]))]
-    recalcArray = recalc2.index.tolist()
-
-    # now using U(staging time) instead of V(arrived time), recaluclate the following columns
+    # columns to be recalculated using U(staging time) instead of V(arrived time) (if needed)
     recalcIncidentCols = {
         #    Column name:
         #       [  column to get diff from 'arrived time'  ,   reverse order  ]
@@ -721,12 +702,36 @@ def analyzeFire(fireDF):
             True,
         ],
     }
+    # get a list of units that needs to be recalculated  staged = arrived_on_scene if ((first_real_unit was staged prior to arrival) & (real unit was not staged prior to Enroute))
+    t = "Time First Real Unit Enroute"
+    u = "Incident Time First Staged"
+    v = "Time First Real Unit Arrived"
 
-    for i in recalcArray:
-        for col in recalcIncidentCols:
-            fireDF.loc[i, col] = getSingleTimeDiff(
-                fireDF, i, recalcIncidentCols[col][0], u, recalcIncidentCols[col][1]
+    # --- get a list of columns that need to be recalculated
+    recalc = fireDF[
+        (
+            (~fireDF[v].isnull())
+            & (fireDF[v] != "-")
+            & (~fireDF[u].isnull())
+            & (fireDF[u] != "-")
+            & (~fireDF[t].isnull())
+            & (fireDF[t] != "-")
+        )
+    ]
+    if not recalc.empty:
+        recalc2 = recalc[
+            (
+                (pd.to_datetime(recalc[u]) < pd.to_datetime(recalc[v]))
+                & (pd.to_datetime(recalc[u]) > pd.to_datetime(recalc[t]))
             )
+        ]
+        recalcArray = recalc2.index.tolist()
+
+        for i in recalcArray:
+            for col in recalcIncidentCols:
+                fireDF.loc[i, col] = getSingleTimeDiff(
+                    fireDF, i, recalcIncidentCols[col][0], u, recalcIncidentCols[col][1]
+                )
 
     # for col in recalcIncidentCols:
     #     fireDF = utils.putColAfter(fireDF, [col + "recalc"], col)
@@ -734,6 +739,19 @@ def analyzeFire(fireDF):
     #   ----------------
     #           Unit Recalculations
     #   ----------------
+
+    # now using U(staging time) instead of V(arrived time), recaluclate the following columns
+    #    Column name:
+    #       [  column to get diff from 'arrived time'  ,   reverse order  ]
+    recalcUnitCols = {
+        "Unit Respond to Arrival": ["Unit Time Enroute", False],
+        "Unit Dispatch to Onscene": ["Unit Time Assigned", False],
+        "Unit OnScene to Clear Call": ["Unit Time Call Cleared", True],
+        "Earliest Phone Pickup Time to Unit Arrival": [
+            "Earliest Time Phone Pickup AFD or EMS",
+            False,
+        ],
+    }
 
     t = "Unit Time Enroute"
     u = "Unit Time Staged"
@@ -750,27 +768,15 @@ def analyzeFire(fireDF):
             & (fireDF[t] != "-")
         )
     ]
-    recalc2 = recalc[((recalc[u] < recalc[v]) & (recalc[u] > recalc[t]))]
-    recalcArray = recalc2.index.tolist()
+    if not recalc.empty:
+        recalc2 = recalc[((recalc[u] < recalc[v]) & (recalc[u] > recalc[t]))]
+        recalcArray = recalc2.index.tolist()
 
-    # now using U(staging time) instead of V(arrived time), recaluclate the following columns
-    #    Column name:
-    #       [  column to get diff from 'arrived time'  ,   reverse order  ]
-    recalcUnitCols = {
-        "Unit Respond to Arrival": ["Unit Time Enroute", False],
-        "Unit Dispatch to Onscene": ["Unit Time Assigned", False],
-        "Unit OnScene to Clear Call": ["Unit Time Call Cleared", True],
-        "Earliest Phone Pickup Time to Unit Arrival": [
-            "Earliest Time Phone Pickup AFD or EMS",
-            False,
-        ],
-    }
-
-    for i in recalcArray:
-        for col in recalcUnitCols:
-            fireDF.loc[i, col] = getSingleTimeDiff(
-                fireDF, i, recalcUnitCols[col][0], u, recalcUnitCols[col][1]
-            )
+        for i in recalcArray:
+            for col in recalcUnitCols:
+                fireDF.loc[i, col] = getSingleTimeDiff(
+                    fireDF, i, recalcUnitCols[col][0], u, recalcUnitCols[col][1]
+                )
 
     # =================================================================
     #   Extra Time Formatted Columns
