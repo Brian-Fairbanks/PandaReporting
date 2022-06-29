@@ -6,15 +6,8 @@ from tkinter import messagebox
 from tkinter.filedialog import askopenfile, askopenfilenames
 
 try:
-    import FireCheck as fc
-    from validateData import checkFile
-except:
-    import GUI.FireCheck as fc
-    from GUI.validateData import checkFile
-
-
-try:
     from analyzefire import analyzeFire
+    from preprocess import preprocess
 except:
     pass
 
@@ -22,7 +15,7 @@ fileArray = {}
 
 ws = Tk()
 ws.title("Fire/EMS Management")
-ws.geometry("400x200")
+ws.geometry("600x200")
 
 ws.columnconfigure(0, weight=1)
 ws.rowconfigure(1, weight=1)
@@ -54,6 +47,7 @@ def guiAnalyze():
     # Merge file before had? calculate them all separately and thne merge at the end?  what do we do here?
     for file in fileArray:
         analyzeFire(fileArray[file])
+
     return None
 
 
@@ -69,11 +63,7 @@ def addFiles():
             try:
                 excel_filename = r"{}".format(file)
                 # read the file
-                fileArray[file] = pd.read_excel(excel_filename)
-                # sort the array
-                # preprocess file
-                fileArray[file] = fc.sort(fileArray[file])
-                fileArray[file] = checkFile(fileArray[file])
+                fileArray[file] = preprocess(pd.read_excel(excel_filename))
 
             except ValueError:
                 messagebox.showerror("Invalid File", "The loaded file is invalid")

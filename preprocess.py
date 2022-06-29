@@ -11,11 +11,11 @@ def preprocess(df, start=None, end=None):
     # =================================================================
     # Get Date Range
     # =================================================================
-    if end is None and start is None:
-        # get start of this month for end
-        end = dt.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        # and then go back one month for the start
-        start = end - rd(months=1)
+    # if end is None and start is None:
+    #     # get start of this month for end
+    #     end = dt.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    #     # and then go back one month for the start
+    #     start = end - rd(months=1)
 
     # =================================================================
     # Ensure that old EMS files will work with even PRE-RENAME-FUNCTIONS (this seems like bad practice...)
@@ -228,15 +228,16 @@ def preprocess(df, start=None, end=None):
         pd.to_datetime(df[colName], errors="raise", unit="s")
 
     # =================================================================
-    # now that we have actual times... Filter to date range
+    # now that we have actual times... Filter to date range (if dates are supplied)
     # =================================================================
-    print(" -- Filtering to Selected Date Range")
-    df = df[
-        (df["Earliest Time Phone Pickup AFD or EMS"] >= start)
-        & (df["Earliest Time Phone Pickup AFD or EMS"] < end)
-        | (df["Incident Time Call Entered in Queue"] >= start)
-        & (df["Incident Time Call Entered in Queue"] < end)
-    ]
+    if end is not None and start is not None:
+        print(" -- Filtering to Selected Date Range")
+        df = df[
+            (df["Earliest Time Phone Pickup AFD or EMS"] >= start)
+            & (df["Earliest Time Phone Pickup AFD or EMS"] < end)
+            | (df["Incident Time Call Entered in Queue"] >= start)
+            & (df["Incident Time Call Entered in Queue"] < end)
+        ]
 
     # =================================================================
     # Drop timeDelta Columns, as we can calculate them ourselves
