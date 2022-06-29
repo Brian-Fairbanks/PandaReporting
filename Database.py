@@ -275,6 +275,8 @@ class SQLDatabase:
 
         # with tqdm(total=len(df), desc=f"Inserting into: {table}") as loading:
         skipped = []
+        errored = []
+        errorRows = []
         for i in tqdm(range(len(df)), desc=f"Inserting into: {table}"):
             # print(df.iloc[i][0])
             try:
@@ -285,10 +287,37 @@ class SQLDatabase:
                 inc = df.iloc[i]["Incident_Number"]
                 skipped.append(f"{inc} - {df.iloc[i][1]}")
                 pass
+            except sqlalchemy.exc.ProgrammingError as err:
+                inc = df.iloc[i]["Incident_Number"]
+                errored.append(f"{inc} - {err}")
+                errorRows.append(i)
+
+            except err:
+                print(" - Something went wrong! - \n", err)
+
         if len(skipped) > 0:
             print(
                 f"Incidents skipped Due to Existing Primary Keys: {len(skipped)}/{len(df)}\n{skipped}"
             )
+        if len(errorRows) > 0:
+            import datetime
+
+            print(
+                f"==== Errors importing the following {len(errorRows)} Incidents - \n"
+            )
+            print(*errored, sep="\n\n")
+            print("\n==========================================================\n")
+            # Write errors to file
+            writer = pd.ExcelWriter(
+                "{0} Write Errors - {1}.xlsx".format(
+                    table, (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
+                ),
+                engine="xlsxwriter",
+                datetime_format="mm/dd/yyyy hh:mm:ss",
+                date_format="mm/dd/yyyy",
+            )
+            df.iloc[errorRows].to_excel(writer)
+            writer.save()
 
     # testing
     def insertTest(self, df):

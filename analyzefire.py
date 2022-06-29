@@ -669,6 +669,10 @@ def analyzeFire(fireDF):
     # Correction of time: staging calls
     # =================================================================
 
+    # Create columns assuming no... this to be changed only on those that are needed.
+    fireDF["INC_Staged_As_Arrived"] = 0
+    fireDF["UNIT_Staged_As_Arrived"] = 0
+
     def getSingleTimeDiff(df, row, t1, t2, reverse):
         if not reverse:
             res = df.loc[row, t2] - df.loc[row, t1]
