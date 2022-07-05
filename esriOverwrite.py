@@ -144,3 +144,12 @@ def formatDFForEsri(df):
 # ==============================================================
 # adds = df.spatial.to_featureset()
 # tbl.edit_features(adds=adds)
+
+if __name__ == "__main__":
+    esriDF = EsriDatabase()
+    esriDF.connect()
+
+    csv_file = r"C:\\Users\\bfairbanks\\Desktop\\esriDF.csv"
+    df = GeoAccessor.from_table(csv_file)
+
+    esriDF.appendDF(df)

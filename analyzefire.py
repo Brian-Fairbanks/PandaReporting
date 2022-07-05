@@ -260,7 +260,7 @@ def analyzeFire(fireDF):
             return "STAGED"
         # "ENROUTE ONLY" - "Unit enroute only, but never arrived"
         if pd.notnull(uenroute):
-            return "EMROUTE ONLY"
+            return "ENROUTE ONLY"
         # "NEVER ENROUTE" - "Never enroute"
         if pd.notnull(uassigned):
             return "NEVER ENROUTE"
@@ -732,6 +732,7 @@ def analyzeFire(fireDF):
         recalcArray = recalc2.index.tolist()
 
         for i in recalcArray:
+            fireDF.loc[i, "INC_Staged_As_Arrived"] = 1
             for col in recalcIncidentCols:
                 fireDF.loc[i, col] = getSingleTimeDiff(
                     fireDF, i, recalcIncidentCols[col][0], u, recalcIncidentCols[col][1]
@@ -777,6 +778,7 @@ def analyzeFire(fireDF):
         recalcArray = recalc2.index.tolist()
 
         for i in recalcArray:
+            fireDF.loc[i, "UNIT_Staged_As_Arrived"] = 1
             for col in recalcUnitCols:
                 fireDF.loc[i, col] = getSingleTimeDiff(
                     fireDF, i, recalcUnitCols[col][0], u, recalcUnitCols[col][1]
@@ -846,17 +848,17 @@ def analyzeFire(fireDF):
     # Unit  Ph PU to UnitArrived
     # fireDF[""] = fireDF[""].apply(utils.dtFormat)
 
-    # writer = pd.ExcelWriter(
-    #     "Output\\Output_{0}.xlsx".format(
-    #         (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
-    #     ),
-    #     engine="xlsxwriter",
-    #     datetime_format="mm/dd/yyyy hh:mm:ss",
-    #     date_format="mm/dd/yyyy",
-    # )
+    writer = pd.ExcelWriter(
+        "Output\\Output_{0}.xlsx".format(
+            (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
+        ),
+        engine="xlsxwriter",
+        datetime_format="mm/dd/yyyy hh:mm:ss",
+        date_format="mm/dd/yyyy",
+    )
 
-    # fireDF.to_excel(writer)
-    # writer.save()
+    fireDF.to_excel(writer)
+    writer.save()
     # plt.savefig('saved_figure.png')
 
     # ----------------
@@ -866,23 +868,23 @@ def analyzeFire(fireDF):
     # show(fireDF)
 
     # Ensure that NotNull Data cannot be null
-    fireDF["Unit"] = fireDF["Unit"].fillna(value="UNKNOWN")
+    # fireDF["Unit"] = fireDF["Unit"].fillna(value="UNKNOWN")
 
-    def fillTime(assigned, phpu):
-        if pd.isnull(assigned):
-            return phpu
-        return assigned
+    # def fillTime(assigned, phpu):
+    #     if pd.isnull(assigned):
+    #         return phpu
+    #     return assigned
 
-    fireDF["Unit_Assigned"] = fireDF.apply(
-        lambda row: fillTime(row["Unit_Assigned"], row["Phone_Pickup_Time"]), axis=1
-    )
+    # fireDF["Unit_Assigned"] = fireDF.apply(
+    #     lambda row: fillTime(row["Unit_Assigned"], row["Phone_Pickup_Time"]), axis=1
+    # )
 
-    from Database import SQLDatabase
+    # from Database import SQLDatabase
 
-    db = SQLDatabase()
-    db.insertDF(fireDF)
+    # db = SQLDatabase()
+    # db.insertDF(fireDF)
 
-    from esriOverwrite import EsriDatabase
+    # from esriOverwrite import EsriDatabase
 
     # esriDF = EsriDatabase.formatDFForEsri(fireDF)
     # edb = EsriDatabase()
