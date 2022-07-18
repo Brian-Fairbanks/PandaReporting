@@ -287,16 +287,19 @@ class SQLDatabase:
                 df.iloc[i : i + 1].to_sql(
                     name=table, if_exists="append", con=self.engine, index=False
                 )
-            except sqlalchemy.exc.IntegrityError:
+            except sqlalchemy.exc.IntegrityError as err:
                 inc = df.iloc[i]["Incident_Number"]
-                skipped.append(f"{inc} - {df.iloc[i][1]}")
-                pass
+                skipped.append(f"{inc} - {err}")
+                errorRows.append(i)
             except sqlalchemy.exc.ProgrammingError as err:
                 inc = df.iloc[i]["Incident_Number"]
                 errored.append(f"{inc} - {err}")
                 errorRows.append(i)
-
-            except err:
+            except sqlalchemy.exc.DataError as err:
+                inc = df.iloc[i]["Incident_Number"]
+                errored.append(f"{inc} - {err}")
+                errorRows.append(i)
+            except Exception as err:
                 print(" - Something went wrong! - \n", err)
 
         if len(skipped) > 0:
@@ -305,6 +308,16 @@ class SQLDatabase:
             )
         if len(errorRows) > 0:
             import datetime
+
+            with open(
+                "{0} Write Errors - {1}.xlsx".format(
+                    table, (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
+                ),
+                "w",
+            ) as f:
+                f.write(
+                    f"===== Integrety Error =====\n{skipped}\n\n===== Data Error =====\n{errored}"
+                )
 
             print(
                 f"==== Errors importing the following {len(errorRows)} Incidents - \n"
@@ -342,34 +355,31 @@ class SQLDatabase:
 
         return None
 
+    def retreiveDF(self, query, dateFields):
+
+        sql_df = pd.read_sql(
+            query,
+            con=self.engine,
+            parse_dates=dateFields,
+        )
+
+        return sql_df
+
 
 # =================================================================
 #      Testing Code
 # =================================================================
 if __name__ == "__main__":
     # set up simple dataframe to test insertion
-    df = pd.DataFrame([["test from dataframe"], ["pandas will work"]], columns=["data"])
+    # df = pd.DataFrame([["test from dataframe"], ["pandas will work"]], columns=["data"])
 
     db = SQLDatabase()
-    db.insertTest(df)
-
-    # conn = pyodbc.connect(
-    #     driver="{SQL Server}",
-    #     host="CRM22G3",
-    #     database="master",
-    #     trusted_connection="yes",
-    # )
-    # conn = pyodbc.connect("DRIVER={SQL Server};SERVER=CRM22G3;DATABASE=master;")
+    df = db.retreiveDF()
+    # db.insertTest(df)
 
     # cursor = conn.cursor()
 
     # cursor.execute(
-    #     """
-    # insert into dbo.Test (data)
-    # values ('input from python'),
-    #     ('and a second as well');
-    # """
-    # )
 
     # conn.commit()
 
