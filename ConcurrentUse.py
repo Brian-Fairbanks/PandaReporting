@@ -45,16 +45,25 @@ def addConcurrentUse(orig, startName, endName):
     # set up timeInterval for easier overlap detection
 
     # dont crash the program when no close is given please...
-    def makeInterval(start, end):
+    def makeInterval(inc, start, end):
         interval = pd.Interval(0, 0, closed="neither")
         try:
             interval = pd.Interval(start, end, closed="right")
         except Exception as e:
-            print(e)
+            if not (pd.isnull(start) or pd.isnull(end)):
+                pass
+            print(f"{inc}: {start} - {end} : {e}")
+            try:
+                interval = pd.Interval(start, start, closed="right")
+            except Exception as err:
+                print(err)
         return interval
 
     orig["Time_Interval"] = orig.apply(
-        lambda row: makeInterval(row[startName], row[endName]), axis=1
+        lambda row: makeInterval(
+            row["Master Incident Number"], row[startName], row[endName]
+        ),
+        axis=1,
     )
 
     # Set up columns to reveal specific time overlap
@@ -121,12 +130,21 @@ def getTimes(df, ind, interval, bucket):
     commonTimes = nearbyInd[
         (nearbyInd["Bucket Type"] == bucket)
         & (nearbyInd["Department"].isin(ourDepartment))
+        # & (nearbyInd["include_in_concurrency"])
     ]
 
+    # Remove broken time intervals before comparing them
+
     # filter that on overlap times - lets use only those within 20
-    commonTimes = commonTimes[
-        commonTimes.apply(lambda row: interval.overlaps(row["Time_Interval"]), axis=1)
-    ]
+    try:
+        commonTimes = commonTimes[
+            commonTimes.apply(
+                lambda row: interval.overlaps(row["Time_Interval"]), axis=1
+            )
+        ]
+    except Exception as e:
+        print(f"{ind} - {interval}")
+
     # this should never actually happen afterall, you should ALWAYS find yourself.
     # if commonTimes.empty:
     #     return df
@@ -164,13 +182,15 @@ def getTimes(df, ind, interval, bucket):
     # skip the first, as it should always be 0 seconds
     for time in timeList[1:]:
         timeRange = time - prevTime
-
-        setLength = (
-            commonTimes[
-                commonTimes.apply(lambda row: time in row["Time_Interval"], axis=1)
-            ].shape[0]
-            - 1
-        )
+        try:
+            setLength = (
+                commonTimes[
+                    commonTimes.apply(lambda row: time in row["Time_Interval"], axis=1)
+                ].shape[0]
+                - 1
+            )
+        except Exception as e:
+            show(commonTimes)
         # print(f"  {str(time):<30}: {str(timeRange):<23}-   {setLength}")
         # max out the time to be 9+ units
         if setLength > 9:
