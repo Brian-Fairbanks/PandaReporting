@@ -22,6 +22,7 @@ pd.options.mode.chained_assignment = None
 locations = data.getLocations()
 reserveUnits = data.getReserves()
 stationDict = data.getStations()
+ourNames = ["AUSTIN-TRAVIS COUNTY EMS", "ESD02 - Pflugerville", "ESD02"]
 
 
 # Create a Pandas Excel writer using XlsxWriter as the engine.
@@ -92,7 +93,6 @@ def getStations(fireDF):
     az = "Department"
     ba = "Frontline_Status"
 
-    ourNames = ["AUSTIN-TRAVIS COUNTY EMS", "ESD02 - Pflugerville", "ESD02"]
     conditions = [
         # fmt: off
         (fireDF["Frontline_Status"] == "Not a unit"),  # 0
@@ -100,6 +100,10 @@ def getStations(fireDF):
         (fireDF[az] == "AFD"),
         (fireDF[az] == "ESD12 - Manor") & (fireDF[ba] == "Other"),
         (fireDF[az] == "ESD12 - Manor"),
+        (fireDF[az] == "WC - Round Rock") & (fireDF[ba] == "Other"),
+        (fireDF[az] == "WC - Round Rock"),
+        (fireDF[az] == "A/TCEMS") & (fireDF[ba] == "Administrative Staff"),
+        (fireDF[az] == "A/TCEMS"),
         (fireDF[az].isin(ourNames)) & (fireDF[ba].isin(["Other", "Command"])),
         (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"] == "QNT261"),  # 6
         (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"].str.contains("BAT20")),
@@ -117,8 +121,12 @@ def getStations(fireDF):
         "Not a unit",  # 0
         "AFD Other",
         "AFD",
-        "ESD12 - Manor Other",
-        "ESD12 - Manor",
+        "ESD12 Manor Other",
+        "ESD12 Manor",
+        "RRFD Other",
+        "RRFD",
+        "A/TCEMS Other",
+        "A/TCEMS",
         "ADMIN",
         "S05",  # 6
         "S01",
@@ -178,8 +186,12 @@ def addFirstArrived(df):
                 incident_data["Unit Time Arrived At Scene"]
                 == incident_data["Unit Time Arrived At Scene"].min()
             ].index[0]
-            # and set earliest arrival of all for incident as 'FirstArrived'
-            df.loc[first, "FirstArrived"] = True
+            # and set earliest arrival of all for incident as 'FirstArrived' if it is less than firstUnitArrived (accounts for out of jurisdiction other units)
+            if (
+                df.loc[first, "Unit Time Arrived At Scene"]
+                <= df.loc[first, "Time First Real Unit Arrived"]
+            ):
+                df.loc[first, "FirstArrived"] = True
         except:
             pass
     return df
@@ -277,11 +289,6 @@ def analyzeFire(fireDF):
         axis=1,
     )
 
-    # status does not exist yet, column organization is put at the end of this file
-
-    # TODO: handle seperation of Response/Response Status as needed
-    # This will require further discussion with Mary
-
     # =================================================================
     #    Fire/EMS Specific Handles
     # =================================================================
@@ -360,20 +367,32 @@ def analyzeFire(fireDF):
     ##############################################################
     print("assigning ESD17 status:")
 
-    def isESD(jur, lon, lat):
-        if jur not in ["ESD02", "PFLUGERVILLE - ESD TSCO"]:
+    def isESD(jur, lon, lat, inc):
+        try:
+            if jur not in ["ESD02", "PFLUGERVILLE - ESD TSCO"]:
+                # print(lat, lon, "is not in esd17")
+                return False
+            plot = Point(lon, lat)
+            if (esd17.contains(plot)).any():
+                # print(lat, lon, "is in esd17")
+                return True
             # print(lat, lon, "is not in esd17")
             return False
-        plot = Point(lon, lat)
-        if (esd17.contains(plot)).any():
-            # print(lat, lon, "is in esd17")
-            return True
-        # print(lat, lon, "is not in esd17")
-        return False
+        except Exception as err:
+            print(err)
+            faults.append(inc)
+            pass
 
+    faults = []
     fireDF["IsESD17"] = np.vectorize(isESD)(
-        fireDF["Jurisdiction"], fireDF["X-Long"], fireDF["Y_Lat"]
+        fireDF["Jurisdiction"],
+        fireDF["X-Long"],
+        fireDF["Y_Lat"],
+        fireDF["Master Incident Number"],
     )
+    if len(faults) > 0:
+        print(faults, end="\n")
+        exit(0)
 
     # Clear data
     esd17 = None
@@ -807,6 +826,41 @@ def analyzeFire(fireDF):
     # =================================================================
     #     get Complete Response Force for each Structure Fire
     # =================================================================
+    # check transport not reflecting onscene status
+
+    if dataSource == "ems":
+        transportCheck = fireDF[
+            pd.isnull(fireDF["Unit Time Arrived At Scene"]) & fireDF["Transport_Count"]
+            > 0
+        ].index.tolist()
+
+        for i in transportCheck:
+            # Status
+            if (fireDF.loc[i, "Incident Call Count"] == 1) and fireDF.loc[
+                i, "Jurisdiction"
+            ] in ourNames:
+                fireDF.loc[i, "Status"] = "1"
+            else:
+                fireDF.loc[i, "Status"] = "0"
+
+            # Response Status
+            fireDF.loc[i, "Response_Status"] = "ONSC"
+
+            # First Arrived Esri
+            if (fireDF.loc[i, "Incident Call Count"] == 1) and fireDF.loc[
+                i, "Jurisdiction"
+            ] in ourNames:
+                fireDF.loc[i, "FirstArrivedEsri"] = "1"
+            else:
+                fireDF.loc[i, "FirstArrivedEsri"] = "-"
+            # fireDF.loc[i, "UNIT_Staged_As_Arrived"] = 1
+            # for col in recalcUnitCols:
+            #     fireDF.loc[i, col] = getSingleTimeDiff(
+            #         fireDF, i, recalcUnitCols[col][0], u, recalcUnitCols[col][1]
+            #     )
+    # =================================================================
+    #     get Complete Response Force for each Structure Fire
+    # =================================================================
     crfdf = getCRF(fireDF)
 
     # fireDF.join(crfdf.set_index("incident"), on="Master Incident Number")
@@ -841,55 +895,38 @@ def analyzeFire(fireDF):
     # using builtin function vs using ExcelWriter class
     # fireDF.to_excel("Output{0}.xlsx".format((datetime.datetime.now()).strftime("%H-%M-%S")))
 
-    # convert specific rows to format {h}:mm:ss format
+    # writer = pd.ExcelWriter(
+    #     "Output\\Output_{0}.xlsx".format(
+    #         (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
+    #     ),
+    #     engine="xlsxwriter",
+    #     datetime_format="mm/dd/yyyy hh:mm:ss",
+    #     date_format="mm/dd/yyyy",
+    # )
 
-    # Incident 1st Enroute to 1stArrived Time
-    # Incident Duration - Ph PU to Clear
-    # Unit  Ph PU to UnitArrived
-    # fireDF[""] = fireDF[""].apply(utils.dtFormat)
-
-    writer = pd.ExcelWriter(
-        "Output\\Output_{0}.xlsx".format(
-            (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
-        ),
-        engine="xlsxwriter",
-        datetime_format="mm/dd/yyyy hh:mm:ss",
-        date_format="mm/dd/yyyy",
-    )
-
-    fireDF.to_excel(writer)
-    writer.save()
+    # fireDF.to_excel(writer)
+    # writer.save()
     # plt.savefig('saved_figure.png')
 
     # ----------------
     # Write to Database
     # ----------------
 
-    # show(fireDF)
+    from Database import SQLDatabase
 
-    # Ensure that NotNull Data cannot be null
-    # fireDF["Unit"] = fireDF["Unit"].fillna(value="UNKNOWN")
+    db = SQLDatabase()
+    db.insertDF(fireDF)
 
-    # def fillTime(assigned, phpu):
-    #     if pd.isnull(assigned):
-    #         return phpu
-    #     return assigned
-
-    # fireDF["Unit_Assigned"] = fireDF.apply(
-    #     lambda row: fillTime(row["Unit_Assigned"], row["Phone_Pickup_Time"]), axis=1
-    # )
-
-    # from Database import SQLDatabase
-
-    # db = SQLDatabase()
-    # db.insertDF(fireDF)
-
+    # ----------------
+    # Write to Esri Directly
+    # ----------------
     # from esriOverwrite import EsriDatabase
 
     # esriDF = EsriDatabase.formatDFForEsri(fireDF)
     # edb = EsriDatabase()
     # edb.connect()
     # edb.appendDF(fireDF)
+
     # show(esriDF)
 
     ######################################
