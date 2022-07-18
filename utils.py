@@ -99,10 +99,29 @@ def addTimeDiff(df, nt, timeStart, timeEnd):
     global last
     last = []
     # ensure valid dateTime, or properly noted error
-    df[timeEnd] = df[timeEnd].apply(verifyTime)
-    df[timeStart] = df[timeStart].apply(verifyTime)
+    # df[timeEnd] = df[timeEnd].apply(verifyTime)
+    # df[timeStart] = df[timeStart].apply(verifyTime)
 
-    df[nt] = (df[timeEnd] - df[timeStart]).astype("timedelta64[s]")
+    def tryGetTime(inc, end, start):
+        if pd.isnull(start) or pd.isnull(end):
+            return None
+        try:
+            return pd.to_timedelta(
+                verifyTime(end) - verifyTime(start), unit="seconds", errors="raise"
+            ) / np.timedelta64(1, "s")
+        except Exception as err:
+
+            print(f"-------  {inc}  ------\n{err}")
+            return None
+
+    # df[nt] = (df[timeEnd] - df[timeStart]).astype("timedelta64[s]")
+    df[nt] = df.apply(
+        lambda row: tryGetTime(
+            row["Master Incident Number"], row[timeEnd], row[timeStart]
+        ),
+        axis=1,
+    )
+
     # print(df[nt])
 
     # print(type(df.loc[1, nt]))
