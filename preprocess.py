@@ -173,6 +173,19 @@ def preprocess(df, start=None, end=None):
     df = df.replace("-", np.nan)
 
     # =================================================================
+    #     Add unit type column to simplify analysis
+    # =================================================================
+    df = utils.addUnitType(df)
+    df = utils.addBucketType(df)
+
+    # =================================================================
+    #     Remove COMM units / Information Only
+    # =================================================================
+    df = df[
+        ~df["Unit Type"].isin(["MEDC", "FTAC", "TEST", "ALARMT", "COM", "CNTRL", "CC"])
+    ]
+
+    # =================================================================
     # order fire data by time : - 'Master Incident Number' > 'Unit Time Arrived At Scene' > 'Unit Time Staged' > 'Unit Time Enroute' > 'Unit Time Assigned'
     # =================================================================
     print(" -- Ordering Rows")

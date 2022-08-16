@@ -337,11 +337,11 @@ def analyzeFire(fireDF):
 
     fireDF = checkFile(fireDF)
 
-    # =================================================================
-    #     Add unit type column to simplify analysis
-    # =================================================================
-    fireDF = utils.addUnitType(fireDF)
-    fireDF = utils.addBucketType(fireDF)
+    # # =================================================================
+    # #     Add unit type column to simplify analysis
+    # # =================================================================
+    # fireDF = utils.addUnitType(fireDF)
+    # fireDF = utils.addBucketType(fireDF)
 
     # =================================================================
     #     Calculate Concurrent Use for Each Unit
@@ -526,12 +526,14 @@ def analyzeFire(fireDF):
             "X" if ((fireDF.loc[i - 1, "Status"] in (["X", "C"]))) else "0"
         )
 
-    # =================================================================
-    #     Remove COMM units / Information Only
-    # =================================================================
-    fireDF = fireDF[
-        ~fireDF["Unit Type"].isin(["MEDC", "FTAC", "TEST", "ALARMT", "COM", "CNTRL"])
-    ]
+    # # =================================================================
+    # #     Remove COMM units / Information Only
+    # # =================================================================
+    # fireDF = fireDF[
+    #     ~fireDF["Unit Type"].isin(
+    #         ["MEDC", "FTAC", "TEST", "ALARMT", "COM", "CNTRL", "CC"]
+    #     )
+    # ]
 
     # =================================================================
     #     Recalculate Shift Data
