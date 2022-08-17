@@ -914,11 +914,10 @@ def analyzeFire(fireDF):
     # Write to Database
     # ----------------
 
-    show(fireDF)
     from Database import SQLDatabase
 
-    # db = SQLDatabase()
-    # db.insertDF(fireDF)
+    db = SQLDatabase()
+    db.insertDF(fireDF)
 
     # ----------------
     # Write to Esri Directly
