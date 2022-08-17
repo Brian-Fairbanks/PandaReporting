@@ -58,6 +58,7 @@ def setStation(station):
     stationSet = station
 
     coords = station["gps"]
+    station["DateIncluded"] = pd.to_datetime(station["DateIncluded"], format="%m-%d-%Y")
 
     point = toCrs(coords[1], coords[0])
 
@@ -131,7 +132,7 @@ def distToStationFromGPS(lat, lon):
     return distInMiles
 
 
-def distToStationFromNode(dest_node, bucket, fullProgress=None):
+def distToStationFromNode(dest_node, bucket, date, fullProgress=None):
     """
     returns the distance from a passed map node -
     requires a station be set.  May crash if no station is set.
@@ -163,10 +164,14 @@ def distToStationFromNode(dest_node, bucket, fullProgress=None):
         return np.inf
 
     # # exclude stations without ENGs from eng calls
-    # if bucket in ["ENG"] and not stationSet["hasFire"]:
-    #     # print("has no trucks")
-    #     return None
+    if bucket in ["ENG"] and not stationSet["hasFire"]:
+        #     # print("has no trucks")
+        return np.inf
 
+    print(f"{date} : {stationSet['DateIncluded']}")
+    if date < stationSet["DateIncluded"]:
+        print("DATE BEFORE ACTIVE")
+        return np.inf
     try:
         # how long is our route in meters?
         dist = nx.shortest_path_length(roadMap, stationNode, dest_node, weight="length")
@@ -253,6 +258,7 @@ def getArrayDistToStation(df):
                 lambda x: distToStationFromNode(
                     x["nearest node"],
                     x["Bucket Type"],
+                    x["Earliest Time Phone Pickup AFD or EMS"],
                     stationBar,
                 ),
                 axis=1,
