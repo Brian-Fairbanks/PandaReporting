@@ -168,9 +168,9 @@ def distToStationFromNode(dest_node, bucket, date, fullProgress=None):
         #     # print("has no trucks")
         return np.inf
 
-    print(f"{date} : {stationSet['DateIncluded']}")
+    # print(f"{date} : {stationSet['DateIncluded']}")
     if date < stationSet["DateIncluded"]:
-        print("DATE BEFORE ACTIVE")
+        # print("DATE BEFORE ACTIVE")
         return np.inf
     try:
         # how long is our route in meters?
