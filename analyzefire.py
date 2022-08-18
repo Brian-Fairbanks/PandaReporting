@@ -24,17 +24,6 @@ reserveUnits = data.getReserves()
 stationDict = data.getStations()
 ourNames = ["AUSTIN-TRAVIS COUNTY EMS", "ESD02 - Pflugerville", "ESD02"]
 
-
-# Create a Pandas Excel writer using XlsxWriter as the engine.
-# Also set the default datetime and date formats.
-
-# writer = pd.ExcelWriter(
-#     "Output.xlsx",
-#     engine="xlsxwriter",
-#     datetime_format="mmm d yyyy hh:mm:ss",
-#     date_format="mmmm dd yyyy",
-# )
-
 # ##############################################################################################################################################
 #     Station Assignment Functions
 # ##############################################################################################################################################
@@ -53,14 +42,14 @@ def addIsClosestStation(df):
 
 
 def getLoc(address):
-    curLoc = str(address).lower()
+    current_location = str(address).lower()
     stationNum = None
-    if "fs020" in curLoc:
-        stationNum = "S" + curLoc[-2:]
+    if "fs020" in current_location:
+        stationNum = "S" + current_location[-2:]
     # else check it against known street names (specified at the top of the file)
     else:
         for street in locations.keys():
-            if street.lower() in curLoc:
+            if street.lower() in current_location:
                 stationNum = locations[street]
                 break
     return stationNum
@@ -139,7 +128,7 @@ def getStations(fireDF):
         "S0" + fireDF["Radio_Name"].str[-2],
     ]
 
-    fireDF["Station"] = np.select(conditions, choices, default="Unknown")
+    fireDF["Station"] = np.select(conditions, choices, default=fireDF[az])
 
     # correct reserved units, as I have spent far too long trying to do this all as one part
     #    ----------------------------
