@@ -1,15 +1,13 @@
 import pandas as pd
-from pandasgui import show
+
+# from pandasgui import show
 
 from tkinter import *
 from tkinter import messagebox
 from tkinter.filedialog import askopenfile, askopenfilenames
 
-try:
-    from analyzefire import analyzeFire
-    from preprocess import preprocess
-except:
-    pass
+import analyzefire as af
+import preprocess as pp
 
 fileArray = {}
 
@@ -46,7 +44,7 @@ fileList.grid(row=1, column=0, columnspan=4, sticky=("ew"))
 def guiAnalyze():
     # Merge file before had? calculate them all separately and thne merge at the end?  what do we do here?
     for file in fileArray:
-        analyzeFire(fileArray[file])
+        af.analyzeFire(fileArray[file])
 
     return None
 
@@ -63,7 +61,7 @@ def addFiles():
             try:
                 excel_filename = r"{}".format(file)
                 # read the file
-                fileArray[file] = preprocess(pd.read_excel(excel_filename))
+                fileArray[file] = pp.preprocess(pd.read_excel(excel_filename))
 
             except ValueError:
                 messagebox.showerror("Invalid File", "The loaded file is invalid")

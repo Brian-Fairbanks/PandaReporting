@@ -3,8 +3,8 @@
     "S02": {"gps":[30.453910816877844, -97.68157275754972], "hasEMS":true , "hasFire":true,     "DateIncluded":"01-01-2000"},
     "S03": {"gps":[30.46735859584173, -97.5850678533701  ], "hasEMS":true , "hasFire":true,     "DateIncluded":"01-01-2000"},
     "S04": {"gps":[30.468996083019054, -97.63488137388288], "hasEMS":false, "hasFire":true,     "DateIncluded":"01-01-2000"},
-    "S05": {"gps":[30.453616, -97.653056                 ], "hasEMS":true , "hasFire":true,     "DateIncluded":"01-01-2015"},
+    "S05": {"gps":[30.453616, -97.653056                 ], "hasEMS":true , "hasFire":true,     "DateIncluded":"04-01-2020"},
     "S06": {"gps":[30.43126237943462, -97.57109109814995 ], "hasEMS":true , "hasFire":true,     "DateIncluded":"01-01-2030"},
     "S07": {"gps":[30.43509001480158, -97.52744230457466 ], "hasEMS":true , "hasFire":true,     "DateIncluded":"01-01-2030"},
-    "S08": {"gps":[30.406507110071285, -97.63127267249365], "hasEMS":true , "hasFire":false,    "DateIncluded":"07-20-2022"}
+    "S08": {"gps":[30.406507110071285, -97.63127267249365], "hasEMS":true , "hasFire":true,     "DateIncluded":"08-08-2022"}
 }

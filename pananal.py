@@ -1,4 +1,3 @@
-import GUI.gui as gp
+import gui as gp
 
 gp.run()
-    
