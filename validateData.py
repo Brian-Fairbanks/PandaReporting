@@ -1,9 +1,5 @@
-try:
-    import FireCheck as fc
-    from cellFix import getCellFix
-except:
-    import GUI.FireCheck as fc
-    from GUI.cellFix import getCellFix
+import FireCheck as fc
+import cellFix as cf
 
 
 def checkFile(df):
@@ -15,7 +11,7 @@ def checkFile(df):
     print(curError, end="")
     c0 = fc.check0(df)
     if c0 is not None:
-        df = getCellFix(df, c0, ["Earliest Time Phone Pickup AFD or EMS"], curError)
+        df = cf.getCellFix(df, c0, ["Earliest Time Phone Pickup AFD or EMS"], curError)
     else:
         print("passed")
 
@@ -24,7 +20,7 @@ def checkFile(df):
     print(curError, end="")
     c1 = fc.check1(df)
     if c1 is not None:
-        getCellFix(df, c1, ["FirstArrived"], curError)
+        cf.getCellFix(df, c1, ["FirstArrived"], curError)
     else:
         print("passed")
 
@@ -33,7 +29,7 @@ def checkFile(df):
     print(curError, end="")
     c2 = fc.check2(df)
     if c2 is not None:
-        getCellFix(df, c2, ["Unit Time Arrived At Scene"], curError)
+        cf.getCellFix(df, c2, ["Unit Time Arrived At Scene"], curError)
     else:
         print("passed")
 
@@ -42,7 +38,7 @@ def checkFile(df):
     print(curError, end="")
     c3 = fc.check3(df)
     if c3 is not None:
-        getCellFix(df, c3, ["Earliest Time Phone Pickup AFD or EMS"], curError)
+        cf.getCellFix(df, c3, ["Earliest Time Phone Pickup AFD or EMS"], curError)
     else:
         print("passed")
 

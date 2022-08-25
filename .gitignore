@@ -25,4 +25,5 @@ analyzefire.spec
 build/
 
 .env
-*.spec
+
+dist*

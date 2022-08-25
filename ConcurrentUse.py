@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
-from pandasgui import show
+
+# from pandasgui import show
 import utils as u
 from timer import Timer
 from tqdm import tqdm
@@ -51,12 +52,14 @@ def addConcurrentUse(orig, startName, endName):
             interval = pd.Interval(start, end, closed="right")
         except Exception as e:
             if not (pd.isnull(start) or pd.isnull(end)):
+                print(f"{inc}: {start} - {end} : {e}")
+            else:
                 pass
-            print(f"{inc}: {start} - {end} : {e}")
             try:
                 interval = pd.Interval(start, start, closed="right")
             except Exception as err:
-                print(err)
+                if not (pd.isnull(start)):
+                    print(err)
         return interval
 
     orig["Time_Interval"] = orig.apply(

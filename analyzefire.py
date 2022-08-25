@@ -2,7 +2,7 @@
 import datetime
 
 # Dependancies
-from pandasgui import show
+# from pandasgui import show
 import pandas as pd
 import numpy as np
 
@@ -322,7 +322,7 @@ def analyzeFire(fireDF):
     # =================================================================
     #     Fire Data Error Checking
     # =================================================================
-    from GUI.validateData import checkFile
+    from validateData import checkFile
 
     fireDF = checkFile(fireDF)
 
@@ -902,7 +902,7 @@ def analyzeFire(fireDF):
     # ----------------
     # Write to Database
     # ----------------
-
+    # show(fireDF)
     from Database import SQLDatabase
 
     db = SQLDatabase()

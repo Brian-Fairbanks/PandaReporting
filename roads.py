@@ -1,8 +1,6 @@
-from geopandas import geodataframe
-from pandasgui import show
+# from pandasgui import show
 import pyproj
 import pandas as pd
-import geopandas as gpd
 from shapely.geometry import Point
 from shapely.ops import transform
 import osmnx as ox
@@ -441,7 +439,6 @@ def testMap():
 
 
 def testNearestNodes():
-    from pandasgui import show
 
     import loadTestFile
 
@@ -489,7 +486,6 @@ def testNearestNodes():
 
 def testStandAlone():
     import loadTestFile
-    from pandasgui import show
     import utils
 
     df = loadTestFile.get()
