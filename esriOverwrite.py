@@ -5,7 +5,8 @@ from arcgis import GIS
 from arcgis.features import GeoAccessor, FeatureLayer
 from dotenv import load_dotenv
 from os import getenv
-from pandasgui import show
+
+# from pandasgui import show
 
 esri_Export_Query = """
 Select * from (
@@ -438,8 +439,8 @@ class EsriDatabase:
         self.gis = GIS(your_org_url, username, password)
         # table_url = "https://services9.arcgis.com/dcfjRs7Bq0KG7jYq/arcgis/rest/services/Esri_Auto_Import_from_Python_Test/FeatureServer/0"        #Test Table URL
         # table_url = "https://services9.arcgis.com/dcfjRs7Bq0KG7jYq/arcgis/rest/services/Fire_EMS_Run_Data/FeatureServer/0"
-        table_url = "https://services9.arcgis.com/dcfjRs7Bq0KG7jYq/arcgis/rest/services/EMS_Fire_Run_Data/FeatureServer/0"
-        self.tbl = FeatureLayer(table_url, gis=self.gis)  # works for tables
+        # table_url = "https://services9.arcgis.com/dcfjRs7Bq0KG7jYq/arcgis/rest/services/EMS_Fire_Run_Data/FeatureServer/0"
+        # self.tbl = FeatureLayer(table_url, gis=self.gis)  # works for tables
 
     def empty(self):
         self.tbl.manager.truncate()  # truncate table
@@ -454,7 +455,14 @@ class EsriDatabase:
         self.empty()
         self.appendDF(df)
 
-    def appendCSV(self):
+    # ===============================================================================================================
+    #  this is the data provided by ESRI
+    #  It will upload a CSV file drectly to ARCGIS online
+    #  and then PUBLISH the csv file to a new feature layer,
+    #  overwriting the previous one and retaining dashboards created from it.
+    # ===============================================================================================================
+    def publishCSV(self):
+
         csvfile = pd.read_csv(
             "C:\\Users\\bfairbanks\\Desktop\\New folder (4)\\EMS+FireRunData.csv"
         )
@@ -486,6 +494,42 @@ class EsriDatabase:
         }
 
         csv_item.publish(publish_params, overwrite=True)
+
+
+# ===============================================================================================================
+#  this is the data mostly put together myself
+#  It will create a Dataframe, pulled from our database
+#  then overwrite and push this data directly to a particular feature layer
+# ===============================================================================================================
+
+
+def appendFeatureLayer():
+    # csv_file = r"C:\\Users\\bfairbanks\\Desktop\\esriDF.csv"
+    # df = GeoAccessor.from_table(csv_file)
+
+    from Database import SQLDatabase
+
+    db = SQLDatabase()
+    df = db.retreiveDF(
+        esri_Export_Query,
+        [
+            "Phone_Pickup_Time",
+        ],
+    )
+
+    # BIT auto converted to BOOLEAN, but exists in ESRI as INTEGER
+    for col in [
+        "IsESD17",
+        "isETJ",
+        "isCOP",
+        "is_walkup",
+        "call_delayed",
+        "INC_Staged_As_Arrived",
+        "UNIT_Staged_As_Arrived",
+    ]:
+        df[col] = df[col].astype(int)
+    # show(df)
+    esriDF.appendDF(df)
 
 
 # end of class
@@ -532,30 +576,5 @@ if __name__ == "__main__":
     esriDF = EsriDatabase()
     esriDF.connect()
 
-    # csv_file = r"C:\\Users\\bfairbanks\\Desktop\\esriDF.csv"
-    # df = GeoAccessor.from_table(csv_file)
-
-    # from Database import SQLDatabase
-
-    # db = SQLDatabase()
-    # df = db.retreiveDF(
-    #     esri_Export_Query,
-    #     [
-    #         "Phone_Pickup_Time",
-    #     ],
-    # )
-
-    # # BIT auto converted to BOOLEAN, but exists in ESRI as INTEGER
-    # for col in [
-    #     "IsESD17",
-    #     "isETJ",
-    #     "isCOP",
-    #     "is_walkup",
-    #     "call_delayed",
-    #     "INC_Staged_As_Arrived",
-    #     "UNIT_Staged_As_Arrived",
-    # ]:
-    #     df[col] = df[col].astype(int)
-    # show(df)
-    # esriDF.appendDF(df)
-    esriDF.appendCSV()
+    # esriDF.appendFeatureLayer()
+    esriDF.publishCSV()
