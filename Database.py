@@ -356,7 +356,7 @@ class SQLDatabase:
         return None
 
     def retreiveDF(self, query, dateFields):
-
+        print("Pulling data from Database")
         sql_df = pd.read_sql(
             query,
             con=self.engine,
