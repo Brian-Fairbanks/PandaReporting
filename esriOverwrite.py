@@ -1,8 +1,4 @@
-from pickle import TRUE
-from tkinter import FALSE
-import pandas as pd
 from arcgis import GIS
-from arcgis.features import GeoAccessor, FeatureLayer
 from dotenv import load_dotenv
 from os import getenv, remove
 import datetime
@@ -16,7 +12,7 @@ logging.basicConfig(filename=LOG_FILENAME, level=logging.DEBUG)
 
 # from pandasgui import show
 
-esri_Export_Query = "SELECT top 100 * FROM [dbo].[v_esri_export-Query-Filtered]"
+esri_Export_Query = "SELECT top FROM [dbo].[v_esri_export-Query-Filtered]"
 
 EsriTableArray = [
     "Incident_Number",
@@ -172,13 +168,13 @@ class EsriDatabase:
         df.to_csv("EMSFireRunData.csv", index=False)
 
         # csvTimer.end()
-        # # exit(0)
 
         # Send the file to ESRI
         print("Sending to ESRI")
+
         try:
             print("  - Finding Existing file")
-            csv_item = self.gis.content.get("d9944b74b4a144e3bb6e5fb7256d7eb6")
+            csv_item = self.gis.content.get("620a5cd3ccdd4b39908158b3cb87e3b5")
 
             item_props = {
                 "type": csv_item.type,
@@ -187,7 +183,13 @@ class EsriDatabase:
                 "typeKeywords": csv_item.typeKeywords,
                 "title": csv_item.title,
             }
+        except:
+            print("  - Process Failed!  - Could not get current item from ESRI")
+            remove(".\\EMSFireRunData.csv")
+            logging.exception("Exception from CSV File Upload")
+            exit(1)
 
+        try:
             print("  - Pushing File to Esri")
             csv_item.update(
                 item_props,
@@ -224,6 +226,7 @@ class EsriDatabase:
         except:
             print(f"  - Process Failed!  - Error Publishing CSV on ESRI Portal")
             logging.exception("Exception in ESRI CSV Publishing")
+            exit(1)
 
         print("Feature Layer Succesfully Updated")
 
