@@ -193,7 +193,8 @@ def getTimes(df, ind, interval, bucket):
                 - 1
             )
         except Exception as e:
-            show(commonTimes)
+            pass
+            # show(commonTimes)I just want to finish my cabinets
         # print(f"  {str(time):<30}: {str(timeRange):<23}-   {setLength}")
         # max out the time to be 9+ units
         if setLength > 9:

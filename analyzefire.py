@@ -120,7 +120,7 @@ def getStations(fireDF):
         "S05",  # 6
         "S01",
         "S03",
-        "S02",
+        "S08",
         "S04",
         "S03",
         # mark instances of reserved units, so we can run an extra filter on these in a moment
@@ -886,16 +886,16 @@ def analyzeFire(fireDF):
     # using builtin function vs using ExcelWriter class
     # fireDF.to_excel("Output{0}.xlsx".format((datetime.datetime.now()).strftime("%H-%M-%S")))
 
-    # writer = pd.ExcelWriter(
-    #     "Output\\Output_{0}.xlsx".format(
-    #         (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
-    #     ),
-    #     engine="xlsxwriter",
-    #     datetime_format="mm/dd/yyyy hh:mm:ss",
-    #     date_format="mm/dd/yyyy",
-    # )
+    writer = pd.ExcelWriter(
+        "Output\\Output_{0}.xlsx".format(
+            (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
+        ),
+        engine="xlsxwriter",
+        datetime_format="mm/dd/yyyy hh:mm:ss",
+        date_format="mm/dd/yyyy",
+    )
 
-    # fireDF.to_excel(writer)
+    fireDF.to_excel(writer)
     # writer.save()
     # plt.savefig('saved_figure.png')
 
