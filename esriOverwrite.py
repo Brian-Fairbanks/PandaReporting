@@ -12,7 +12,7 @@ logging.basicConfig(filename=LOG_FILENAME, level=logging.DEBUG)
 
 # from pandasgui import show
 
-esri_Export_Query = "SELECT top FROM [dbo].[v_esri_export-Query-Filtered]"
+esri_Export_Query = "SELECT * FROM [dbo].[v_esri_export-Query-Filtered]"
 
 EsriTableArray = [
     "Incident_Number",
@@ -158,7 +158,7 @@ class EsriDatabase:
     def publishCSV(self):
 
         # Create CSV File from Database
-        from timer import Timer
+        # from timer import Timer
 
         # csvTimer = Timer("Timing query request to CSV write")
         # csvTimer.start()

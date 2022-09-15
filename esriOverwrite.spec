@@ -3,20 +3,21 @@
 
 block_cipher = None
 
-
+added_files = [('.env', '.'),('*.py','.')]
 a = Analysis(['esriOverwrite.py'],
              pathex=[],
              binaries=[],
-             datas=[],
-             hiddenimports=["requests_ntlm","arcgis"],
+             datas=added_files,
+             hiddenimports=["requests_ntlm","arcgis", "pyodbc", "sqlalchemy", 'dotenv', 'tqdm'],
              hookspath=[],
              hooksconfig={},
-            runtime_hooks=['./hooks/rthooks/pyi_rth_arcpy.py'],
+            runtime_hooks=[],
             excludes=['arcpy'],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher,
              noarchive=False)
+a.datas += Tree('./arcgis', prefix='arcgis')
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 

@@ -120,7 +120,7 @@ def getStations(fireDF):
         "S05",  # 6
         "S01",
         "S03",
-        "S02",
+        "S08",
         "S04",
         "S03",
         # mark instances of reserved units, so we can run an extra filter on these in a moment

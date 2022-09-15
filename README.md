@@ -27,3 +27,18 @@ Ensure you have installed Pandas, NumPy, and matplotlib
 
 Install MS Sql
 schemas.sql included in root to set up the database
+
+## Installing Esri Overwritter
+
+### PreReq
+
+install KERBEROS
+https://web.mit.edu/KERBEROS/dist/
+
+### Compile Code
+
+run the following line in the root of this folder:
+
+```
+pyinstaller esriOverwrite.spec
+```
