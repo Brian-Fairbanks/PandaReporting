@@ -22,6 +22,11 @@ def addPopDen(fireDF):
     # )
     popData["Pop/Mile"] = popData.apply(lambda x: x["POP_SQMI"], axis=1)
 
+    # Also load in Block Data from
+    print("loading Block Data:")
+    blockData = gpd.read_file("Shape\\BlockData.shp")
+    blockData.set_crs(epsg=4326, inplace=True)
+
     def getPopulationDensity(lon, lat):
         plot = Point(lon, lat)
         try:
@@ -52,6 +57,22 @@ def addPopDen(fireDF):
 
     fireDF["Population Classification"] = fireDF.apply(
         lambda x: popRatio(x["People/Mile"]), axis=1
+    )
+
+    def getBlockData(lon, lat):
+        plot = Point(lon, lat)
+        try:
+            # print(blockData)
+            mapInd = blockData.index[blockData.contains(plot)][0]
+            # GEOID20 = FIPS Alias
+            return blockData.loc[mapInd, "GEOID20"]
+            # return mapInd
+        except:
+            return None
+
+    fireDF["blockData"] = fireDF.apply(
+        lambda x: getBlockData(x["X-Long"], x["Y_Lat"]),
+        axis=1,
     )
 
     return fireDF
