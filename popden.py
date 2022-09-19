@@ -5,16 +5,22 @@ import geopandas as gpd
 
 def addPopDen(fireDF):
     print("loading population grid:")
-    popData = gpd.read_file("Shape\\ESD2Pop.shp")
+    # popData = gpd.read_file("Shape\\ESD2Pop.shp")
+    popData = gpd.read_file("Shape\\PopulationDensityInESD2.shp")
+    # ESD2Pop needed this, PopDenInESD2 is already in 4326
     # specify that source data is WGS 84 / Pseudo-Mercator -- Spherical Mercator, Google Maps, OpenStreetMap, Bing, ArcGIS, ESRI' - https://epsg.io/3857
-    popData.set_crs(epsg=3857, inplace=True)
+    # popData.set_crs(epsg=3857, inplace=True)
     # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
-    popData = popData.to_crs(4326)
+    # popData = popData.to_crs(4326)
 
     # weird aliases... this is 'total population' / 'AreaofLAND(meters)'
-    popData["Pop/Mile"] = popData.apply(
-        lambda x: (x["B01001_001"] / x["ALAND"]) * 2590000, axis=1
-    )
+    # population_name = "B01001_001"
+    # area_name = "ALAND"
+
+    # popData["Pop/Mile"] = popData.apply(
+    #     lambda x: (x[population_name] / x[area_name]) * 2590000, axis=1
+    # )
+    popData["Pop/Mile"] = popData.apply(lambda x: x["POP_SQMI"], axis=1)
 
     def getPopulationDensity(lon, lat):
         plot = Point(lon, lat)

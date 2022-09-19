@@ -896,7 +896,7 @@ def analyzeFire(fireDF):
     )
 
     fireDF.to_excel(writer)
-    # writer.save()
+    writer.save()
     # plt.savefig('saved_figure.png')
 
     # ----------------
@@ -905,8 +905,8 @@ def analyzeFire(fireDF):
     # show(fireDF)
     from Database import SQLDatabase
 
-    db = SQLDatabase()
-    db.insertDF(fireDF)
+    # db = SQLDatabase()
+    # db.insertDF(fireDF)
 
     # ----------------
     # Write to Esri Directly
