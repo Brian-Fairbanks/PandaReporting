@@ -76,3 +76,23 @@ def addPopDen(fireDF):
     )
 
     return fireDF
+
+
+def main():
+    from pandasgui import show
+
+    file = "Fire.xlsx"
+    df = pd.read_excel(file)
+    df = addPopDen(df)
+
+    def getQuery(block, inc):
+        return f"UPDATE [dbo].[FireIncidents] set [Block_ID] = '{block}' WHERE [Incident_Number] = '{inc}'"
+
+    df["sql_statement"] = df.apply(
+        lambda x: getQuery(x["blockData"], x["Incident_Number"]),
+        axis=1,
+    )
+
+
+if __name__ == "__main__":
+    main()
