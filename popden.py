@@ -93,6 +93,8 @@ def main():
         axis=1,
     )
 
+    show(df)
+
 
 if __name__ == "__main__":
     main()

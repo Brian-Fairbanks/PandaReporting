@@ -2,6 +2,7 @@ import pyodbc
 import sqlalchemy
 from sqlalchemy.engine import URL
 import pandas as pd
+
 # from pandasgui import show
 from tqdm import tqdm
 
@@ -79,6 +80,7 @@ class SQLDatabase:
                 "Incident_Call_Count",
                 "Incident_ERF_Time",
                 "Force_At_ERF_Time_of_Close",
+                "Block_ID",
             ]
         ]
         uniqueIncidents = uniqueIncidents.drop_duplicates(subset=["Incident_Number"])
@@ -150,6 +152,7 @@ class SQLDatabase:
                 "Incident_Call_Count",
                 "Incident_ERF_Time",
                 "Force_At_ERF_Time_of_Close",
+                "Block_ID",
             ]
         ]
         uniqueIncidents = uniqueIncidents.drop_duplicates(subset=["Incident_Number"])
