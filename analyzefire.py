@@ -22,6 +22,7 @@ pd.options.mode.chained_assignment = None
 locations = data.getLocations()
 reserveUnits = data.getReserves()
 stationDict = data.getStations()
+specialUnits = data.getSpecialUnits()
 ourNames = ["AUSTIN-TRAVIS COUNTY EMS", "ESD02 - Pflugerville", "ESD02"]
 
 # ##############################################################################################################################################

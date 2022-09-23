@@ -18,6 +18,10 @@ def getReserves():
     return load("reserves")
 
 
+def getSpecialUnits():
+    return load("units")
+
+
 def main():
     print(getLocations())
 
