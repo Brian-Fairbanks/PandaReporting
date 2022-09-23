@@ -70,91 +70,77 @@ def addLocAtAssignToDF(df):
     return df
 
 
+#
+
+
+def stationName(department, frontline, radioName, location):
+    # Helper function to be used in getStations
+    # -------------------------------------------------------------------------------------------
+    specialUnits = {
+        "QNT261": "S05",
+        "BAT20": "S01",
+        "MED271": "S03",
+        "MED281": "S08",
+        "MED270": "S04",
+        "MED280": "S03",
+    }
+
+    otherUnits = {
+        "ESD12 - Manor": "ESD12 Manor",
+        "WC - Round Rock": "RRFD",
+    }
+
+    # rule out units that are not frontline
+    if frontline == "Not a unit":
+        return "Not a unit"
+
+    # Account for our own units
+    if department in (ourNames):
+        # If frontline status is not Frontline...
+        if frontline in (["Other", "Command"]):
+            return "Admin"
+
+        # Our department, but special units - refer to newly created file:
+        if radioName in specialUnits.keys():
+            return specialUnits[radioName]
+
+        # Our department, and not reserve - easy
+        if not radioName in (reserveUnits):
+            return f"S0{radioName[-2]}"
+
+        # If reserver units though...
+        stationNum = getLoc(location)
+        if stationNum != None:
+            return stationNum
+        else:
+            return "UNKNOWN"
+
+    # for all others, give department
+    outsiders = department
+    # Rename those that need it
+    if outsiders in otherUnits.keys():
+        outsiders = otherUnits[outsiders]
+    # and for good measure, append 'OTHER' when needed
+    if frontline == "Other":
+        outsiders += " Other"
+    return outsiders
+
+
 def getStations(fireDF):
     # Add a new Stations Column
     # -------------------------------------------------------------------------------------------
-    # look up radio name and department
-    # S01, S02, S03, S04, S05, ADMIN, AFD, OTHER
 
-    # pulled from fire data xlsx
-    # =IF(AND(AZ1="ESD02 - Pflugerville",BA1="Frontline"),RIGHT(Fire_Table[@[Radio Name]],3),"ADMIN ESD02")
+    fireDF["Station"] = fireDF.apply(
+        lambda row: stationName(
+            row["Department"],
+            row["Frontline_Status"],
+            row["Radio_Name"],
+            row["Location_At_Assign_Time"],
+        ),
+        axis=1,
+    )
 
-    az = "Department"
-    ba = "Frontline_Status"
-
-    conditions = [
-        # fmt: off
-        (fireDF["Frontline_Status"] == "Not a unit"),  # 0
-        (fireDF[az] == "AFD") & (fireDF[ba] == "Other"),  # 1
-        (fireDF[az] == "AFD"),
-        (fireDF[az] == "ESD12 - Manor") & (fireDF[ba] == "Other"),
-        (fireDF[az] == "ESD12 - Manor"),
-        (fireDF[az] == "WC - Round Rock") & (fireDF[ba] == "Other"),
-        (fireDF[az] == "WC - Round Rock"),
-        (fireDF[az] == "A/TCEMS") & (fireDF[ba] == "Administrative Staff"),
-        (fireDF[az] == "A/TCEMS"),
-        (fireDF[az].isin(ourNames)) & (fireDF[ba].isin(["Other", "Command"])),
-        (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"] == "QNT261"),  # 6
-        (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"].str.contains("BAT20")),
-        (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"].str.contains("MED271")),
-        (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"].str.contains("MED281")),
-        (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"].str.contains("MED270")),
-        (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"].str.contains("MED280")),
-            # account for instances where vehicle is filling in for another.  
-            # We will need to deterimine which station it is filling in for based on the location at time of assignment
-        (fireDF[az].isin(ourNames)) & (fireDF["Radio_Name"].isin(reserveUnits)),
-        (fireDF[az].isin(ourNames)),
-        # fmt: on
-    ]
-    choices = [
-        "Not a unit",  # 0
-        "AFD Other",
-        "AFD",
-        "ESD12 Manor Other",
-        "ESD12 Manor",
-        "RRFD Other",
-        "RRFD",
-        "A/TCEMS Other",
-        "A/TCEMS",
-        "ADMIN",
-        "S05",  # 6
-        "S01",
-        "S03",
-        "S08",
-        "S04",
-        "S03",
-        # mark instances of reserved units, so we can run an extra filter on these in a moment
-        "Reserve Unit",
-        "S0" + fireDF["Radio_Name"].str[-2],
-    ]
-
-    fireDF["Station"] = np.select(conditions, choices, default=fireDF[az])
-
-    # correct reserved units, as I have spent far too long trying to do this all as one part
-    #    ----------------------------
-    rescor = fireDF.index[fireDF["Station"] == "Reserve Unit"].tolist()
-    # again, this is going to be very slow compared to other vectorized checks/changes
-    for i in rescor:
-        # get location as a string
-        curLoc = str(fireDF.loc[i, "Location_At_Assign_Time"]).lower()
-        # set default value
-        stationNum = "UNKNOWN"
-
-        # check if it has already been specified
-        if "fs020" in curLoc:
-            stationNum = "S" + curLoc[-2:]
-        # else check it against known street names (specified at the top of the file)
-        else:
-            for street in locations.keys():
-                if street.lower() in curLoc:
-                    stationNum = locations[street]
-                    break
-        # and then set the finalized location
-        fireDF.loc[i, "Station"] = stationNum
-
-    # move Status col to front
     fireDF = utils.putColAt(fireDF, ["Station", "Status"], 0)
-
     return fireDF
 
 
@@ -939,4 +925,8 @@ if __name__ == "__main__":
 
     df = loadTestFile.get()
     # run test file
-    analyzeFire(df)
+    from pandasgui import show
+
+    show(df)
+
+    # analyzeFire(df)
