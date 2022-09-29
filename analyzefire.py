@@ -95,6 +95,10 @@ def stationName(department, frontline, radioName, location):
     if frontline == "Not a unit":
         return "Not a unit"
 
+    # note all private ambulance services as private
+    if frontline.lower() == "private":
+        return "Private"
+
     # Account for our own units
     if department in (ourNames):
         # If frontline status is not Frontline...
@@ -874,7 +878,7 @@ def analyzeFire(fireDF):
     # fireDF.to_excel("Output{0}.xlsx".format((datetime.datetime.now()).strftime("%H-%M-%S")))
 
     writer = pd.ExcelWriter(
-        "Output\\Output_{0}.xlsx".format(
+        "..\\Logs\\Output_{0}.xlsx".format(
             (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
         ),
         engine="xlsxwriter",
@@ -892,8 +896,8 @@ def analyzeFire(fireDF):
     # show(fireDF)
     from Database import SQLDatabase
 
-    # db = SQLDatabase()
-    # db.insertDF(fireDF)
+    db = SQLDatabase()
+    db.insertDF(fireDF)
 
     # ----------------
     # Write to Esri Directly

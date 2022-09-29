@@ -313,13 +313,13 @@ class SQLDatabase:
             import datetime
 
             with open(
-                "{0} Write Errors - {1}.xlsx".format(
+                "../Logs/{0} Write Errors - {1}.xlsx".format(
                     table, (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
                 ),
                 "w",
             ) as f:
                 f.write(
-                    f"===== Integrety Error =====\n{skipped}\n\n===== Data Error =====\n{errored}"
+                    f"===== Data Error =====\n{errored}\n\n\n===== Integrety Error =====\n{skipped}\n\n"
                 )
 
             print(
@@ -329,7 +329,7 @@ class SQLDatabase:
             print("\n==========================================================\n")
             # Write errors to file
             writer = pd.ExcelWriter(
-                "{0} Write Errors - {1}.xlsx".format(
+                "../Logs/{0} Write Errors - {1}.xlsx".format(
                     table, (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
                 ),
                 engine="xlsxwriter",
