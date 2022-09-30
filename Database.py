@@ -2,6 +2,7 @@ import pyodbc
 import sqlalchemy
 from sqlalchemy.engine import URL
 import pandas as pd
+
 # from pandasgui import show
 from tqdm import tqdm
 
@@ -79,6 +80,7 @@ class SQLDatabase:
                 "Incident_Call_Count",
                 "Incident_ERF_Time",
                 "Force_At_ERF_Time_of_Close",
+                "Block_ID",
             ]
         ]
         uniqueIncidents = uniqueIncidents.drop_duplicates(subset=["Incident_Number"])
@@ -150,6 +152,7 @@ class SQLDatabase:
                 "Incident_Call_Count",
                 "Incident_ERF_Time",
                 "Force_At_ERF_Time_of_Close",
+                "Block_ID",
             ]
         ]
         uniqueIncidents = uniqueIncidents.drop_duplicates(subset=["Incident_Number"])
@@ -310,13 +313,13 @@ class SQLDatabase:
             import datetime
 
             with open(
-                "{0} Write Errors - {1}.xlsx".format(
+                "../Logs/{0} Write Errors - {1}.xlsx".format(
                     table, (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
                 ),
                 "w",
             ) as f:
                 f.write(
-                    f"===== Integrety Error =====\n{skipped}\n\n===== Data Error =====\n{errored}"
+                    f"===== Data Error =====\n{errored}\n\n\n===== Integrety Error =====\n{skipped}\n\n"
                 )
 
             print(
@@ -326,7 +329,7 @@ class SQLDatabase:
             print("\n==========================================================\n")
             # Write errors to file
             writer = pd.ExcelWriter(
-                "{0} Write Errors - {1}.xlsx".format(
+                "../Logs/{0} Write Errors - {1}.xlsx".format(
                     table, (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
                 ),
                 engine="xlsxwriter",
