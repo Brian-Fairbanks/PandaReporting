@@ -28,7 +28,19 @@ Ensure you have installed Pandas, NumPy, and matplotlib
 Install MS Sql
 schemas.sql included in root to set up the database
 
-## Installing Esri Overwritter
+### Compile Code
+
+run the following line in the root of this folder:
+
+```
+pyinstaller esriOverwrite.spec
+```
+
+<br>
+<br>
+<br>
+
+# Installing Esri Overwritter
 
 ### PreReq
 
@@ -42,3 +54,24 @@ run the following line in the root of this folder:
 ```
 pyinstaller esriOverwrite.spec
 ```
+
+<br>
+<br>
+<br>
+
+# Installing Google Form Reader
+
+follow the guide outlined on [developers.google](https://developers.google.com/forms/api/quickstart/python)
+
+```
+pip install --upgrade google-api-python-client
+```
+
+- I had to run the following, but im not really sure why. It said everything was already installed when run, yet still resolved my issues.
+
+```
+pip install oauth2client
+```
+
+Dont forget to get the client-secret.json associated with the login account!  
+It has been included in .gitignore

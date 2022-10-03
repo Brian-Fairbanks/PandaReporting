@@ -27,3 +27,5 @@ build/
 .env
 
 dist*
+client_secrets.json
+token.json
