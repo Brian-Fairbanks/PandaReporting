@@ -79,7 +79,7 @@ def stationName(department, frontline, radioName, location):
     # -------------------------------------------------------------------------------------------
     specialUnits = {
         "QNT261": "S05",
-        "BAT20": "S01",
+        "BAT201": "S01",
         "MED271": "S03",
         "MED281": "S08",
         "MED270": "S04",
@@ -96,7 +96,7 @@ def stationName(department, frontline, radioName, location):
         return "Not a unit"
 
     # note all private ambulance services as private
-    if frontline.lower() == "private":
+    if frontline == "Private Ambulance Provider" or "ALG" in str(radioName):
         return "Private"
 
     # Account for our own units
@@ -126,7 +126,16 @@ def stationName(department, frontline, radioName, location):
     if outsiders in otherUnits.keys():
         outsiders = otherUnits[outsiders]
     # and for good measure, append 'OTHER' when needed
-    if frontline == "Other":
+    if frontline in [
+        "Other",
+        "Support",
+        "Clinical Practice",
+        "Special Events Medic",
+        "Emergency Support Unit",
+        "Paramedic Practitioner Resp",
+        "Aid Unit",
+        "Administrative Support",
+    ]:
         outsiders += " Other"
     return outsiders
 
@@ -206,7 +215,7 @@ def reprocessPriority(df):
 # ##############################################################################################################################################
 
 
-def analyzeFire(fireDF):
+def analyzeFire(fileDF):
     """
     Extrapolates information from a specifically formatted XLS file, returning a larger set presumed, formatted, and corracted data
 
@@ -226,7 +235,7 @@ def analyzeFire(fireDF):
     #    Confirm creation of FirstArrived column
     # =================================================================
     # file should have this column already, ems should need it.  Log this step.
-    if "FirstArrived" in fireDF:
+    if "FirstArrived" in fileDF:
         dataSource = "fire"
     else:
         dataSource = "ems"
@@ -259,7 +268,7 @@ def analyzeFire(fireDF):
         # "NEVER ASSIGNED" - no units were ever assigned
         return "NEVER ASSIGNED"
 
-    fireDF["Response_Status"] = fireDF.apply(
+    fileDF["Response_Status"] = fileDF.apply(
         lambda row: get_response_status(
             row["Unit Time Arrived At Scene"],
             row["Unit Time Staged"],
@@ -273,11 +282,11 @@ def analyzeFire(fireDF):
     #    Fire/EMS Specific Handles
     # =================================================================
     if dataSource == "fire":
-        fireDF["FirstArrived_Orig"] = fireDF["FirstArrived"]
-        fireDF = addFirstArrived(fireDF)
+        fileDF["FirstArrived_Orig"] = fileDF["FirstArrived"]
+        fileDF = addFirstArrived(fileDF)
     else:
-        fireDF = reprocessPriority(fireDF)
-        fireDF = addFirstArrived(fireDF)
+        fileDF = reprocessPriority(fileDF)
+        fileDF = addFirstArrived(fileDF)
 
     # =================================================================
     #     Match esri formatting for first arrived
@@ -300,7 +309,7 @@ def analyzeFire(fireDF):
             return "Yes"
         return "-"
 
-    fireDF["FirstArrivedEsri"] = fireDF.apply(
+    fileDF["FirstArrivedEsri"] = fileDF.apply(
         lambda x: replaceAssigned(
             x["FirstArrived"],
             x["Unit Time Arrived At Scene"],
@@ -308,14 +317,14 @@ def analyzeFire(fireDF):
         ),
         axis=1,
     )
-    fireDF = utils.putColAfter(fireDF, ["FirstArrivedEsri"], "FirstArrived")
+    fileDF = utils.putColAfter(fileDF, ["FirstArrivedEsri"], "FirstArrived")
 
     # =================================================================
     #     Fire Data Error Checking
     # =================================================================
     from validateData import checkFile
 
-    fireDF = checkFile(fireDF)
+    fileDF = checkFile(fileDF)
 
     # # =================================================================
     # #     Add unit type column to simplify analysis
@@ -326,7 +335,7 @@ def analyzeFire(fireDF):
     # =================================================================
     #     Calculate Concurrent Use for Each Unit
     # =================================================================
-    fireDF = cu.addConcurrentUse(fireDF, "Unit Time Assigned", "Unit Time Call Cleared")
+    fileDF = cu.addConcurrentUse(fileDF, "Unit Time Assigned", "Unit Time Call Cleared")
     # =================================================================
     #     Set District 17 Values
     # =================================================================
@@ -364,11 +373,11 @@ def analyzeFire(fireDF):
             pass
 
     faults = []
-    fireDF["IsESD17"] = np.vectorize(isESD)(
-        fireDF["Jurisdiction"],
-        fireDF["X-Long"],
-        fireDF["Y_Lat"],
-        fireDF["Master Incident Number"],
+    fileDF["IsESD17"] = np.vectorize(isESD)(
+        fileDF["Jurisdiction"],
+        fileDF["X-Long"],
+        fileDF["Y_Lat"],
+        fileDF["Master Incident Number"],
     )
     if len(faults) > 0:
         print(faults, end="\n")
@@ -400,7 +409,7 @@ def analyzeFire(fireDF):
             return True
         return False
 
-    fireDF["isETJ"] = np.vectorize(isETJ)(fireDF["X-Long"], fireDF["Y_Lat"])
+    fileDF["isETJ"] = np.vectorize(isETJ)(fileDF["X-Long"], fileDF["Y_Lat"])
 
     # Clear data
     etj = None
@@ -427,7 +436,7 @@ def analyzeFire(fireDF):
             return True
         return False
 
-    fireDF["isCOP"] = np.vectorize(isCOP)(fireDF["X-Long"], fireDF["Y_Lat"])
+    fileDF["isCOP"] = np.vectorize(isCOP)(fileDF["X-Long"], fileDF["Y_Lat"])
 
     # Clear data
     cop = None
@@ -450,8 +459,8 @@ def analyzeFire(fireDF):
         except:
             return None
 
-    if "AFD Response Box" not in fireDF:
-        fireDF["AFD Response Box"] = fireDF.apply(
+    if "AFD Response Box" not in fileDF:
+        fileDF["AFD Response Box"] = fileDF.apply(
             lambda x: getResponseArea(x["X-Long"], x["Y_Lat"]),
             axis=1,
         )
@@ -463,7 +472,7 @@ def analyzeFire(fireDF):
     # =================================================================
     import popden
 
-    fireDF = popden.addPopDen(fireDF)
+    fileDF = popden.addPopDen(fileDF)
     # (getMapscoGrid)(fireDF["X-Long"], fireDF["Y_Lat"])
 
     print("Adding Status:")
@@ -488,22 +497,22 @@ def analyzeFire(fireDF):
 
     # Set Canceled, 1(first arrived), or 0(multi incident)
     conditions = [
-        (fireDF["Master Incident Number"] != fireDF.shift(1)["Master Incident Number"])
-        & (fireDF["Unit Time Arrived At Scene"].isnull()),
-        (fireDF["Master Incident Number"] == fireDF.shift(1)["Master Incident Number"]),
+        (fileDF["Master Incident Number"] != fileDF.shift(1)["Master Incident Number"])
+        & (fileDF["Unit Time Arrived At Scene"].isnull()),
+        (fileDF["Master Incident Number"] == fileDF.shift(1)["Master Incident Number"]),
     ]
     choices = ["C", "0"]
-    fireDF["Status"] = np.select(conditions, choices, default="1")
+    fileDF["Status"] = np.select(conditions, choices, default="1")
 
     # Overwrite 0 with X on canceled calls
     # get array of indexes with 0
-    res0 = fireDF.index[fireDF["Status"] == "0"].tolist()
+    res0 = fileDF.index[fileDF["Status"] == "0"].tolist()
 
     # this is going to be really slow...
     # this will also break if referencing an incident removed by
     for i in res0:
-        fireDF.loc[i, "Status"] = (
-            "X" if ((fireDF.loc[i - 1, "Status"] in (["X", "C"]))) else "0"
+        fileDF.loc[i, "Status"] = (
+            "X" if ((fileDF.loc[i - 1, "Status"] in (["X", "C"]))) else "0"
         )
 
     # # =================================================================
@@ -533,31 +542,31 @@ def analyzeFire(fireDF):
     col_bb = "Unit Time Assigned"
     col_w = "Earliest Time Phone Pickup AFD or EMS"
 
-    fireDF["ESD02_Shift"] = fireDF.apply(
+    fileDF["ESD02_Shift"] = fileDF.apply(
         lambda row: getShift(row[col_bb], row[col_w]), axis=1
     )
 
     # =================================================================
     #     Add a new Stations (Origin) Column
     # =================================================================
-    fireDF = getStations(fireDF)
+    fileDF = getStations(fileDF)
 
     # =================================================================
     #     Add a new Column for if Unit was at its Station Address when Assigned
     # =================================================================
-    fireDF = addLocAtAssignToDF(fireDF)
+    fileDF = addLocAtAssignToDF(fileDF)
 
     # =================================================================
     #     Calculate Station Distances
     # =================================================================
     print(" -- adding road checks")
-    fireDF = rd.addRoadDistances(fireDF)
+    fileDF = rd.addRoadDistances(fileDF)
 
     # =================================================================
     #     add Is Sent From Closest Station
     # =================================================================
     print(" -- adding Closest Station")
-    fireDF = addIsClosestStation(fireDF)
+    fileDF = addIsClosestStation(fileDF)
 
     # =================================================================
     # Time delta/interval Colulmn Creation
@@ -604,13 +613,13 @@ def analyzeFire(fireDF):
 
     # Create TimeDelta Columns
     for col in incidentCols:
-        fireDF = utils.addTimeDiff(
-            fireDF, col, incidentCols[col][0], incidentCols[col][1]
+        fileDF = utils.addTimeDiff(
+            fileDF, col, incidentCols[col][0], incidentCols[col][1]
         )
 
     # Move TimeDelta Columns to correct spot in file
-    fireDF = utils.putColAfter(
-        fireDF,
+    fileDF = utils.putColAfter(
+        fileDF,
         list(incidentCols.keys()),
         "Last Real Unit Clear Incident",
     )
@@ -657,11 +666,11 @@ def analyzeFire(fireDF):
 
     # Create TimeDelta Columns
     for col in unitCols:
-        fireDF = utils.addTimeDiff(fireDF, col, unitCols[col][0], unitCols[col][1])
+        fileDF = utils.addTimeDiff(fileDF, col, unitCols[col][0], unitCols[col][1])
 
     # Move TimeDelta Columns to correct spot in file
-    fireDF = utils.putColAfter(
-        fireDF,
+    fileDF = utils.putColAfter(
+        fileDF,
         list(unitCols.keys()),
         "Unit Time Call Cleared",
     )
@@ -671,8 +680,8 @@ def analyzeFire(fireDF):
     # =================================================================
 
     # Create columns assuming no... this to be changed only on those that are needed.
-    fireDF["INC_Staged_As_Arrived"] = 0
-    fireDF["UNIT_Staged_As_Arrived"] = 0
+    fileDF["INC_Staged_As_Arrived"] = 0
+    fileDF["UNIT_Staged_As_Arrived"] = 0
 
     def getSingleTimeDiff(df, row, t1, t2, reverse):
         if not reverse:
@@ -713,14 +722,14 @@ def analyzeFire(fireDF):
     v = "Time First Real Unit Arrived"
 
     # --- get a list of columns that need to be recalculated
-    recalc = fireDF[
+    recalc = fileDF[
         (
-            (~fireDF[v].isnull())
-            & (fireDF[v] != "-")
-            & (~fireDF[u].isnull())
-            & (fireDF[u] != "-")
-            & (~fireDF[t].isnull())
-            & (fireDF[t] != "-")
+            (~fileDF[v].isnull())
+            & (fileDF[v] != "-")
+            & (~fileDF[u].isnull())
+            & (fileDF[u] != "-")
+            & (~fileDF[t].isnull())
+            & (fileDF[t] != "-")
         )
     ]
     if not recalc.empty:
@@ -733,10 +742,10 @@ def analyzeFire(fireDF):
         recalcArray = recalc2.index.tolist()
 
         for i in recalcArray:
-            fireDF.loc[i, "INC_Staged_As_Arrived"] = 1
+            fileDF.loc[i, "INC_Staged_As_Arrived"] = 1
             for col in recalcIncidentCols:
-                fireDF.loc[i, col] = getSingleTimeDiff(
-                    fireDF, i, recalcIncidentCols[col][0], u, recalcIncidentCols[col][1]
+                fileDF.loc[i, col] = getSingleTimeDiff(
+                    fileDF, i, recalcIncidentCols[col][0], u, recalcIncidentCols[col][1]
                 )
 
     # for col in recalcIncidentCols:
@@ -764,14 +773,14 @@ def analyzeFire(fireDF):
     v = "Unit Time Arrived At Scene"
 
     # --- get a list of columns that need to be recalculated
-    recalc = fireDF[
+    recalc = fileDF[
         (
-            (~fireDF[v].isnull())
-            & (fireDF[v] != "-")
-            & (~fireDF[u].isnull())
-            & (fireDF[u] != "-")
-            & (~fireDF[t].isnull())
-            & (fireDF[t] != "-")
+            (~fileDF[v].isnull())
+            & (fileDF[v] != "-")
+            & (~fileDF[u].isnull())
+            & (fileDF[u] != "-")
+            & (~fileDF[t].isnull())
+            & (fileDF[t] != "-")
         )
     ]
     if not recalc.empty:
@@ -779,10 +788,10 @@ def analyzeFire(fireDF):
         recalcArray = recalc2.index.tolist()
 
         for i in recalcArray:
-            fireDF.loc[i, "UNIT_Staged_As_Arrived"] = 1
+            fileDF.loc[i, "UNIT_Staged_As_Arrived"] = 1
             for col in recalcUnitCols:
-                fireDF.loc[i, col] = getSingleTimeDiff(
-                    fireDF, i, recalcUnitCols[col][0], u, recalcUnitCols[col][1]
+                fileDF.loc[i, col] = getSingleTimeDiff(
+                    fileDF, i, recalcUnitCols[col][0], u, recalcUnitCols[col][1]
                 )
 
     # =================================================================
@@ -790,20 +799,20 @@ def analyzeFire(fireDF):
     # =================================================================
 
     # format times to [HH]:mm:ss
-    fireDF = tb.addFormattedTimes(fireDF)
+    fileDF = tb.addFormattedTimes(fileDF)
 
     # add Month / Year / Qtr Year
-    fireDF = tb.addMothData(fireDF)
+    fileDF = tb.addMothData(fileDF)
 
     # add call time classifications ('Calls > 20 Min - PU to Arrive' , 'Ph_PU2_UnitArrive Time_Intervals in seconds')
-    fireDF = tb.addPhPuSteps(fireDF)
+    fileDF = tb.addPhPuSteps(fileDF)
 
     # add call count / single / multi cols
-    fireDF = tb.addCallCount(fireDF)
-    fireDF = tb.addSingleVSMulti(fireDF)
+    fileDF = tb.addCallCount(fileDF)
+    fileDF = tb.addSingleVSMulti(fileDF)
 
     # move Qtr Year to end to match marys data
-    fireDF = utils.putColAt(fireDF, ["Qtr Year"], 200)
+    fileDF = utils.putColAt(fileDF, ["Qtr Year"], 200)
 
     # =================================================================
     #     get Complete Response Force for each Structure Fire
@@ -811,30 +820,32 @@ def analyzeFire(fireDF):
     # check transport not reflecting onscene status
 
     if dataSource == "ems":
-        transportCheck = fireDF[
-            pd.isnull(fireDF["Unit Time Arrived At Scene"]) & fireDF["Transport_Count"]
-            > 0
+        # Create a new list of all incidents where unit time arrived and scene or transport count are null
+        transportCheck = fileDF[
+            (pd.isnull(fileDF["Unit Time Arrived At Scene"]))
+            & (fileDF["Transport_Count"] > 0)
         ].index.tolist()
 
+        # Iterate through said list...
         for i in transportCheck:
-            # Status
-            if (fireDF.loc[i, "Incident Call Count"] == 1) and fireDF.loc[
-                i, "Jurisdiction"
+            # Set Status...
+            if (fileDF.loc[i, "Incident Call Count"] == 1) and fileDF.loc[
+                i, "Department"
             ] in ourNames:
-                fireDF.loc[i, "Status"] = "1"
+                fileDF.loc[i, "Status"] = "1"
             else:
-                fireDF.loc[i, "Status"] = "0"
+                fileDF.loc[i, "Status"] = "0"
 
             # Response Status
-            fireDF.loc[i, "Response_Status"] = "ONSC"
+            fileDF.loc[i, "Response_Status"] = "ONSC"
 
             # First Arrived Esri
-            if (fireDF.loc[i, "Incident Call Count"] == 1) and fireDF.loc[
-                i, "Jurisdiction"
+            if (fileDF.loc[i, "Incident Call Count"] == 1) and fileDF.loc[
+                i, "Department"
             ] in ourNames:
-                fireDF.loc[i, "FirstArrivedEsri"] = "1"
+                fileDF.loc[i, "FirstArrivedEsri"] = "1"
             else:
-                fireDF.loc[i, "FirstArrivedEsri"] = "-"
+                fileDF.loc[i, "FirstArrivedEsri"] = "-"
             # fireDF.loc[i, "UNIT_Staged_As_Arrived"] = 1
             # for col in recalcUnitCols:
             #     fireDF.loc[i, col] = getSingleTimeDiff(
@@ -843,31 +854,31 @@ def analyzeFire(fireDF):
     # =================================================================
     #     get Complete Response Force for each Structure Fire
     # =================================================================
-    crfdf = getCRF(fireDF)
+    crfdf = getCRF(fileDF)
 
     # fireDF.join(crfdf.set_index("incident"), on="Master Incident Number")
     try:
-        fireDF = pd.merge(fireDF, crfdf, how="left", on=["Master Incident Number"])
+        fileDF = pd.merge(fileDF, crfdf, how="left", on=["Master Incident Number"])
     except:
-        fireDF["Incident_ERF_Time"] = None
-        fireDF["Force_At_ERF_Time_of_Close"] = None
+        fileDF["Incident_ERF_Time"] = None
+        fileDF["Force_At_ERF_Time_of_Close"] = None
         print("No ERF Found")
 
     # =================================================================
     # finalize naming
     # =================================================================
-    fireDF = n.rename(fireDF)
+    fileDF = n.rename(fileDF)
 
     # =================================================================
     #     Column Organization
     # =================================================================
 
-    fireDF = utils.putColAfter(
-        fireDF,
+    fileDF = utils.putColAfter(
+        fileDF,
         ["Incident_Call_Count"],
         "Force_At_ERF_Time_of_Close",
     )
-    fireDF = utils.putColAfter(fireDF, ["Response_Status"], "Status")
+    fileDF = utils.putColAfter(fileDF, ["Response_Status"], "Status")
 
     # ----------------
     # Exporting and completion
@@ -886,7 +897,7 @@ def analyzeFire(fireDF):
         date_format="mm/dd/yyyy",
     )
 
-    fireDF.to_excel(writer)
+    fileDF.to_excel(writer)
     writer.save()
     # plt.savefig('saved_figure.png')
 
@@ -897,7 +908,7 @@ def analyzeFire(fireDF):
     from Database import SQLDatabase
 
     db = SQLDatabase()
-    db.insertDF(fireDF)
+    db.insertDF(fileDF)
 
     # ----------------
     # Write to Esri Directly
