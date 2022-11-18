@@ -12,7 +12,7 @@ logging.basicConfig(filename=LOG_FILENAME, level=logging.DEBUG)
 
 # from pandasgui import show
 
-esri_Export_Query = "SELECT * FROM [dbo].[v_esri_export-Query-Filtered]"
+esri_Export_Query = "SELECT * FROM [dbo].[v_esri_export-Query-Filtered] where [Phone_Pickup_Time] >= '01/01/2021 00:00:00.00'"
 
 EsriTableArray = [
     "Incident_Number",

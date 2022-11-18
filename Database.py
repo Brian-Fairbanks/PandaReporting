@@ -368,6 +368,15 @@ class SQLDatabase:
 
         return sql_df
 
+    # ======================================================================================
+    # Google Form Insertions
+    # ======================================================================================
+    def insertForm(self, json):
+        from pandasgui import show
+
+        df = pd.json_normalize(json["responses"])
+        show(df)
+
 
 # =================================================================
 #      Testing Code

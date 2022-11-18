@@ -25,7 +25,12 @@ def getSampleData():
 
 
 def main():
-    getSampleData()
+    formData = getSampleData()
+
+    from Database import SQLDatabase
+
+    db = SQLDatabase()
+    db.insertForm(formData)
 
 
 if __name__ == "__main__":

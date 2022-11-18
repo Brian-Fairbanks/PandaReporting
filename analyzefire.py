@@ -80,6 +80,10 @@ def stationName(department, frontline, radioName, location):
     specialUnits = {
         "QNT261": "S05",
         "BAT201": "S01",
+        "BAT202": "S01",
+        "BT261": "S01",
+        "BT271": "S07",
+        "SQ271": "S07",
         "MED271": "S03",
         "MED281": "S08",
         "MED270": "S04",
@@ -92,7 +96,7 @@ def stationName(department, frontline, radioName, location):
     }
 
     # rule out units that are not frontline
-    if frontline == "Not a unit":
+    if frontline in ["Not a unit", "Rescue Talk Group 1", "MCOT"]:
         return "Not a unit"
 
     # note all private ambulance services as private
@@ -113,7 +117,7 @@ def stationName(department, frontline, radioName, location):
         if not radioName in (reserveUnits):
             return f"S0{radioName[-2]}"
 
-        # If reserver units though...
+        # If reserve units though...
         stationNum = getLoc(location)
         if stationNum != None:
             return stationNum
@@ -135,6 +139,7 @@ def stationName(department, frontline, radioName, location):
         "Paramedic Practitioner Resp",
         "Aid Unit",
         "Administrative Support",
+        "Administrative Staff",
     ]:
         outsiders += " Other"
     return outsiders
