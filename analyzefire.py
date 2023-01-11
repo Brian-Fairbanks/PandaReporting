@@ -77,18 +77,20 @@ def addLocAtAssignToDF(df):
 def stationName(department, frontline, radioName, location):
     # Helper function to be used in getStations
     # -------------------------------------------------------------------------------------------
-    specialUnits = {
-        "QNT261": "S05",
-        "BAT201": "S01",
-        "BAT202": "S01",
-        "BT261": "S01",
-        "BT271": "S07",
-        "SQ271": "S07",
-        "MED271": "S03",
-        "MED281": "S08",
-        "MED270": "S04",
-        "MED280": "S03",
-    }
+    # specialUnits = {
+    #     "QNT261": "S05",
+    #     "BAT201": "S01",
+    #     "BAT202": "S01",
+    #     "BT261": "S01",
+    #     "BT271": "S07",
+    #     "SQ271": "S07",
+    #     "MED271": "S03",
+    #     "MED281": "S08",
+    #     "MED270": "S04",
+    #     "MED280": "S03",
+    #     "MED290": "S04",
+    #     "ENG205": "S07",
+    # }
 
     otherUnits = {
         "ESD12 - Manor": "ESD12 Manor",
