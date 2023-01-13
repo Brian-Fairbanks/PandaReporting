@@ -7,7 +7,25 @@ import utils
 # from pandasgui import show
 
 
+def dumpRawData(df, type):
+    print("Dumping Raw Data to Database")
+
+    from Database import SQLDatabase
+
+    db = SQLDatabase()
+
+    df = df.replace("-", np.nan)
+    db.insertRaw(df, type)
+
+
 def preprocess(df, start=None, end=None):
+    if "Ph_PU_Time" in df.columns or "Ph PU Time" in df.columns:
+        fileType = "ems"
+    else:
+        fileType = "fire"
+
+    dumpRawData(df, fileType)
+
     print("Preparing for Analysis")
     # =================================================================
     # Get Date Range
@@ -67,12 +85,9 @@ def preprocess(df, start=None, end=None):
     # Assign Destination/File Source
     # =================================================================
     # This should be (maybe not the best) a way to determine EMS or Fire source data
-    if "Ph_PU_Time" in df.columns:
-        fileType = "ems"
-    else:
+    if fileType == "fire":
         # as good a time as any to ensure response_area columns ACTUALLY mean the same thing
         df = df.rename(columns={"Response Area": "AFD Response Box"}, errors="ignore")
-        fileType = "fire"
 
     # Can this be handeled better?
     df["Data Source"] = fileType

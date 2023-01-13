@@ -10,6 +10,21 @@ from dotenv import load_dotenv
 from os import getenv
 
 
+from datetime import datetime
+import logging
+
+runtime = datetime.now().strftime("%Y.%m.%d %H.%M")
+
+# set up logging folder
+writePath = "../Logs"
+
+# logging setup - write to output file as well as printing visably
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger()
+logger.addHandler(logging.FileHandler(f"{writePath}/RunLog-{runtime}.log", "a"))
+print = logger.info
+
+
 class SQLDatabase:
     """a connection to a SQL Database, and associated functions for insertion of required data"""
 
@@ -27,6 +42,14 @@ class SQLDatabase:
         self.engine = sqlalchemy.create_engine(connection_url)
 
     # write the DataFrame to a table in the sql database
+
+    def insertToRawEMS(self, df):
+        self.insertToTable(df, "RawEMS")
+        return None
+
+    def insertToRawFire(self, df):
+        self.insertToTable(df, "RawFire")
+        return None
 
     def insertToFireIncident(self, df):
         # get array of unique incident numbers
@@ -274,6 +297,7 @@ class SQLDatabase:
 
     # since pandas to_sql will not allow for upserts on primary key violations
     # we will go ahead and write a much slower alternative
+
     def insertToTable(self, df, table):
         """Dataframe: df - entire table
         String: table - name"""
@@ -281,6 +305,11 @@ class SQLDatabase:
         # df.apply(lambda row: self.upsert(row, table), axis=1)
 
         # with tqdm(total=len(df), desc=f"Inserting into: {table}") as loading:
+        def getIncName(df):
+            for name in ["Incident_Number", "Master_Incident_Number", "Incident"]:
+                if name in df.columns:
+                    return name
+
         skipped = []
         errored = []
         errorRows = []
@@ -291,15 +320,15 @@ class SQLDatabase:
                     name=table, if_exists="append", con=self.engine, index=False
                 )
             except sqlalchemy.exc.IntegrityError as err:
-                inc = df.iloc[i]["Incident_Number"]
+                inc = df.iloc[i][getIncName(df)]
                 skipped.append(f"{inc} - {err}")
                 errorRows.append(i)
             except sqlalchemy.exc.ProgrammingError as err:
-                inc = df.iloc[i]["Incident_Number"]
+                inc = df.iloc[i][getIncName(df)]
                 errored.append(f"{inc} - {err}")
                 errorRows.append(i)
             except sqlalchemy.exc.DataError as err:
-                inc = df.iloc[i]["Incident_Number"]
+                inc = df.iloc[i][getIncName(df)]
                 errored.append(f"{inc} - {err}")
                 errorRows.append(i)
             except Exception as err:
@@ -307,8 +336,10 @@ class SQLDatabase:
 
         if len(skipped) > 0:
             print(
-                f"Incidents skipped Due to Existing Primary Keys: {len(skipped)}/{len(df)}\n{skipped}"
+                f"Incidents skipped Due to Existing Primary Keys: {len(skipped)}/{len(df)}"
             )
+            for line in skipped:
+                print(f"{line}\n")
         if len(errorRows) > 0:
             import datetime
 
@@ -325,7 +356,8 @@ class SQLDatabase:
             print(
                 f"==== Errors importing the following {len(errorRows)} Incidents - \n"
             )
-            print(*errored, sep="\n\n")
+            for line in errored:
+                print(f"{line}\n")
             print("\n==========================================================\n")
             # Write errors to file
             writer = pd.ExcelWriter(
@@ -357,6 +389,15 @@ class SQLDatabase:
             self.insertToFireUnits(df)
 
         return None
+
+    def insertRaw(self, df, type):
+        if type == "ems":
+            # DONT manipulate the DF - keep the function pure!
+            temp = df
+            temp["PandasIndex"] = temp.index
+            self.insertToRawEMS(df)
+        else:
+            self.insertToRawFire(df)
 
     def retreiveDF(self, query, dateFields):
         print("Pulling data from Database")
