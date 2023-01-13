@@ -306,7 +306,7 @@ class SQLDatabase:
 
         # with tqdm(total=len(df), desc=f"Inserting into: {table}") as loading:
         def getIncName(df):
-            for name in ["Incident_Number", "Master_Incident_Number"]:
+            for name in ["Incident_Number", "Master_Incident_Number", "Incident"]:
                 if name in df.columns:
                     return name
 
@@ -336,8 +336,10 @@ class SQLDatabase:
 
         if len(skipped) > 0:
             print(
-                f"Incidents skipped Due to Existing Primary Keys: {len(skipped)}/{len(df)}\n{skipped}"
+                f"Incidents skipped Due to Existing Primary Keys: {len(skipped)}/{len(df)}"
             )
+            for line in skipped:
+                print(f"{line}\n")
         if len(errorRows) > 0:
             import datetime
 
@@ -390,6 +392,9 @@ class SQLDatabase:
 
     def insertRaw(self, df, type):
         if type == "ems":
+            # DONT manipulate the DF - keep the function pure!
+            temp = df
+            temp["PandasIndex"] = temp.index
             self.insertToRawEMS(df)
         else:
             self.insertToRawFire(df)
