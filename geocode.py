@@ -4,6 +4,11 @@ from time import time
 from os import getenv
 import pandas as pd
 
+import logging
+
+logger = logging.getLogger(__name__)
+print = logger.info
+
 load_dotenv()
 
 # api-endpoint
@@ -23,29 +28,34 @@ def addCoordinates(df, progress=None):
 
     print("Beginning calls to Google:")
 
+    hashAddress = {}
+
     def doesNeed(row, lon, lat, progress):
-        # Combine sections to get address
-        addressComponents = [
-            "Number Or Milepost",
-            "Street Prefix",
-            "Street Or Highway Name",
-            "Street Type",
-            "City",
-            "State",
-            "Zip",
-        ]
+        address = row["Address of Incident"]
 
-        address = ""
-        for part in addressComponents:
-            if not pd.isnull(row[part]):
-                address += str(row[part]) + " "
+        # geocode as little as possible.  log addresses as they are searched
+        if address in hashAddress.keys():
+            print(f"{address} found in hash.")
+            return hashAddress[address]
 
+        # return lat and lon if they already exist
         if not pd.isnull(lat) and not pd.isnull(lon):
+            if lat != 0 and lon != 0:
+                return f"{lat}, {lon}"
+
+        # get coords and return them
+        try:
+            print(f"I'll have to look up {address}")
+            coords = getCoordinates(address, progress)
+            print(f"  -  {coords}")
+            hashAddress[address] = coords
+        except Exception as e:
+            print(e)
             return f"{lat}, {lon}"
-        return getCoordinates(address, progress)
+        return coords
 
     df["GPS"] = df.apply(
-        lambda row: doesNeed(row, row["Longitude"], row["Latitude"], progress),
+        lambda row: doesNeed(row, row["X-Long"], row["Y_Lat"], progress),
         axis=1,
     )
 
@@ -53,7 +63,7 @@ def addCoordinates(df, progress=None):
 
     def getCoord(row, pos):
         gps = row["GPS"]
-        print(f"processing {gps}")
+        # print(f"processing {gps}")
         try:
             return gps.split(",")[pos]
         except Exception as e:
@@ -61,20 +71,22 @@ def addCoordinates(df, progress=None):
             print(e)
             return None
 
-    df["Latitude"] = df.apply(lambda row: getCoord(row, 0), axis=1)
-    df["Longitude"] = df.apply(lambda row: getCoord(row, 1), axis=1)
+    df["Y_Lat"] = df.apply(lambda row: getCoord(row, 0), axis=1)
+    df["X-Long"] = df.apply(lambda row: getCoord(row, 1), axis=1)
     df = df.drop(["GPS"], axis=1)
 
     # print(errors)
-    print("Complete:  You may now close, or process a new file.")
+    print("Complete")
 
     return df
 
 
 def getCoordinates(address, progress={}):
+    failure = "30.400000, -97.600000"
     # throw an error if address is invalid
     if address is None:
-        return None
+        print(" - Geocoding Failed")
+        return failure
     # progress["value"] += 1
     print(f"\tObtaining GPS for: {address}")
     # Rate Limiting requests
@@ -92,7 +104,20 @@ def getCoordinates(address, progress={}):
         # return time()
         return f'{loc["lat"]},{loc["lng"]}'
     except:
-        return None
+        print(" - Geocoding Failed")
+        return failure
+
+
+def fixCoords(df):
+    from pandasgui import show
+
+    print("- Correcting bad GPS Coordinates")
+
+    # badGPS = df.query("`X-Long` == 0 or `Y_Lat` == 0")
+    # show(badGPS)
+
+    df = addCoordinates(df, {})
+    show(df)
 
 
 if __name__ == "__main__":

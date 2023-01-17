@@ -15,6 +15,21 @@ import getData as data
 import timeBreakdowns as tb
 import naming as n
 
+# Setup Logging for the remainder of the data
+import logging
+
+runtime = datetime.datetime.now().strftime("%Y.%m.%d %H.%M")
+
+# set up logging folder
+writePath = "../Logs"
+
+# logging setup - write to output file as well as printing visably
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger()
+logger.addHandler(logging.FileHandler(f"{writePath}/RunLog-{runtime}.log", "a"))
+print = logger.info
+
+
 # Dont warn me about potentially assigning a copy
 pd.options.mode.chained_assignment = None
 
@@ -236,6 +251,15 @@ def analyzeFire(fileDF):
     Dataframe:
         A larger dataframe with additional information gleamed from the passed file.
     """
+
+    # =================================================================
+    # Correct no GPS coord issues
+    # =================================================================
+    import geocode
+
+    geocode.fixCoords(fileDF)
+
+    return 0
 
     dataSource = None
     # =================================================================
@@ -912,10 +936,10 @@ def analyzeFire(fileDF):
     # Write to Database
     # ----------------
     # show(fireDF)
-    from Database import SQLDatabase
+    # from Database import SQLDatabase
 
-    db = SQLDatabase()
-    db.insertDF(fileDF)
+    # db = SQLDatabase()
+    # db.insertDF(fileDF)
 
     # ----------------
     # Write to Esri Directly
@@ -950,6 +974,6 @@ if __name__ == "__main__":
     # run test file
     from pandasgui import show
 
-    show(df)
+    # show(df)
 
-    # analyzeFire(df)
+    analyzeFire(df)
