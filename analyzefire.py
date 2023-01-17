@@ -259,8 +259,6 @@ def analyzeFire(fileDF):
 
     geocode.fixCoords(fileDF)
 
-    return 0
-
     dataSource = None
     # =================================================================
     #    Confirm creation of FirstArrived column
@@ -936,10 +934,10 @@ def analyzeFire(fileDF):
     # Write to Database
     # ----------------
     # show(fireDF)
-    # from Database import SQLDatabase
+    from Database import SQLDatabase
 
-    # db = SQLDatabase()
-    # db.insertDF(fileDF)
+    db = SQLDatabase()
+    db.insertDF(fileDF)
 
     # ----------------
     # Write to Esri Directly

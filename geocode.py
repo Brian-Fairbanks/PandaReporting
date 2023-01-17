@@ -109,15 +109,13 @@ def getCoordinates(address, progress={}):
 
 
 def fixCoords(df):
-    from pandasgui import show
-
-    print("- Correcting bad GPS Coordinates")
+    # from pandasgui import show
 
     # badGPS = df.query("`X-Long` == 0 or `Y_Lat` == 0")
     # show(badGPS)
 
+    print("- Correcting bad GPS Coordinates")
     df = addCoordinates(df, {})
-    show(df)
 
 
 if __name__ == "__main__":
