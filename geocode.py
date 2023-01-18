@@ -65,7 +65,7 @@ def addCoordinates(df, progress=None):
         gps = row["GPS"]
         # print(f"processing {gps}")
         try:
-            return gps.split(",")[pos]
+            return float(gps.split(",")[pos])
         except Exception as e:
             # errors[row["Sr No"]] = e
             print(e)
