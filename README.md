@@ -75,3 +75,8 @@ pip install oauth2client
 
 Dont forget to get the client-secret.json associated with the login account!  
 It has been included in .gitignore
+
+# Important Notes
+
+for GPS coordinate failures, please note the following code...
+`tcesd2_admin_office_gps = "30.439196854214842, -97.6199526861625"`

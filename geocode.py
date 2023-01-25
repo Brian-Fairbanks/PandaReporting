@@ -82,7 +82,8 @@ def addCoordinates(df, progress=None):
 
 
 def getCoordinates(address, progress={}):
-    failure = "30.400000, -97.600000"
+    tcesd2_admin_office_gps = "30.439196854214842, -97.6199526861625"
+    failure = tcesd2_admin_office_gps
     # throw an error if address is invalid
     if address is None:
         print(" - Geocoding Failed")

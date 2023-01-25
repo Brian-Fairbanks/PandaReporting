@@ -123,6 +123,7 @@ class SQLDatabase:
                 "Zip",
                 "County",
                 "Jurisdiction",
+                "Response_Area",
                 "AFD_Response_Box",
                 "Problem",
                 "Incident_Type",
