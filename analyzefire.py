@@ -15,6 +15,21 @@ import getData as data
 import timeBreakdowns as tb
 import naming as n
 
+# Setup Logging for the remainder of the data
+import logging
+
+runtime = datetime.datetime.now().strftime("%Y.%m.%d %H.%M")
+
+# set up logging folder
+writePath = "../Logs"
+
+# logging setup - write to output file as well as printing visably
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger()
+logger.addHandler(logging.FileHandler(f"{writePath}/RunLog-{runtime}.log", "a"))
+print = logger.info
+
+
 # Dont warn me about potentially assigning a copy
 pd.options.mode.chained_assignment = None
 
@@ -84,7 +99,6 @@ def stationName(department, frontline, radioName, location):
     #     "BT261": "S01",
     #     "BT271": "S07",
     #     "SQ271": "S07",
-    #     "MED271": "S03",
     #     "MED281": "S08",
     #     "MED270": "S04",
     #     "MED280": "S03",
@@ -133,6 +147,7 @@ def stationName(department, frontline, radioName, location):
         outsiders = otherUnits[outsiders]
     # and for good measure, append 'OTHER' when needed
     if frontline in [
+        "Command",
         "Other",
         "Support",
         "Clinical Practice",
@@ -236,6 +251,13 @@ def analyzeFire(fileDF):
     Dataframe:
         A larger dataframe with additional information gleamed from the passed file.
     """
+
+    # =================================================================
+    # Correct no GPS coord issues
+    # =================================================================
+    import geocode
+
+    geocode.fixCoords(fileDF)
 
     dataSource = None
     # =================================================================
@@ -950,6 +972,6 @@ if __name__ == "__main__":
     # run test file
     from pandasgui import show
 
-    show(df)
+    # show(df)
 
-    # analyzeFire(df)
+    analyzeFire(df)

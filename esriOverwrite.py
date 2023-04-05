@@ -12,7 +12,13 @@ logging.basicConfig(filename=LOG_FILENAME, level=logging.DEBUG)
 
 # from pandasgui import show
 
-esri_Export_Query = "SELECT * FROM [dbo].[v_esri_export-Query-Filtered] where [Phone_Pickup_Time] >= '01/01/2021 00:00:00.00'"
+arc_gis_csv_id = "620a5cd3ccdd4b39908158b3cb87e3b5"
+# arc_gis_csv_id = "0549a85434524c20bdc195765480b5a7"
+
+temp_CSV_file = r".\\EMSFireRunData.csv"
+# temp_CSV_file = r".\\UnitRunData.csv"
+
+esri_Export_Query = "SELECT * FROM [dbo].[v_esri_export-Query-Filtered] where [Phone_Pickup_Time] >= '01/01/2020'"
 
 EsriTableArray = [
     "Incident_Number",
@@ -156,7 +162,6 @@ class EsriDatabase:
     #  overwriting the previous one and retaining dashboards created from it.
     # ===============================================================================================================
     def publishCSV(self):
-
         # Create CSV File from Database
         # from timer import Timer
 
@@ -165,7 +170,7 @@ class EsriDatabase:
 
         df = getFormattedTable()
         print("Writing Temporary CSV file...")
-        df.to_csv("EMSFireRunData.csv", index=False)
+        df.to_csv(temp_CSV_file, index=False)
 
         # csvTimer.end()
 
@@ -174,7 +179,7 @@ class EsriDatabase:
 
         try:
             print("  - Finding Existing file")
-            csv_item = self.gis.content.get("620a5cd3ccdd4b39908158b3cb87e3b5")
+            csv_item = self.gis.content.get(arc_gis_csv_id)
 
             item_props = {
                 "type": csv_item.type,
@@ -185,7 +190,7 @@ class EsriDatabase:
             }
         except:
             print("  - Process Failed!  - Could not get current item from ESRI")
-            remove(".\\EMSFireRunData.csv")
+            remove(temp_CSV_file)
             logging.exception("Exception from CSV File Upload")
             exit(1)
 
@@ -193,7 +198,7 @@ class EsriDatabase:
             print("  - Pushing File to Esri")
             csv_item.update(
                 item_props,
-                data=r".\\EMSFireRunData.csv",
+                data=temp_CSV_file,
             )
 
             print("  - Complete!")
@@ -201,13 +206,13 @@ class EsriDatabase:
             print(
                 "  - Process Failed!  - Error uploading CSV file to ESRI.  Removing Temporary CSV file"
             )
-            remove(".\\EMSFireRunData.csv")
+            remove(temp_CSV_file)
             logging.exception("Exception from CSV File Upload")
             exit(1)
 
         print("Removing Temporary CSV file.")
         # delete the file if it fails or finishes!
-        remove(".\\EMSFireRunData.csv")
+        remove(temp_CSV_file)
 
         print("publishing CSV to Feature Layer... ")
         try:
@@ -223,8 +228,9 @@ class EsriDatabase:
             pp["coordinateFieldType"] = "LatitudeAndLongitude"
 
             csv_item.publish(publish_parameters=pp, overwrite=True)
-        except:
+        except Exception as e:
             print(f"  - Process Failed!  - Error Publishing CSV on ESRI Portal")
+            print(e)
             logging.exception("Exception in ESRI CSV Publishing")
             exit(1)
 

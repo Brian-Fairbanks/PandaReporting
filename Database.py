@@ -13,15 +13,7 @@ from os import getenv
 from datetime import datetime
 import logging
 
-runtime = datetime.now().strftime("%Y.%m.%d %H.%M")
-
-# set up logging folder
-writePath = "../Logs"
-
-# logging setup - write to output file as well as printing visably
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger()
-logger.addHandler(logging.FileHandler(f"{writePath}/RunLog-{runtime}.log", "a"))
+logger = logging.getLogger(__name__)
 print = logger.info
 
 
@@ -131,6 +123,7 @@ class SQLDatabase:
                 "Zip",
                 "County",
                 "Jurisdiction",
+                "Response_Area",
                 "AFD_Response_Box",
                 "Problem",
                 "Incident_Type",
@@ -338,8 +331,11 @@ class SQLDatabase:
             print(
                 f"Incidents skipped Due to Existing Primary Keys: {len(skipped)}/{len(df)}"
             )
-            for line in skipped:
-                print(f"{line}\n")
+            if len(skipped) != len(df):
+                for line in skipped:
+                    print(f"{line}\n")
+            else:
+                print("Every row failed.  Has this file already been processed?")
         if len(errorRows) > 0:
             import datetime
 

@@ -3,7 +3,7 @@ from datetime import datetime as dt
 from preprocess import preprocess
 
 
-def get():
+def get(requestingRaw=False):
     # file = "Fire 07 2021 ESD02_RAWDATA_UPDATE_Fairbanks.xlsx"
     # file = "fire 10-21.xlsx"
     # file = "ESD02 January 22 Raw Data.xlsx"
@@ -23,8 +23,11 @@ def get():
     # file = "fire 06 2021 Raw QV Data.xlsx"
     # file = "XLSs\\05 May ESD02 EMS Data.xlsx"
     # file = "XLSs\\06 June ESD02 EMS Data.xlsx"
-    file = "ESD02 Raw Data - Weekly-8.22.22.xlsx"
+    # file = "ESD02 Raw Data - Weekly-8.22.22.xlsx"
+    file = "2012_2022 ESD02 Raw Data - AFD Fire.xlsx"
     fireDF = pd.read_excel(file)
 
+    if requestingRaw:
+        return fireDF
     return preprocess(fireDF, startTime, endTime)
     # return preprocess(fireDF)
