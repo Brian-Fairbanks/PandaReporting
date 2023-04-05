@@ -99,7 +99,6 @@ def stationName(department, frontline, radioName, location):
     #     "BT261": "S01",
     #     "BT271": "S07",
     #     "SQ271": "S07",
-    #     "MED271": "S03",
     #     "MED281": "S08",
     #     "MED270": "S04",
     #     "MED280": "S03",
@@ -148,6 +147,7 @@ def stationName(department, frontline, radioName, location):
         outsiders = otherUnits[outsiders]
     # and for good measure, append 'OTHER' when needed
     if frontline in [
+        "Command",
         "Other",
         "Support",
         "Clinical Practice",
