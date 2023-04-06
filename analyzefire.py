@@ -312,7 +312,9 @@ def analyzeFire(fileDF):
     # =================================================================
     if dataSource == "fire":
         fileDF["FirstArrived_Orig"] = fileDF["FirstArrived"]
-        fileDF = addFirstArrived(fileDF)
+        # fileDF = addFirstArrived(fileDF)
+        fileDF["FirstArrived"] = fileDF["FirstArrived"].map({"Yes": True, " ": False})
+
     else:
         fileDF = reprocessPriority(fileDF)
         fileDF = addFirstArrived(fileDF)
