@@ -5,10 +5,24 @@ import datetime
 
 import logging
 
-LOG_FILENAME = (
-    f"../Logs/Esri_{(datetime.datetime.now()).strftime('%y-%m-%d_%H-%M')}.txt"
+# set up logging folder
+writePath = "../Logs"
+
+# logging setup - write to output file as well as printing visably
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger()
+logger.addHandler(
+    logging.FileHandler(
+        f"{writePath}/Esri_Export-{(datetime.datetime.now()).strftime('%y-%m-%d_%H-%M')}.log",
+        "a",
+    )
 )
-logging.basicConfig(filename=LOG_FILENAME, level=logging.DEBUG)
+print = logger.info
+
+# LOG_FILENAME = (
+#     "../Logs/Esri_{(datetime.datetime.now()).strftime('%y-%m-%d_%H-%M')}.txt"
+# )
+# logging.basicConfig(filename=LOG_FILENAME, level=logging.DEBUG)
 
 # from pandasgui import show
 
