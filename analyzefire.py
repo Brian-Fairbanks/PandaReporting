@@ -125,20 +125,38 @@ def stationName(department, frontline, radioName, location):
         if frontline in (["Other", "Command"]):
             return "Admin"
 
-        # Our department, but special units - refer to newly created file:
+        # check if unit is reserve, and find station based on location
+        if radioName in (reserveUnits):
+            stationNum = getLoc(location)
+            if stationNum != None:
+                return stationNum
+
+        # if not reserve, or reserve but no location found, use "Special Units" list
+        # TODO - Can we find a better way to maintain this?
         if radioName in specialUnits.keys():
             return specialUnits[radioName]
 
-        # Our department, and not reserve - easy
+        # Our department, not reserve, and not special - easy
         if not radioName in (reserveUnits):
             return f"S0{radioName[-2]}"
 
-        # If reserve units though...
-        stationNum = getLoc(location)
-        if stationNum != None:
-            return stationNum
-        else:
-            return "UNKNOWN"
+        # If reserve units,cant be found based on location, and not special ...
+        return "UNKNOWN"
+
+        # # Our department, but special units - refer to newly created file:
+        # if radioName in specialUnits.keys():
+        #     return specialUnits[radioName]
+
+        # # Our department, and not reserve - easy
+        # if not radioName in (reserveUnits):
+        #     return f"S0{radioName[-2]}"
+
+        # # If reserve units though...
+        # stationNum = getLoc(location)
+        # if stationNum != None:
+        #     return stationNum
+        # else:
+        #     return "UNKNOWN"
 
     # for all others, give department
     outsiders = department
