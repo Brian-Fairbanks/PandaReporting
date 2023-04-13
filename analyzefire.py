@@ -60,7 +60,7 @@ def addIsClosestStation(df):
 def getLoc(address):
     current_location = str(address).lower()
     stationNum = None
-    if "fs020" in current_location:
+    if "fs020" in current_location or "esd2 - station 2" in current_location:
         stationNum = "S" + current_location[-2:]
     # else check it against known street names (specified at the top of the file)
     else:
