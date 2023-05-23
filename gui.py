@@ -8,6 +8,7 @@ from tkinter.filedialog import askopenfile, askopenfilenames
 
 import analyzefire as af
 import preprocess as pp
+import numpy as np
 
 fileArray = {}
 
@@ -34,9 +35,12 @@ addFileBtn.grid(row=0, column=1)
 analyzeButton = Button(frame1, text="Analyze Data", command=lambda: guiAnalyze())
 analyzeButton.grid(row=0, column=2)
 
+rawInsert = Button(frame1, text="Insert Raw Data", command=lambda: insertRaw())
+rawInsert.grid(row=1, column=2)
+
 global fileList
 fileList = Listbox(frame1, height=5)
-fileList.grid(row=1, column=0, columnspan=4, sticky=("ew"))
+fileList.grid(row=2, column=0, columnspan=4, sticky=("ew"))
 
 # TODO - Add ability to drag and drop files directly onto this list
 
@@ -47,6 +51,28 @@ def guiAnalyze():
         af.analyzeFire(fileArray[file])
 
     return None
+
+
+def insertRaw():
+    for file in fileArray.keys():
+        try:
+            excel_filename = r"{}".format(file)
+            # read the file
+            df = pd.read_excel(excel_filename)
+
+            if "Ph_PU_Time" in df.columns or "Ph PU Time" in df.columns:
+                fileType = "ems"
+            else:
+                fileType = "fire"
+
+            dumpRawData(df, fileType)
+
+        except ValueError:
+            messagebox.showerror("Invalid File", "The loaded file is invalid")
+            return None
+        except FileNotFoundError:
+            messagebox.showerror("Invalid File", "No such file as {excel_filename}")
+            return None
 
 
 def addFiles():
@@ -74,6 +100,17 @@ def addFiles():
     fileList.delete(0, "end")
     for file in fileArray.keys():
         fileList.insert("end", file)
+
+
+def dumpRawData(df, type):
+    print("Dumping Raw Data to Database")
+
+    from Database import SQLDatabase
+
+    db = SQLDatabase()
+
+    df = df.replace("-", np.nan)
+    db.insertRaw(df, type)
 
 
 def run():

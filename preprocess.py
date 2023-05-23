@@ -7,24 +7,11 @@ import utils
 # from pandasgui import show
 
 
-def dumpRawData(df, type):
-    print("Dumping Raw Data to Database")
-
-    from Database import SQLDatabase
-
-    db = SQLDatabase()
-
-    df = df.replace("-", np.nan)
-    db.insertRaw(df, type)
-
-
 def preprocess(df, start=None, end=None):
     if "Ph_PU_Time" in df.columns or "Ph PU Time" in df.columns:
         fileType = "ems"
     else:
         fileType = "fire"
-
-    dumpRawData(df, fileType)
 
     print("Preparing for Analysis")
     # =================================================================
