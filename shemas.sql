@@ -70,3 +70,27 @@ CREATE TABLE [FireUnits] (
 GO
 
 ALTER TABLE [FireUnits] ADD FOREIGN KEY ([Incident_Number]) REFERENCES [FireIncidents] ([Incident_Number])
+
+
+-- Stored Procedure to update Fire and EMS link data
+use [UNIT_RUN_DATA]
+GO
+
+CREATE PROCEDURE dbo.linkFireEMS @lastRunDate datetime
+AS
+ insert into EMS_Fire_Link
+ SELECT fi.Phone_Pickup_Time, fi.Incident_Number as Fire_Incident_Number, fi.EMS_Incident_Numbers as Fire_EMS_Incident_Links, ei.Incident_Number as EMS_Incident_Number
+  FROM 
+  (select *
+	from [UNIT_RUN_DATA].[dbo].[FireIncidents]
+	where EMS_Incident_Numbers is not NULL
+	and Phone_Pickup_Time > @lastRunDate
+	)as fi
+  inner join
+  [UNIT_RUN_DATA].[dbo].[EMSIncidents] ei
+  on fi.EMS_Incident_Numbers like '%'+ei.Incident_Number+'%' 
+  where ei.Phone_Pickup_Time > @lastRunDate
+  and not exists(select * from EMS_Fire_Link efl
+	where efl.EMS_Incident_Number = ei.Incident_Number
+	and efl.Fire_Incident_Number = fi.Incident_Number
+	)

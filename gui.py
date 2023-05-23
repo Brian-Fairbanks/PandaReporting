@@ -10,6 +10,11 @@ import analyzefire as af
 import preprocess as pp
 import numpy as np
 
+from Database import SQLDatabase
+
+db = SQLDatabase()
+
+
 fileArray = {}
 
 ws = Tk()
@@ -40,7 +45,10 @@ rawInsert.grid(row=1, column=2)
 
 global fileList
 fileList = Listbox(frame1, height=5)
-fileList.grid(row=2, column=0, columnspan=4, sticky=("ew"))
+fileList.grid(row=3, column=0, columnspan=4, sticky=("ew"))
+
+linkData = Button(ws, text="Link Fire and EMS Data", command=lambda: linkFireEMS())
+linkData.grid(row=1, column=0, columnspan=3)
 
 # TODO - Add ability to drag and drop files directly onto this list
 
@@ -51,6 +59,16 @@ def guiAnalyze():
         af.analyzeFire(fileArray[file])
 
     return None
+
+
+def linkFireEMS():
+    from datetime import datetime, timedelta
+
+    today = datetime.now()
+    one_month_ago = today - timedelta(days=30)
+    one_month_ago = one_month_ago.replace(hour=0, minute=0, second=0, microsecond=0)
+    db.RunFireEMSLink(one_month_ago)
+    print("Done Updating!")
 
 
 def insertRaw():
@@ -104,11 +122,6 @@ def addFiles():
 
 def dumpRawData(df, type):
     print("Dumping Raw Data to Database")
-
-    from Database import SQLDatabase
-
-    db = SQLDatabase()
-
     df = df.replace("-", np.nan)
     db.insertRaw(df, type)
 

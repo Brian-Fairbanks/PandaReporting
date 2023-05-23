@@ -405,6 +405,13 @@ class SQLDatabase:
 
         return sql_df
 
+    def RunFireEMSLink(self, date):
+        print("Updating Fire EMS Link table for the last month...")
+        fire_ems_link_procedure = f"exec linkFireEMS @lastRunDate='{date}';"
+        with self.engine.connect().execution_options(autocommit=True) as connection:
+            connection.execute(fire_ems_link_procedure)
+        return None
+
     # ======================================================================================
     # Google Form Insertions
     # ======================================================================================
