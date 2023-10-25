@@ -2,11 +2,12 @@ import pyodbc
 import sqlalchemy
 from sqlalchemy.engine import URL
 import pandas as pd
+from sys import exit
 
 # from pandasgui import show
 from tqdm import tqdm
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from os import getenv
 
 
@@ -21,10 +22,13 @@ class SQLDatabase:
     """a connection to a SQL Database, and associated functions for insertion of required data"""
 
     def __init__(self):
-        load_dotenv()
+        load_dotenv(find_dotenv())
         drvr = getenv("DBDRVR")
         srvr = getenv("DBSRVR")
         dtbs = getenv("DBDTBS")
+        if drvr == None or srvr == None or dtbs == None:
+            print("Error: Database connection not read from .env")
+            exit()
 
         connectionString = f"DRIVER={drvr};SERVER={srvr};DATABASE={dtbs};"
         print(connectionString)
@@ -40,6 +44,11 @@ class SQLDatabase:
         return None
 
     def insertToRawFire(self, df):
+        prepreprocess = {
+            # Aug 28 2023, dispatch renamed a file.  Fixing that here.
+            "Alarm_Level": "Alarm Level",
+        }
+        df = df.rename(columns=prepreprocess, errors="ignore")
         self.insertToTable(df, "RawFire")
         return None
 
