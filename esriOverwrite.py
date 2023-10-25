@@ -101,6 +101,7 @@ EsriTableArray = [
     "Unit_Type",
     "Frontline_Status",
     "EMD_Code",
+    "is_Last_Month",
 ]
 
 
@@ -126,6 +127,7 @@ def getFormattedTable():
             "call_delayed",
             "INC_Staged_As_Arrived",
             "UNIT_Staged_As_Arrived",
+            "is_Last_Month",
         ]:
             df[col] = df[col].astype(int)
         return df
