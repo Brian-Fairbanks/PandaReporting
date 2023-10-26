@@ -14,6 +14,7 @@ import roads as rd
 import getData as data
 import timeBreakdowns as tb
 import naming as n
+import os
 
 # Setup Logging for the remainder of the data
 import logging
@@ -39,6 +40,43 @@ reserveUnits = data.getReserves()
 stationDict = data.getStations()
 specialUnits = data.getSpecialUnits()
 ourNames = ["AUSTIN-TRAVIS COUNTY EMS", "ESD02 - Pflugerville", "ESD02"]
+
+
+# ----------------
+# Exporting and completion
+# ----------------
+def export_to_xlsx(name, fileDF):
+    # Format the current timestamp as part of the file name
+    timestamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
+
+    # Define the file path
+    file_path = os.path.join("..", "Logs", f"{name}_{timestamp}.xlsx")
+
+    print(f"Writing to XLSX: {file_path}")
+
+    # Create the Excel writer using the xlsxwriter engine
+    writer = pd.ExcelWriter(file_path, engine="xlsxwriter")
+
+    # Write the DataFrame to the Excel file
+    fileDF.to_excel(writer, index=False, sheet_name="Sheet1")
+
+    # Get the xlsxwriter workbook and worksheet objects
+    workbook = writer.book
+    worksheet = writer.sheets["Sheet1"]
+
+    # Automatically adjust the column widths to fit the content
+    for i, col in enumerate(fileDF.columns):
+        column_len = max(fileDF[col].astype(str).str.len().max(), len(col))
+        worksheet.set_column(i, i, column_len)
+
+    # Save the Excel file
+    writer.save()
+
+    print("  Complete")
+
+    return file_path  # Return the file path for reference
+    # plt.savefig('saved_figure.png')
+
 
 # ##############################################################################################################################################
 #     Station Assignment Functions
@@ -112,7 +150,15 @@ def stationName(department, frontline, radioName, location):
     }
 
     # rule out units that are not frontline
-    if frontline in ["Not a unit", "Rescue Talk Group 1", "MCOT"]:
+    if frontline in [
+        "Not a unit",
+        "Rescue Talk Group 1",
+        "Rescue Talk Group 2",
+        "Rescue Talk Group 3",
+        "Rescue Talk Group 4",
+        "MCOT",
+        "",
+    ]:
         return "Not a unit"
 
     # note all private ambulance services as private
@@ -331,7 +377,9 @@ def analyzeFire(fileDF):
     if dataSource == "fire":
         fileDF["FirstArrived_Orig"] = fileDF["FirstArrived"]
         # fileDF = addFirstArrived(fileDF)
-        fileDF["FirstArrived"] = fileDF["FirstArrived"].map({"Yes": True, " ": False})
+        fileDF["FirstArrived"] = (
+            fileDF["FirstArrived"].fillna("").map({"Yes": True, " ": False, "": False})
+        )
 
     else:
         fileDF = reprocessPriority(fileDF)
@@ -351,11 +399,13 @@ def analyzeFire(fileDF):
     #     print(firstArrived)
     #     return firstArrived
     def replaceAssigned(firstArrived, timeAtScene, timeFirstArrived):
+        # if pd.isnull(firstArrived) or firstArrived == "" or firstArrived == " ":
+        # if timeAtScene == timeFirstArrived:
+        #     return "Yes"
+        if firstArrived == "Yes" or firstArrived == True:
+            return "Yes"
         if pd.isnull(timeAtScene):
             return "X"
-        # if pd.isnull(firstArrived) or firstArrived == "" or firstArrived == " ":
-        if timeAtScene == timeFirstArrived:
-            return "Yes"
         return "-"
 
     fileDF["FirstArrivedEsri"] = fileDF.apply(
@@ -929,26 +979,7 @@ def analyzeFire(fileDF):
     )
     fileDF = utils.putColAfter(fileDF, ["Response_Status"], "Status")
 
-    # ----------------
-    # Exporting and completion
-    # ----------------
-    # print to files
-
-    # using builtin function vs using ExcelWriter class
-    # fireDF.to_excel("Output{0}.xlsx".format((datetime.datetime.now()).strftime("%H-%M-%S")))
-
-    writer = pd.ExcelWriter(
-        "..\\Logs\\Output_{0}.xlsx".format(
-            (datetime.datetime.now()).strftime("%y-%m-%d_%H-%M")
-        ),
-        engine="xlsxwriter",
-        datetime_format="mm/dd/yyyy hh:mm:ss",
-        date_format="mm/dd/yyyy",
-    )
-
-    fileDF.to_excel(writer)
-    writer.save()
-    # plt.savefig('saved_figure.png')
+    export_to_xlsx("output", fileDF)
 
     # ----------------
     # Write to Database
