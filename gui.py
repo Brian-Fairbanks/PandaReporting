@@ -47,8 +47,13 @@ global fileList
 fileList = Listbox(frame1, height=5)
 fileList.grid(row=3, column=0, columnspan=4, sticky=("ew"))
 
-linkData = Button(ws, text="Link Fire and EMS Data", command=lambda: linkFireEMS())
+linkData = Button(
+    ws, text="Update Dependency Tables", command=lambda: update_dependency_tables()
+)
 linkData.grid(row=1, column=0, columnspan=3)
+
+run_Reports = Button(ws, text="Email Reports", command=lambda: runReports())
+run_Reports.grid(row=2, column=0, columnspan=3)
 
 # TODO - Add ability to drag and drop files directly onto this list
 
@@ -60,15 +65,21 @@ def guiAnalyze():
 
     return None
 
+def runReports():
+    print("Run Reports - Stub")
 
-def linkFireEMS():
+def update_dependency_tables():
     from datetime import datetime, timedelta
 
     today = datetime.now()
     one_month_ago = today - timedelta(days=30)
     one_month_ago = one_month_ago.replace(hour=0, minute=0, second=0, microsecond=0)
+    print("Updating Fire-EMS Link Table")
     db.RunFireEMSLink(one_month_ago)
-    print("Done Updating!")
+    print(" - Done Updating!")
+    print("Updating Truck Concurrency Table")
+    db.RunConcurrencyUpdate(one_month_ago, today)
+    print(" - Done Updating!")
 
 
 def insertRaw():

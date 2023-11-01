@@ -420,6 +420,13 @@ class SQLDatabase:
         with self.engine.connect().execution_options(autocommit=True) as connection:
             connection.execute(fire_ems_link_procedure)
         return None
+    
+    def RunConcurrencyUpdate(self, date, date_end):
+        print("Updating Fire EMS Link table for the last month...")
+        concurrency_procedure = f"EXEC GenerateEmergencyResponseSummary '{date}', '{date_end}';"
+        with self.engine.connect().execution_options(autocommit=True) as connection:
+            connection.execute(concurrency_procedure)
+        return None
 
     # ======================================================================================
     # Google Form Insertions
