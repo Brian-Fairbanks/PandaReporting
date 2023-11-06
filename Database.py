@@ -420,10 +420,12 @@ class SQLDatabase:
         with self.engine.connect().execution_options(autocommit=True) as connection:
             connection.execute(fire_ems_link_procedure)
         return None
-    
+
     def RunConcurrencyUpdate(self, date, date_end):
-        print("Updating Fire EMS Link table for the last month...")
-        concurrency_procedure = f"EXEC GenerateEmergencyResponseSummary '{date}', '{date_end}';"
+        print("Updating Concurrency table for the last month...")
+        concurrency_procedure = (
+            f"EXEC GenerateEmergencyResponseSummary '{date}', '{date_end}';"
+        )
         with self.engine.connect().execution_options(autocommit=True) as connection:
             connection.execute(concurrency_procedure)
         return None
@@ -446,7 +448,7 @@ if __name__ == "__main__":
     # df = pd.DataFrame([["test from dataframe"], ["pandas will work"]], columns=["data"])
 
     db = SQLDatabase()
-    df = db.retreiveDF()
+    # df = db.retreiveDF()
     # db.insertTest(df)
 
     # cursor = conn.cursor()
@@ -459,3 +461,10 @@ if __name__ == "__main__":
 
     # for i in cursor:
     #     print(i)
+    from datetime import datetime, timedelta
+
+    today = datetime.now()
+    today = today.replace(hour=0, minute=0, second=0, microsecond=0)
+    one_month_ago = today - timedelta(days=30)
+    one_month_ago = one_month_ago.replace(hour=0, minute=0, second=0, microsecond=0)
+    db.RunConcurrencyUpdate(one_month_ago, today)

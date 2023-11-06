@@ -13,7 +13,7 @@ import numpy as np
 from Database import SQLDatabase
 
 db = SQLDatabase()
-from Email_Report import get_and_run_reports
+from report_mailer import get_and_run_reports
 
 
 fileArray = {}
@@ -75,6 +75,7 @@ def update_dependency_tables():
     from datetime import datetime, timedelta
 
     today = datetime.now()
+    today = today.replace(hour=0, minute=0, second=0, microsecond=0)
     one_month_ago = today - timedelta(days=30)
     one_month_ago = one_month_ago.replace(hour=0, minute=0, second=0, microsecond=0)
     print("Updating Fire-EMS Link Table")
