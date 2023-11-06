@@ -16,7 +16,6 @@ import logging
 # append log to end of runlog if possible, otherwise start a new file
 try:
     logger = logging.getLogger(__name__)
-    print("\n\n==================  Emailing BC Turnout Report  ==================")
 except:
     # set up logging folder
     writePath = "../Logs"
@@ -197,9 +196,35 @@ def send_report_from_file(filename):
     send_email_with_attachment(report_file, config)
 
 
+def get_and_run_reports():
+    print("\n\n==================  Emailing Reports  ==================")
+
+    # Get the current directory
+    current_directory = os.getcwd()
+
+    # Search for 'reports' folder in the current directory and its subdirectories
+    for root, dirs, files in os.walk(current_directory):
+        if "reports" in dirs:
+            reports_directory = os.path.join(root, "reports")
+            break
+    else:
+        print("Couldn't find the 'reports' folder.")
+        return
+
+    # Get a list of all .rpt files
+    rpt_files = [f for f in os.listdir(reports_directory) if f.endswith(".rpt")]
+
+    # For each .rpt file, send the report
+    for rpt_file in rpt_files:
+        file_path = os.path.join(reports_directory, rpt_file)
+        print(f" - Running {rpt_file} -")
+        send_report_from_file(file_path)
+
+
 def main():
     # send_BC_Report()
-    send_report_from_file("./reports/BC_Turnout.rpt")
+    # send_report_from_file("./reports/BC_Turnout.rpt")
+    get_and_run_reports()
 
 
 if __name__ == "__main__":

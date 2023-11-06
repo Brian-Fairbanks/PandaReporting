@@ -13,6 +13,7 @@ import numpy as np
 from Database import SQLDatabase
 
 db = SQLDatabase()
+from Email_Report import get_and_run_reports
 
 
 fileArray = {}
@@ -65,8 +66,10 @@ def guiAnalyze():
 
     return None
 
+
 def runReports():
-    print("Run Reports - Stub")
+    get_and_run_reports()
+
 
 def update_dependency_tables():
     from datetime import datetime, timedelta
