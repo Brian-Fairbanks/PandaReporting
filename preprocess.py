@@ -193,17 +193,19 @@ def preprocess(df, start=None, end=None):
     # =================================================================
     print(" -- Ordering Rows")
 
-    def getFrontline(name):
-        if name == "Frontline":
-            return False
-        return True
+    def getFrontline(frontline_status, unit):
+        if "Safe" in unit:
+            return (
+                True  # Do not ignore units with 'Safe' regardless of frontline status
+            )
+        return frontline_status == "Frontline"
 
     try:
-        df["ignoreInStatus"] = df.apply(
-            lambda row: getFrontline(row["Frontline_Status"]), axis=1
+        df["isFrontlineOrSafe"] = df.apply(
+            lambda row: getFrontline(row["Frontline_Status"], row["Unit"]), axis=1
         )
     except Exception as ex:
-        df["ignoreInStatus"] = None
+        df["isFrontlineOrSafe"] = False
         print(
             f"\n\t\t------------ERROR --------------\n\t\t{ex}\n\t\t---------end ---------------\n"
         )
@@ -217,12 +219,21 @@ def preprocess(df, start=None, end=None):
         by=[
             "Master Incident Number",
             "Not Arrived",
-            "ignoreInStatus",
+            "isFrontlineOrSafe",  # This now comes after the primary sorting columns
             "Unit Time Arrived At Scene",
             "Unit Time Staged",
             "Unit Time Enroute",
             "Unit Time Assigned",
-        ]
+        ],
+        ascending=[
+            True,
+            True,
+            False,
+            True,
+            True,
+            True,
+            True,
+        ],  # Adjust ascending/descending order as needed
     )
 
     # =================================================================
