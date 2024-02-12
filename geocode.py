@@ -16,6 +16,7 @@ URL = "https://maps.googleapis.com/maps/api/geocode/json"
 PARAMS = {
     "key": getenv("APIKEY"),
     "address": None,
+    "components": "country:US|administrative_area:TX",
 }
 
 
