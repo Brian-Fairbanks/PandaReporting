@@ -102,6 +102,7 @@ EsriTableArray = [
     "Frontline_Status",
     "EMD_Code",
     "is_Last_Month",
+    "Subdivision",
 ]
 
 
