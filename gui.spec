@@ -8,7 +8,8 @@ a = Analysis(['gui.py'],
              pathex=[],
              binaries=[],
              datas=added_files,
-             hiddenimports=['tabulate', 'tqdm', 'geopandas','fiona','shapely','shapely.geometry','fiona._shim','fiona.schema', 'osmnx', 'networkx', 'easygui', 'pyodbc','sqlalchemy', 'dotenv'],
+             hiddenimports=['tabulate', 'tqdm', 'geopandas', 'fiona', 'shapely', 'shapely.geometry', 'fiona._shim', 'fiona.schema', 'osmnx', 'networkx', 'easygui', 'pyodbc', 'sqlalchemy', 'dotenv', 'email.mime.multipart', 'email.mime.text', 'email.mime.application'],
+
              hookspath=[],
              hooksconfig={},
              runtime_hooks=[],
@@ -19,6 +20,7 @@ a = Analysis(['gui.py'],
              noarchive=False)
 a.datas += Tree('./data/Lists', prefix='data/Lists')
 a.datas += Tree('./Shape', prefix='Shape')
+a.datas += Tree('./reports', prefix='reports')
 a.datas += Tree('./osmnx', prefix='osmnx')
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)

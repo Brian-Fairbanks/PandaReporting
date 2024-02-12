@@ -213,7 +213,7 @@ def preprocess(df, start=None, end=None):
     df["Not Arrived"] = df.apply(
         lambda row: pd.isnull(row["Unit Time Arrived At Scene"]), axis=1
     )
-    df = utils.putColAt(df, ["ignoreInStatus", "Not Arrived"], 1)
+    df = utils.putColAt(df, ["isFrontlineOrSafe", "Not Arrived"], 1)
 
     df = df.sort_values(
         by=[
@@ -325,7 +325,7 @@ def preprocess(df, start=None, end=None):
         [
             "ESD02_Record",
             "Master Incident Without First Two Digits",
-            "ignoreInStatus",
+            "isFrontlineOrSafe",
             "Not Arrived",
         ],
         axis=1,

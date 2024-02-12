@@ -17,44 +17,50 @@ from report_mailer import get_and_run_reports
 
 
 fileArray = {}
+ws = None
 
-ws = Tk()
-ws.title("Fire/EMS Management")
-ws.geometry("600x200")
 
-ws.columnconfigure(0, weight=1)
-ws.rowconfigure(1, weight=1)
+def createGui():
+    ws = Tk()
+    ws.title("Fire/EMS Management")
+    ws.geometry("600x200")
 
-#     Frame for file dialog
-# =========================================================================================================================
-frame1 = LabelFrame(ws, text="File Selection")
-frame1.grid(row=0, column=0, columnspan=4, sticky=("ew"))
+    ws.columnconfigure(0, weight=1)
+    ws.rowconfigure(1, weight=1)
 
-frame1.columnconfigure(0, weight=1)
+    #     Frame for file dialog
+    # =========================================================================================================================
+    frame1 = LabelFrame(ws, text="File Selection")
+    frame1.grid(row=0, column=0, columnspan=4, sticky=("ew"))
 
-addFileLabel = Label(frame1, text="Add Files to List")
-addFileLabel.grid(row=0, column=0, padx=10)
+    frame1.columnconfigure(0, weight=1)
 
-addFileBtn = Button(frame1, text="Choose File", command=lambda: addFiles())
-addFileBtn.grid(row=0, column=1)
+    addFileLabel = Label(frame1, text="Add Files to List")
+    addFileLabel.grid(row=0, column=0, padx=10)
 
-analyzeButton = Button(frame1, text="Analyze Data", command=lambda: guiAnalyze())
-analyzeButton.grid(row=0, column=2)
+    addFileBtn = Button(frame1, text="Choose File", command=lambda: addFiles())
+    addFileBtn.grid(row=0, column=1)
 
-rawInsert = Button(frame1, text="Insert Raw Data", command=lambda: insertRaw())
-rawInsert.grid(row=1, column=2)
+    analyzeButton = Button(frame1, text="Analyze Data", command=lambda: guiAnalyze())
+    analyzeButton.grid(row=0, column=2)
 
-global fileList
-fileList = Listbox(frame1, height=5)
-fileList.grid(row=3, column=0, columnspan=4, sticky=("ew"))
+    rawInsert = Button(frame1, text="Insert Raw Data", command=lambda: insertRaw())
+    rawInsert.grid(row=1, column=2)
 
-linkData = Button(
-    ws, text="Update Dependency Tables", command=lambda: update_dependency_tables()
-)
-linkData.grid(row=1, column=0, columnspan=3)
+    global fileList
+    fileList = Listbox(frame1, height=5)
+    fileList.grid(row=3, column=0, columnspan=4, sticky=("ew"))
 
-run_Reports = Button(ws, text="Email Reports", command=lambda: runReports())
-run_Reports.grid(row=2, column=0, columnspan=3)
+    linkData = Button(
+        ws, text="Update Dependency Tables", command=lambda: update_dependency_tables()
+    )
+    linkData.grid(row=1, column=0, columnspan=3)
+
+    run_Reports = Button(ws, text="Email Reports", command=lambda: runReports())
+    run_Reports.grid(row=2, column=0, columnspan=3)
+
+    return ws
+
 
 # TODO - Add ability to drag and drop files directly onto this list
 
@@ -108,12 +114,14 @@ def insertRaw():
             return None
 
 
-def addFiles():
-    files = askopenfilenames(parent=ws, title="Choose Files")
+def addFiles(files=None):
+    if files == None:
+        files = askopenfilenames(parent=ws, title="Choose Files")
     # ensure unique items in list
     for file in files:
-        # temporarily add to file list to show that things are running
-        fileList.insert("end", file)
+        # if ws exists (gui is actually runnng) temporarily add to file list to show that things are running
+        if ws:
+            fileList.insert("end", file)
 
         # then check if file is valid, read it, and hold onto its DF
         if not file in fileArray.keys():
@@ -121,13 +129,17 @@ def addFiles():
                 excel_filename = r"{}".format(file)
                 # read the file
                 fileArray[file] = pp.preprocess(pd.read_excel(excel_filename))
-
+ 
             except ValueError:
                 messagebox.showerror("Invalid File", "The loaded file is invalid")
                 return None
             except FileNotFoundError:
                 messagebox.showerror("Invalid File", "No such file as {excel_filename}")
                 return None
+
+    # Silent run Gatekeeping
+    if not ws:
+        return
 
     # reprint list
     fileList.delete(0, "end")
@@ -142,8 +154,10 @@ def dumpRawData(df, type):
 
 
 def run():
+    ws = createGui()
     ws.mainloop()
 
 
 if __name__ == "__main__":
+    ws = createGui()
     ws.mainloop()
