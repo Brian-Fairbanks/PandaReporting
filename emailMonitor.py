@@ -101,7 +101,7 @@ def format_email_date(date_string):
 
 
 def save_attachments(email_msg, rule):
-    log_file = "downloaded_files_log.txt"  # Define the log file path
+    log_file = ".\\data\\downloaded_files_log.txt"  # Define the log file path
     sender = email_msg["From"]
     date_str = format_email_date(email_msg["Date"])
 

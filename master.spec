@@ -2,77 +2,92 @@
 
 block_cipher = None
 
-added_files = [('.env', '.'), ('*.py', '.')]
-hidden_imports = ["requests_ntlm", "arcgis", "pyodbc", "sqlalchemy", "dotenv", "tqdm", "tabulate", "geopandas", "fiona", "shapely", "shapely.geometry", "fiona._shim", "fiona.schema", "osmnx", "networkx", "easygui", "email.mime.multipart", "email.mime.text", "email.mime.application"]
+added_files = [(".env", "."), ("*.py", ".")]
+hidden_imports = [
+    "requests_ntlm",
+    "arcgis",
+    "pyodbc",
+    "sqlalchemy",
+    "dotenv",
+    "tqdm",
+    "tabulate",
+    "geopandas",
+    "fiona",
+    "shapely",
+    "shapely.geometry",
+    "fiona._shim",
+    "fiona.schema",
+    "osmnx",
+    "networkx",
+    "easygui",
+    "email.mime.multipart",
+    "email.mime.text",
+    "email.mime.application",
+]
 
-a = Analysis(['gui.py', 'AutoImportFromFTP.py', 'esriOverwrite.py'],
-             pathex=[],
-             binaries=[],
-             datas=added_files,
-             hiddenimports=hidden_imports,
-             hookspath=[],
-             hooksconfig={},
-             runtime_hooks=[],
-             excludes=['arcpy'],
-             win_no_prefer_redirects=False,
-             win_private_assemblies=False,
-             cipher=block_cipher,
-             noarchive=False)
+executables_info = {
+    "Gui": {
+        "script": "gui.py",
+        "additional_data": added_files,
+        "hidden_imports": hidden_imports,
+    },
+    "AutoImportFromFTP": {
+        "script": "AutoImportFromFTP.py",
+        "additional_data": added_files,
+        "hidden_imports": hidden_imports,
+    },
+    "esriOverwrite": {
+        "script": "esriOverwrite.py",
+        "additional_data": added_files,
+        "hidden_imports": [
+            "requests_ntlm",
+            "arcgis",
+            "pyodbc",
+            "sqlalchemy",
+            "dotenv",
+            "tqdm",
+        ],
+    },
+    "emailMonitor": {
+        "script": "emailMonitor.py",
+        "additional_data": added_files,
+        "hidden_imports": ["dotenv"],
+    },
+}
 
-# Add additional data files
-a.datas += Tree('./data/Lists', prefix='data/Lists')
-a.datas += Tree('./Shape', prefix='Shape')
-a.datas += Tree('./reports', prefix='reports')
-a.datas += Tree('./osmnx', prefix='osmnx')
-a.datas += Tree('./arcgis', prefix='arcgis')
 
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+exes = []
+all_datas = set()
+all_binaries = set()
 
-# Create separate executables for each script
-exe_gui = EXE(pyz,
-              a.scripts + [('gui.py', 'gui.py', 'PYSOURCE')],
-              [],
-              exclude_binaries=True,
-              name='gui',
-              debug=False,
-              bootloader_ignore_signals=False,
-              strip=False,
-              upx=True,
-              console=True,
-              disable_windowed_traceback=False)
+for name, info in executables_info.items():
+    analysis = Analysis(
+        [info["script"]],
+        datas=info["additional_data"]
+        + [
+            ("./data/Lists", "data/Lists"),
+            ("./Shape", "Shape"),
+            ("./reports", "reports"),
+            ("./osmnx", "osmnx"),
+            ("./arcgis", "arcgis"),
+        ],
+        hiddenimports=info["hidden_imports"],
+        cipher=block_cipher,
+    )
 
-exe_ftp = EXE(pyz,
-              a.scripts + [('AutoImportFromFTP.py', 'AutoImportFromFTP.py', 'PYSOURCE')],
-              [],
-              exclude_binaries=True,
-              name='AutoImportFromFTP',
-              debug=False,
-              bootloader_ignore_signals=False,
-              strip=False,
-              upx=True,
-              console=True,
-              disable_windowed_traceback=False)
+    pyz = PYZ(analysis.pure, analysis.zipped_data, cipher=block_cipher)
 
-exe_esri = EXE(pyz,
-               a.scripts + [('esriOverwrite.py', 'esriOverwrite.py', 'PYSOURCE')],
-               [],
-               exclude_binaries=True,
-               name='esriOverwrite',
-               debug=False,
-               bootloader_ignore_signals=False,
-               strip=False,
-               upx=True,
-               console=True,
-               disable_windowed_traceback=False)
+    exe = EXE(
+        pyz,
+        analysis.scripts,
+        exclude_binaries=True,
+        name=name,
+        debug=False,
+        console=True,
+    )
 
-# Collect all necessary binaries, zip files, and data files into one folder
-coll = COLLECT(exe_gui,
-               exe_ftp,
-               exe_esri,
-               a.binaries,
-               a.zipfiles,
-               a.datas,
-               strip=False,
-               upx=True,
-               upx_exclude=[],
-               name='AllExecutables')
+    exes.append(exe)
+    all_datas.update(analysis.datas)
+    all_binaries.update(analysis.binaries)
+
+coll = COLLECT(*exes, all_binaries, all_datas, name="AllExecutables")
