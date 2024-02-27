@@ -1,0 +1,16 @@
+{
+    "email_rules": [
+      {
+        "sender": "fireresearch@austintexas.gov",
+        "subject_keyword": "Daily Data",
+        "attachment_type": ".xlsx",
+        "folder_path": "E:\\New folder\\Fire Data"
+      },
+      {
+        "sender": "ems.cognos@austintexas.gov",
+        "subject_keyword": "Incidents - ESD02 Dataset - Daily",
+        "attachment_type": ".xlsx",
+        "folder_path": "E:\\New folder\\EMS Data"
+      }
+    ]
+  }
