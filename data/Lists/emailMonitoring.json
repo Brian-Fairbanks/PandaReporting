@@ -1,16 +1,22 @@
 {
     "email_rules": [
       {
+        "processing":"autoImportFromFTP",
         "sender": "fireresearch@austintexas.gov",
         "subject_keyword": "Daily Data",
         "attachment_type": ".xlsx",
-        "folder_path": "E:\\New folder\\Fire Data"
+        "folder_path": "E:\\temp\\Fire Data",
+        "move_on_success":"E:\\temp\\Fire Data\\archive",
+        "move_on_failure":"E:\\temp\\Fire Data\\failed"
       },
       {
+        "processing":"autoImportFromFTP",
         "sender": "ems.cognos@austintexas.gov",
         "subject_keyword": "Incidents - ESD02 Dataset - Daily",
         "attachment_type": ".xlsx",
-        "folder_path": "E:\\New folder\\EMS Data"
+        "folder_path": "E:\\temp\\EMS Data",
+        "move_on_success":"E:\\temp\\EMS Data\\archive",
+        "move_on_failure":"E:\\temp\\EMS Data\\failed"
       }
     ]
   }
