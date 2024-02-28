@@ -12,7 +12,10 @@ def setup_logging():
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[logging.FileHandler("email_monitoring.log"), logging.StreamHandler()],
+        handlers=[
+            logging.FileHandler("..\\logs\\email_monitoring.log"),
+            logging.StreamHandler(),
+        ],
     )
     logging.info("Script started")
 
