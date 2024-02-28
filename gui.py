@@ -99,6 +99,9 @@ def insertRaw():
             # read the file
             df = pd.read_excel(excel_filename)
 
+            renames = {"ESD02_Record_Daily": "ESD02_Record"}
+            df = df.rename(columns=renames, errors="ignore")
+
             if "Ph_PU_Time" in df.columns or "Ph PU Time" in df.columns:
                 fileType = "ems"
             else:
@@ -129,7 +132,7 @@ def addFiles(files=None):
                 excel_filename = r"{}".format(file)
                 # read the file
                 fileArray[file] = pp.preprocess(pd.read_excel(excel_filename))
- 
+
             except ValueError:
                 messagebox.showerror("Invalid File", "The loaded file is invalid")
                 return None
