@@ -2,6 +2,7 @@ import pyodbc
 import sqlalchemy
 from sqlalchemy.engine import URL
 import pandas as pd
+import json
 from sys import exit
 
 # from pandasgui import show
@@ -21,11 +22,25 @@ print = logger.info
 class SQLDatabase:
     """a connection to a SQL Database, and associated functions for insertion of required data"""
 
+    def which_database_to_use(self):
+        config_file_location = ".\\data\\Lists\\TestDatabase.json"
+        # Test Database is a JSON object with 2 fields:
+        #     "use_test_database": true,
+        #     "test_database_name":"UnitRunDataTest"
+        with open(config_file_location, "r") as file:
+            config = json.load(file)
+
+        if config["use_test_database"]:
+            print(f"Testing Database is Enabled ({config_file_location})")
+            return config["test_database_name"]
+
+        return getenv("DBDTBS")
+
     def __init__(self):
         load_dotenv(find_dotenv())
         drvr = getenv("DBDRVR")
         srvr = getenv("DBSRVR")
-        dtbs = getenv("DBDTBS")
+        dtbs = self.which_database_to_use()
         if drvr == None or srvr == None or dtbs == None:
             print("Error: Database connection not read from .env")
             exit()
