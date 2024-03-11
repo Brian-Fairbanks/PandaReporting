@@ -170,6 +170,15 @@ def read_rpt_file(filename):
     return details
 
 
+def should_run_today(days_to_run_str):
+    # Parse the days_to_run string into a list
+    days_to_run = days_to_run_str.lower().split(", ")
+    # Get the current day abbreviation (Mon, Tue, Wed, etc.)
+    current_day_abbr = datetime.datetime.now().strftime("%a").lower()
+    # Return True if the current day is in the days_to_run list
+    return current_day_abbr in days_to_run
+
+
 def send_report_from_file(filename):
     # Read the details from the .rpt file
     details = read_rpt_file(filename)
@@ -183,8 +192,14 @@ def send_report_from_file(filename):
             "cc_emails": details["cc_emails"],
             "subject": f"{details['subject']} {current_date}",
             "Email_Body": details["Email_Body"],
+            "days_to_run": details["days_to_run"],
         }
     )
+
+    # Which Days Gateeping
+    if not should_run_today(details.get("days_to_run", "")):
+        print(f"Skipping report: {filename}. Today is not a scheduled run day.")
+        return  # Skip this report
 
     # Grab report from SQL
     turnout_report = getFormattedTable(
