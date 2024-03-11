@@ -117,6 +117,11 @@ def insertRaw():
             return None
 
 
+def remove_completed_files():
+    print("Clearing completed Files from FileArray")
+    fileArray.clear()
+
+
 def addFiles(files=None):
     if files == None:
         files = askopenfilenames(parent=ws, title="Choose Files")
