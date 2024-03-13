@@ -614,15 +614,6 @@ def analyzeFire(fileDF):
             "X" if ((fileDF.loc[i - 1, "Status"] in (["X", "C"]))) else "0"
         )
 
-    # # =================================================================
-    # #     Remove COMM units / Information Only
-    # # =================================================================
-    # fireDF = fireDF[
-    #     ~fireDF["Unit Type"].isin(
-    #         ["MEDC", "FTAC", "TEST", "ALARMT", "COM", "CNTRL", "CC"]
-    #     )
-    # ]
-
     # =================================================================
     #     Recalculate Shift Data
     # =================================================================
@@ -982,15 +973,6 @@ def analyzeFire(fileDF):
     export_to_xlsx("output", fileDF)
 
     # ----------------
-    # Write to Database
-    # ----------------
-    # show(fireDF)
-    from Database import SQLDatabase
-
-    db = SQLDatabase()
-    db.insertDF(fileDF)
-
-    # ----------------
     # Write to Esri Directly
     # ----------------
     # from esriOverwrite import EsriDatabase
@@ -1004,8 +986,10 @@ def analyzeFire(fileDF):
 
     ######################################
     # show in gui just after writing
-    print("Complete")
+    # print("Complete")
     # show(fireDF)
+
+    return fileDF
 
 
 ################################
@@ -1025,4 +1009,13 @@ if __name__ == "__main__":
 
     # show(df)
 
-    analyzeFire(df)
+    analyzeDF = analyzeFire(df)
+
+    # ----------------
+    # Write to Database
+    # ----------------
+    # show(fireDF)
+    from Database import SQLDatabase
+
+    db = SQLDatabase()
+    db.insertDF(analyzeDF)

@@ -68,7 +68,15 @@ def createGui():
 def guiAnalyze():
     # Merge file before had? calculate them all separately and thne merge at the end?  what do we do here?
     for file in fileArray:
-        af.analyzeFire(fileArray[file])
+        fileDF = af.analyzeFire(fileArray[file])
+        # ----------------
+        # Write to Database
+        # ----------------
+        # show(fireDF)
+        from Database import SQLDatabase
+
+        db = SQLDatabase()
+        db.insertDF(fileDF)
 
     return None
 
