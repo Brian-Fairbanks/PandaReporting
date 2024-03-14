@@ -1,35 +1,11 @@
 from datetime import datetime
-import json
 import logging
 import os
 from dotenv import load_dotenv, find_dotenv
 import imaplib
 import email
 from email.policy import default
-
-
-def setup_logging():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.FileHandler("..\\logs\\email_monitoring.log"),
-            logging.StreamHandler(),
-        ],
-    )
-    logging.info("Script started")
-
-
-def load_config():
-    try:
-        config_file_location = ".\\data\\Lists\\emailMonitoring.json"
-        with open(config_file_location, "r") as file:
-            config = json.load(file)
-        logging.info("Email monitoring configuration loaded")
-        return config["email_rules"]
-    except Exception as e:
-        logging.error(f"Error loading email configuration: {e}")
-        exit(1)
+import ServerFiles as sf
 
 
 def login_to_email():
@@ -159,8 +135,8 @@ def is_file_logged(log_file, filename, sender, date):
 
 
 def main():
-    setup_logging()
-    email_rules = load_config()
+    sf.setup_logging("EmailMonitor")
+    email_rules = sf.load_config()
     mail = login_to_email()
 
     for rule in email_rules:
