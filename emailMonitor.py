@@ -46,6 +46,21 @@ def login_to_email():
 #         save_attachments(email_msg, rule)
 
 
+def open_sftp_client(rule):
+    sftp_client = None
+    if "sftp_copy" in rule:
+        sftp_client = sf.create_sftp_client(rule["sftp_copy"])
+    return sftp_client
+
+
+def transfer_file_via_sftp(sftp_client, local_path, remote_path):
+    try:
+        sftp_client.put(local_path, remote_path)
+        logging.info(f"Successfully transferred {local_path} to {remote_path}")
+    except Exception as e:
+        logging.error(f"Failed to transfer {local_path} to {remote_path}: {e}")
+
+
 def find_first_matching_email(mail, rule):
     criteria = '(FROM "{}" SUBJECT "{}")'.format(
         rule["sender"], rule["subject_keyword"]
@@ -60,14 +75,18 @@ def find_first_matching_email(mail, rule):
         return None
 
 
-def process_first_email(mail, message_id, rule):
+def process_single_email(mail, message_id, rule, sftp):
     if message_id is None:
         logging.info("No matching email to process.")
         return
 
     _, data = mail.fetch(message_id, "(RFC822)")
     email_msg = email.message_from_bytes(data[0][1], policy=default)
-    save_attachments(email_msg, rule)
+    file_data = save_attachments(email_msg, rule)
+    if file_data and sftp:
+        transfer_file_via_sftp(
+            sftp, file_data["file_path"], f".\\{file_data['file_name']}"
+        )
 
 
 def format_email_date(date_string):
@@ -80,6 +99,10 @@ def format_email_date(date_string):
 
 
 def save_attachments(email_msg, rule):
+    """
+    Collects files if they have not already been collected, and saves them.
+    Returns a dictionary of {file_path, file_name} if the file was saved, and None if the file skipped
+    """
     log_file = ".\\data\\downloaded_files_log.txt"  # Define the log file path
     sender = email_msg["From"]
     date_str = format_email_date(email_msg["Date"])
@@ -110,6 +133,8 @@ def save_attachments(email_msg, rule):
                 log_downloaded_file(log_file, new_filename, sender, email_msg["Date"])
             else:
                 logging.info(f"Skipped {new_filename}, already processed.")
+                return None
+        return {"file_path": filepath, "file_name": new_filename}
 
 
 def log_downloaded_file(log_file, filename, sender, date):
@@ -138,11 +163,15 @@ def main():
     sf.setup_logging("EmailMonitor")
     email_rules = sf.load_config()
     mail = login_to_email()
-
+    print(f"Beginning rule creation")
     for rule in email_rules:
         try:
+            print(f'\n--  {rule["subject_keyword"]}  --\n')
+            sftp = open_sftp_client(rule)
             message_id = find_first_matching_email(mail, rule)
-            process_first_email(mail, message_id, rule)
+            process_single_email(mail, message_id, rule, sftp)
+            if sftp:
+                sftp.close()
         except Exception as e:
             logging.error(f"Error processing email for rule {rule}: {e}")
 

@@ -1,7 +1,53 @@
 import logging
 import json
 import os
+import paramiko
 import shutil
+
+
+def create_sftp_client(connection_name):
+    """
+    Create an SFTP client using SSH key authentication.
+    """
+    try:
+        connection = get_sftp_settings(connection_name)
+        print(f"Found sftp data: {connection}")
+        # Initialize an SSH client
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        # Load the private key
+        mykey = paramiko.RSAKey.from_private_key_file(connection["key_path"])
+
+        # Connect using the loaded key
+        client.connect(
+            hostname=connection["hostname"],
+            port=connection["port"],
+            username=connection["username"],
+            pkey=mykey,
+        )
+        sftp = client.open_sftp()
+        return sftp
+    except Exception as e:
+        print(f"Failed to create SFTP client: {e}")
+        return None
+
+
+def get_sftp_settings(connection_name):
+    if connection_name:
+        sftp_host = os.getenv(f"SFTP_{connection_name}_HOST")
+        sftp_port = int(
+            os.getenv(f"SFTP_{connection_name}_PORT", 22)
+        )  # Default to port 22 if not specified
+        sftp_username = os.getenv(f"SFTP_{connection_name}_USERNAME")
+        sftp_key = os.getenv(f"SFTP_{connection_name}_KEY_PATH")
+
+    return {
+        "hostname": sftp_host,
+        "port": sftp_port,
+        "username": sftp_username,
+        "key_path": sftp_key,
+    }
 
 
 def setup_logging(filename, base="..\\logs\\"):
