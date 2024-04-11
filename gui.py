@@ -100,22 +100,29 @@ def update_dependency_tables():
     print(" - Done Updating!")
 
 
+def readRaw(filePath):
+    excel_filename = r"{}".format(filePath)
+    # read the file
+    df = pd.read_excel(excel_filename)
+
+    renames = {"ESD02_Record_Daily": "ESD02_Record"}
+    df = df.rename(columns=renames, errors="ignore")
+
+    df = df.replace("-", np.nan)
+
+    if "Ph_PU_Time" in df.columns or "Ph PU Time" in df.columns:
+        fileType = "ems"
+    else:
+        fileType = "fire"
+
+    return df, fileType
+
+
 def insertRaw():
-    for file in fileArray.keys():
+    for file in fileArray.keys():  # keys should just be filepath+name
         try:
-            excel_filename = r"{}".format(file)
-            # read the file
-            df = pd.read_excel(excel_filename)
-
-            renames = {"ESD02_Record_Daily": "ESD02_Record"}
-            df = df.rename(columns=renames, errors="ignore")
-
-            if "Ph_PU_Time" in df.columns or "Ph PU Time" in df.columns:
-                fileType = "ems"
-            else:
-                fileType = "fire"
-
-            dumpRawData(df, fileType)
+            df, filetype = readRaw(file)
+            dumpRawData(df, filetype)
 
         except ValueError:
             messagebox.showerror("Invalid File", "The loaded file is invalid")
@@ -165,7 +172,6 @@ def addFiles(files=None):
 
 def dumpRawData(df, type):
     print("Dumping Raw Data to Database")
-    df = df.replace("-", np.nan)
     db.insertRaw(df, type)
 
 
