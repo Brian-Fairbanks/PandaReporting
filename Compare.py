@@ -62,29 +62,86 @@ def get_from_database(time_frame, data_source):
     return df
 
 
-def compare_file(from_file_df, from_db_df):
+def compare_file(from_file_df, from_db_df, data_source):
     """
-    Compare our data from the processed weekly file against the data that already exists in the database.
+    Compare our data from the raw weekly file against the data that already exists in the database.
     Create 2 separate lists for data to update, and data that needs to be inserted
+    the primary clusters should be:
+        data_source "ems":[Incident]+[unit]+[assigned], where unit and assigned can be null
+            {incident: 112233, unit: Eng201, assigned: null} != {incident: 112233, unit: Safe201, assigned: null}
+            {incident: 112233, unit: Eng201, assigned: 2024/02/01 12:30:20.01} != {incident: 112233, unit: S01, assigned: 2024/02/01 12:39:53.84}
+        data_source "fire": [Incident_Number]+[Unit]+[Unit_Assigned]
     """
+    # Define comparison keys based on the data source
+    if data_source == "ems":
+        compare_keys = ["incident", "unit", "assigned"]
+    elif data_source == "fire":
+        compare_keys = ["Master_Incident_Number", "Radio_Name", "Unit Time Assigned"]
+    else:
+        raise ValueError(f"Unknown data_source: {data_source}")
+
+    # Normalize null values and ensure data types, especially for dates
+    renames = {
+        "Alarm Level": "Alarm_Level",
+    }
+    from_db_df.rename(columns=renames, errors="ignore", inplace=True)
+
+    from_file_df.fillna("null", inplace=True)
+    from_db_df.fillna("null", inplace=True)
+    from_file_df[compare_keys] = from_file_df[compare_keys].astype(str)
+    from_db_df[compare_keys] = from_db_df[compare_keys].astype(str)
+
+    # Prepare columns for update check (non-key columns)
+    non_key_columns = [
+        col
+        for col in from_file_df.columns
+        if col not in compare_keys
+        and col not in ["index", "Master Incident Without First Two Digits"]
+    ]
+
+    # Convert DB df to a dict for faster lookups
+    db_records = {
+        tuple(row[k] for k in compare_keys): row for _, row in from_db_df.iterrows()
+    }
+
     update = []
     insert = []
 
-    # Fill in the blanks
+    for _, new_row in from_file_df.iterrows():
+        new_record_key = tuple(new_row[k] for k in compare_keys)
+        if new_record_key in db_records:
+            existing_record = db_records[new_record_key]
+            # Identify changed columns
+            changed_cols = [
+                col for col in non_key_columns if new_row[col] != existing_record[col]
+            ]
+            if changed_cols:
+                update.append({"data": dict(new_row), "changed_columns": changed_cols})
+        else:
+            insert.append(dict(new_row))
 
-    return {update, insert}
+    # Convert lists to DataFrames
+    update_df = pd.DataFrame([u["data"] for u in update])
+    update_df["changed_columns"] = [
+        u["changed_columns"] for u in update
+    ]  # Add as a separate column
+    insert_df = pd.DataFrame(insert)
+
+    return {"update": update_df, "insert": insert_df}
 
 
 def process_comparison(file_path):
     df, data_source = gui.readRaw(file_path)
     time_frame = get_time_frame(df, data_source)
     database_df = get_from_database(time_frame, data_source)
-    dfs = [df, database_df]
 
     from pandasgui import show
 
-    show(*dfs)
-    # compare_file(df, database_df)
+    # dfs = [df, database_df]
+    # show(*dfs)
+
+    dfs = compare_file(df, database_df, data_source)
+    show(**dfs)
 
 
 def process_directory(directory, file_types, move_on_success, move_on_failure):
@@ -110,10 +167,10 @@ def main():
             f"\n\n===========================================\nBeginning Processing for Directory : {directory}\n===========================================\n\n"
         )
 
-        try:
-            process_directory(directory, file_types, move_on_success, move_on_failure)
-        except Exception as e:
-            logging.error(f"Error processing email for rule {rule}: {e}")
+        # try:
+        process_directory(directory, file_types, move_on_success, move_on_failure)
+        # except Exception as e:
+        #     logging.error(f"Error processing email for rule {rule}: {e}")
 
 
 if __name__ == "__main__":
