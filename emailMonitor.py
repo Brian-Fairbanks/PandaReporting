@@ -65,6 +65,10 @@ def find_first_matching_email(mail, rule):
     criteria = '(FROM "{}" SUBJECT "{}")'.format(
         rule["sender"], rule["subject_keyword"]
     )
+    if "excludes" in rule:
+        excludes = " ".join(['NOT SUBJECT "{}"'.format(ex) for ex in rule["excludes"]])
+        criteria = f"({criteria} {excludes})"
+
     status, messages = mail.search(None, criteria)
     if status == "OK" and messages[0]:  # Check if there's at least one match
         message_ids = messages[0].split()

@@ -1,31 +1,42 @@
 {
-    "email_rules": [
-      {
-        "processing":"autoImportFromFTP",
-        "sender": "fireresearch@austintexas.gov",
-        "subject_keyword": "Daily Data",
-        "attachment_type": ".xlsx",
-        "folder_path": "c:\\temp\\Fire Data",
-        "move_on_success":"c:\\temp\\Fire Data\\archive",
-        "move_on_failure":"c:\\temp\\Fire Data\\failed"
-      },
-      {
-        "processing":"autoImportFromFTP",
-        "sender": "ems.cognos@austintexas.gov",
-        "subject_keyword": "Incidents - ESD02 Dataset - Daily",
-        "attachment_type": ".xlsx",
-        "folder_path": "c:\\temp\\EMS Data",
-        "move_on_success":"c:\\temp\\EMS Data\\archive",
-        "move_on_failure":"c:\\temp\\EMS Data\\failed"
-      },
-      {
-        "processing":"WeeklyComparison",
-        "sender": "fireresearch@austintexas.gov",
-        "subject_keyword": "ESD02 Weekly Data",
-        "attachment_type": ".xlsx",
-        "folder_path": "c:\\temp\\Fire Data\\weekly",
-        "move_on_success":"c:\\temp\\Fire Data\\archive",
-        "move_on_failure":"c:\\temp\\Fire Data\\failed"
-      }
-    ]
-  }
+  "email_rules": [
+    {
+      "processing":"autoImportFromFTP",
+      "sender": "fireresearch@austintexas.gov",
+      "subject_keyword": "Daily Data",
+      "attachment_type": ".xlsx",
+      "folder_path": "c:\\temp\\Fire Data",
+      "move_on_success":"c:\\temp\\Fire Data\\archive",
+      "move_on_failure":"c:\\temp\\Fire Data\\failed"
+    },
+    {
+      "processing":"autoImportFromFTP",
+      "sender": "ems.cognos@austintexas.gov",
+      "subject_keyword": "Incidents - ESD02 Dataset - Daily",
+      "attachment_type": ".xlsx",
+      "folder_path": "c:\\temp\\EMS Data",
+      "move_on_success":"c:\\temp\\EMS Data\\archive",
+      "move_on_failure":"c:\\temp\\EMS Data\\failed"
+    },
+    {
+      "processing":"WeeklyComparison",
+      "sender": "fireresearch@austintexas.gov",
+      "subject_keyword": "ESD02 Weekly Data",
+      "excludes":"daily",
+      "attachment_type": ".xlsx",
+      "folder_path": "c:\\temp\\Fire Data\\weekly",
+      "move_on_success":"c:\\temp\\Fire Data\\archive",
+      "move_on_failure":"c:\\temp\\Fire Data\\failed"
+    }
+    ,    {
+      "processing":"WeeklyComparison",
+      "sender": "ems.cognos@austintexas.gov",
+      "subject_keyword": "ESD02 Dataset",
+      "excludes":"daily",
+      "attachment_type": ".xlsx",
+      "folder_path": "c:\\temp\\EMS Data\\weekly",
+      "move_on_success":"c:\\temp\\EMS Data\\archive",
+      "move_on_failure":"c:\\temp\\EMS Data\\failed"
+    }
+  ]
+}

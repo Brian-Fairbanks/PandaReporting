@@ -74,7 +74,7 @@ def compare_file(from_file_df, from_db_df, data_source):
     """
     # Define comparison keys based on the data source
     if data_source == "ems":
-        compare_keys = ["incident", "unit", "assigned"]
+        compare_keys = ["Incident", "Unit", "Assigned"]
     elif data_source == "fire":
         compare_keys = ["Master_Incident_Number", "Radio_Name", "Unit Time Assigned"]
     else:
