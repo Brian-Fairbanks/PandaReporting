@@ -2,9 +2,12 @@ import pyodbc
 import sqlalchemy
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
 import pandas as pd
+import numpy as np
 import json
 from sys import exit
+import re
 
 # from pandasgui import show
 from tqdm import tqdm
@@ -404,6 +407,125 @@ class SQLDatabase:
         # for i in res:
         #     print(i)
 
+    def check_simple_errors(self, err):
+        err_str = str(err)
+        # Regex to catch "String or binary data would be truncated" errors
+        match = re.search(
+            r"String or binary data would be truncated in table \\'([^']+)\\', column \\'([^']+)\\'",
+            err_str,
+        )
+        if match:
+            table, column = match.groups()
+
+            return f"{table}[{column}] would be truncated. Consider expanding to greater size."
+        return None
+
+    def format_sql_values(self, row):
+        formatted = []
+        for item in row:
+            # print(
+            #     f"Processing item with type {type(item)} and value {item}"
+            # )  # Debug output
+
+            # Check if the item is list or dict and handle as JSON
+            if isinstance(item, (list, dict)):
+                # Serialize list or dictionary to JSON string
+                json_str = json.dumps(item).replace("'", "''")
+                formatted.append(f"'{json_str}'")
+                continue
+
+            # Handle numpy arrays, if any, assuming they are not meant to be here
+            if isinstance(item, np.ndarray):
+                if item.size == 1:
+                    item = item[0]  # Convert single-element arrays to scalars
+                else:
+                    logging.error(
+                        "Item is an array with more than one element. Only single-element arrays are handled."
+                    )
+                    continue
+
+            # Normal null check and handling for scalar values
+            if pd.isnull(item):
+                formatted.append("NULL")
+            elif isinstance(item, str):
+                # Escape single quotes and handle line breaks
+                escaped_item = (
+                    item.replace("'", "''").replace("\n", "| ").replace("\r", "| ")
+                )  # Replace line breaks with spaces
+                formatted.append(f"'{escaped_item}'")
+            elif isinstance(item, pd.Timestamp):
+                formatted.append(f"'{item.strftime('%Y-%m-%d %H:%M:%S')}'")
+            else:
+                formatted.append(str(item))
+
+        return ", ".join(formatted)
+
+    def insert_dataframe(self, df, table_name, primary_keys):
+        """
+        Upserts a DataFrame into the specified table with error handling and logging failures.
+
+        Parameters:
+            df (pandas.DataFrame): DataFrame to upsert.
+            table_name (str): Table name to upsert into.
+            primary_keys (list): List of column names to be used as primary keys.
+        """
+        # Converting boolean columns to 1/0 for SQL Server BIT type compatibility
+        bool_columns = [col for col, dtype in df.dtypes.items() if dtype == "bool"]
+        for col in bool_columns:
+            df[col] = df[col].astype(int)
+
+        Session = sessionmaker(bind=self.engine)
+        session = Session()
+
+        failed_rows = []
+        for index, row in tqdm(df.iterrows(), total=len(df), desc="Upserting rows"):
+            values = self.format_sql_values(row.values)
+            primary_key_condition = " AND ".join(
+                [f"target.{pk} = source.{pk}" for pk in primary_keys]
+            )
+            update_set = ", ".join(
+                [
+                    f"target.{col} = source.{col}"
+                    for col in df.columns
+                    if col not in primary_keys
+                ]
+            )
+            insert_cols = ", ".join([f"[{col}]" for col in df.columns])
+            insert_vals = values
+
+            stmt = f"""
+            MERGE INTO {table_name} AS target
+            USING (SELECT * FROM (VALUES ({insert_vals})) AS s ({insert_cols}))
+            AS source ON {primary_key_condition}
+            WHEN MATCHED THEN
+                UPDATE SET {update_set}
+            WHEN NOT MATCHED THEN
+                INSERT ({insert_cols}) VALUES ({insert_vals});
+            """
+            try:
+                session.execute(stmt)
+                session.commit()
+            except Exception as e:
+                simple_error = self.check_simple_errors(e)
+                if simple_error:
+                    logging.error(f"Simple Error for row {index}: {simple_error}")
+                else:
+                    logging.error(f"Failed to insert/update row {index}: {e}")
+                    logging.error(
+                        f"SQL Statement: {stmt}"
+                    )  # Log the full SQL statement
+                failed_rows.append(index)
+
+        if failed_rows:
+            logging.info(f"Failed rows are logged. Row indices: {failed_rows}")
+        session.close()
+
+    def insertESOBasic(self, df):
+        """
+        Inserts or updates entries into the 'Basic' table using 'IncidentId' as the primary key.
+        """
+        self.insert_dataframe(df, "Basic", ["IncidentId"])
+
     # main reason for this... run all included functions
     def insertDF(self, df):
         if df.loc[0, "Data_Source"] == "ems":
@@ -477,7 +599,7 @@ class SQLDatabase:
 if __name__ == "__main__":
     # set up simple dataframe to test insertion
     # df = pd.DataFrame([["test from dataframe"], ["pandas will work"]], columns=["data"])
-
+    exit()
     db = SQLDatabase()
     # df = db.retreiveDF()
     # db.insertTest(df)

@@ -6,12 +6,15 @@ import os
 import pandas as pd
 from pandasgui import show
 
+
 testing = False
 
 
 #       ESO API Data Gathering
 # =======================================================================================
-def construct_query(start_date=datetime(2024, 3, 3), end_date=datetime(2024, 3, 3, 3)):
+def construct_query(
+    start_date=datetime(2024, 3, 3), end_date=datetime(2024, 3, 20, 2, 40)
+):
     try:
         # Your ESO Subscription ID
         load_dotenv(find_dotenv())
@@ -263,8 +266,13 @@ def getPath(response, path):
             # If encountering a list without a digit key, return the list as is
             print(f"!!! '{path}' not found")
             break
-    if testing and value:
+    # Convert boolean to bit if the final resolved value is a boolean
+    if isinstance(value, bool):
+        value = int(value)
+
+    if testing and value is not None:
         print(f"\n\tFound Value: {value}")
+
     return value
 
 
@@ -387,10 +395,18 @@ def define_sql_table(df, table_name=None, primary_key=None, non_nullable_fields=
     return create_script  # Optionally return the create script if you want to use it programmatically
 
 
+def store_dfs(group_dfs):
+    from Database import SQLDatabase
+
+    db = SQLDatabase("DBESO")
+    db.insertESOBasic(group_dfs["Basic"])
+
+
 def main():
     sf.setup_logging("..\\logs\\ESO Pull.log")
 
-    eso_query = construct_query(datetime(2024, 3, 8), datetime(2024, 3, 10, 0))
+    # eso_query = construct_query(datetime(2024, 3, 8), datetime(2024, 3, 10, 0))
+    eso_query = construct_query()
     eso_data = get_eso(eso_query)
 
     group_dfs = group_data(eso_data)
@@ -398,13 +414,9 @@ def main():
     # if group_dfs:
     #     show(**group_dfs)
 
-    # pd.set_option("display.max_columns", None)
-    # pd.set_option("display.max_rows", None)
-    define_sql_table(group_dfs["Basic"], "Basic", "IncidentId")
-    # print(column_details)
+    # define_sql_table(group_dfs["Basic"], "Basic", "IncidentId")
 
-    # db = SQLDatabase("DBESO")
-    # db.insertESOBasic(group_dfs["Basic"])
+    store_dfs(group_dfs)
 
 
 if __name__ == "__main__":
