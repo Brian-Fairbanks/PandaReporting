@@ -56,7 +56,7 @@ def get_from_database(time_frame, data_source):
 
     try:
         db = SQLDatabase()
-        df = db.retreiveDF(*args)  # unpack a set of parameters
+        df = db.retrieve_df(*args)  # unpack a set of parameters
     except Exception as e:
         print(e)
     return df

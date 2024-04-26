@@ -1,6 +1,7 @@
 import pyodbc
 import sqlalchemy
 from sqlalchemy.engine import URL
+from sqlalchemy.orm import sessionmaker
 import pandas as pd
 import json
 from sys import exit
@@ -22,7 +23,7 @@ print = logger.info
 class SQLDatabase:
     """a connection to a SQL Database, and associated functions for insertion of required data"""
 
-    def which_database_to_use(self):
+    def which_database_to_use(self, dtbs):
         config_file_location = ".\\data\\Lists\\TestDatabase.json"
         # Test Database is a JSON object with 2 fields:
         #     "use_test_database": true,
@@ -34,13 +35,17 @@ class SQLDatabase:
             print(f"Testing Database is Enabled ({config_file_location})")
             return config["test_database_name"]
 
+        # Use specific database if one was passed
+        if dtbs != "":
+            return getenv(dtbs)
+
         return getenv("DBDTBS")
 
-    def __init__(self):
+    def __init__(self, useDTBS=""):
         load_dotenv(find_dotenv())
         drvr = getenv("DBDRVR")
         srvr = getenv("DBSRVR")
-        dtbs = self.which_database_to_use()
+        dtbs = self.which_database_to_use(useDTBS)
         if drvr == None or srvr == None or dtbs == None:
             print("Error: Database connection not read from .env")
             exit()
@@ -419,13 +424,24 @@ class SQLDatabase:
         else:
             self.insertToRawFire(df)
 
-    def retreiveDF(self, query, dateFields):
-        print("Pulling data from Database")
-        sql_df = pd.read_sql(
-            query,
-            con=self.engine,
-            parse_dates=dateFields,
-        )
+    def retrieve_df(self, query, date_fields):
+        """
+        Retrieves data from the database and returns it as a pandas DataFrame.
+
+        Parameters:
+            query (str): SQL query to be executed.
+            date_fields (list of str): List of column names that should be parsed as dates.
+
+        Returns:
+            pandas.DataFrame: Data retrieved from the database.
+        """
+        try:
+            print("Pulling data from Database")
+            sql_df = pd.read_sql(query, con=self.engine, parse_dates=date_fields)
+            print(f"Data successfully retrieved: {len(sql_df)} rows.")
+        except Exception as e:
+            print(f"An error occurred while pulling data: {e}")
+            return pd.DataFrame()  # Return an empty DataFrame in case of an error
 
         return sql_df
 
