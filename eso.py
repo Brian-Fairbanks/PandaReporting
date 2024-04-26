@@ -348,16 +348,63 @@ def group_data(response):
     return group_dfs
 
 
+# Testing and setup
+import pandas as pd
+
+
+def define_sql_table(df, table_name=None, primary_key=None, non_nullable_fields=None):
+    sql_type_mapping = {
+        "object": "NVARCHAR(MAX)",
+        "int64": "BIGINT",
+        "float64": "FLOAT",
+        "bool": "BIT",
+        "datetime64[ns]": "DATETIME2",
+    }
+
+    if non_nullable_fields is None:
+        non_nullable_fields = []
+
+    column_details = df.dtypes.reset_index()
+    column_details.columns = ["ColumnName", "DataType"]
+    column_details["DataType"] = column_details["DataType"].astype(str)
+
+    print(column_details)  # Debug print
+
+    create_script = f"CREATE TABLE {table_name} (\n"
+    for index, row in column_details.iterrows():
+        data_type_str = row["DataType"]
+        sql_data_type = sql_type_mapping.get(data_type_str, "NVARCHAR(MAX)")
+        nullable = "NOT NULL" if row["ColumnName"] in non_nullable_fields else "NULL"
+        column_entry = f"    [{row['ColumnName']}] {sql_data_type} {nullable}"
+        if primary_key and row["ColumnName"] == primary_key:
+            column_entry += " PRIMARY KEY"
+        create_script += f"{column_entry},\n"
+
+    create_script = create_script.strip().rstrip(",") + "\n);"
+
+    print(create_script)  # Final SQL statement
+
+    return create_script  # Optionally return the create script if you want to use it programmatically
+
+
 def main():
     sf.setup_logging("..\\logs\\ESO Pull.log")
 
-    eso_query = construct_query()
+    eso_query = construct_query(datetime(2024, 3, 8), datetime(2024, 3, 10, 0))
     eso_data = get_eso(eso_query)
 
     group_dfs = group_data(eso_data)
 
-    if group_dfs:
-        show(**group_dfs)
+    # if group_dfs:
+    #     show(**group_dfs)
+
+    # pd.set_option("display.max_columns", None)
+    # pd.set_option("display.max_rows", None)
+    define_sql_table(group_dfs["Basic"], "Basic", "IncidentId")
+    # print(column_details)
+
+    # db = SQLDatabase("DBESO")
+    # db.insertESOBasic(group_dfs["Basic"])
 
 
 if __name__ == "__main__":
