@@ -264,7 +264,7 @@ def getPath(response, path):
             value = value[int(key)]  # Access specific index if key is a digit
         else:
             # If encountering a list without a digit key, return the list as is
-            print(f"!!! '{path}' not found")
+            # print(f"!!! '{path}' not found")
             break
     # Convert boolean to bit if the final resolved value is a boolean
     if isinstance(value, bool):
