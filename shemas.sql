@@ -95,19 +95,22 @@ AS
 	and efl.Fire_Incident_Number = fi.Incident_Number
 	)
 
-[initialDispatchCode],
-[workingFire],
-[CriticalIncident],
-[CriticalIncidentTeamMobilized],
-[reportToIRWIN],
 
-  use [ESO]
-  CREATE TABLE Basic (
+  
+CREATE TABLE Basic (
     [IncidentId] NVARCHAR(36) NOT NULL PRIMARY KEY,
     [IncidentNumber] NVARCHAR(50) NULL,
     [NFIRSIncidentNumber] NVARCHAR(7) NOT NULL,
     [IncidentDate] DATETIME2 NULL,
+    [ExposureId] NVARCHAR(36) NULL,
+    [sequenceNumber] INT NULL,
+    [IncidentTypeCode] NVARCHAR(10) NULL,
     [IncidentType] NVARCHAR(50) NULL,
+    [initialDispatchCode] NVARCHAR(50) NULL,
+    [workingFire] BIT NULL,
+    [CriticalIncident] BIT NULL,
+    [CriticalIncidentTeamMobilized] BIT NULL,
+    [reportToIRWIN] BIT NULL,
     [Alarms] INT NULL,
     [Station] NVARCHAR(50) NULL,
     [StationName] NVARCHAR(100) NULL,
@@ -191,7 +194,7 @@ AS
     [ReportWriterName] NVARCHAR(100) NULL,
     [ReportWriterAssignment] NVARCHAR(100) NULL,
     [ReportWriterRank] NVARCHAR(50) NULL,
-    [OfficerInCharge] NVARCHAR(100) NULL,
+    [OfficerInCharge] NVARCHAR(300) NULL,
     [OfficerInChargeAssignment] NVARCHAR(100) NULL,
     [OfficerInChargeRank] NVARCHAR(50) NULL,
     [Narratives] NVARCHAR(MAX) NULL,
