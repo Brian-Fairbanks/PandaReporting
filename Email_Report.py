@@ -55,7 +55,7 @@ def getFormattedTable(query, times):
 
     try:
         db = SQLDatabase()
-        df = db.retreiveDF(
+        df = db.retrieve_df(
             query,
             times,
         )

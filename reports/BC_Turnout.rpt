@@ -1,0 +1,7 @@
+recipient_emails: mnyland@pflugervillefire.org, battalionchiefs@pflugervillefire.org, bfairbanks@pflugervillefire.org
+cc_emails: 
+subject: Weekly Turnout Data
+query: SELECT * FROM [UNIT_RUN_DATA].[dbo].[v_BC_Turnout]
+Email_Body: Attached is the weekly turnout report, Please contact Mary Nyland (mnyland@pflugervillefire.org) if you have any questions.
+date_time_columns: Phone_Pickup_Time
+days_to_run: mon
