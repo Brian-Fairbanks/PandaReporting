@@ -13,7 +13,7 @@ testing = False
 #       ESO API Data Gathering
 # =======================================================================================
 def construct_query(
-    start_date=datetime(2024, 3, 3), end_date=datetime(2024, 3, 20, 2, 40)
+    start_date=datetime(2024, 3, 3), end_date=datetime(2024, 3, 3, 0, 1)
 ):
     try:
         # Your ESO Subscription ID
@@ -35,32 +35,30 @@ def construct_query(
 
 
 def get_eso(eso_query):
-    response = requests.get(eso_query["url"], params=eso_query["params"])
+    try:
+        response = requests.get(eso_query["url"], params=eso_query["params"])
+        response.raise_for_status()  # Raises HTTPError for bad responses
+        json_data = response.json()
 
-    # Check if the request was successful
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print("Failed to retrieve data:", response)
-        return None
+        # Check if 'lastModifiedDate' exists and has a value
+        if "lastModifiedDate" not in json_data or json_data["lastModifiedDate"] is None:
+            print("No incidents found for the selected date.")
+            return None
 
-
-# def explode_data(data):
-#     try:
-#         # Extracting the 'Incidents' list and flattening it
-#         incidents_df = pd.json_normalize(data, record_path=["incidents"])
-
-#         # Adding the other attributes to the incidents DataFrame
-#         for column in [
-#             "lastModifiedDate",
-#             "lastIncidentDate",
-#             "lastIncidentDateString",
-#         ]:
-#             incidents_df[column] = data[column]
-#         return incidents_df
-#     except Exception as e:
-#         print(f"Failed to Explode Data: {e}")
-#         return None
+        return json_data
+    except requests.exceptions.HTTPError as e:
+        # Log HTTP errors and include response content for better context
+        print(f"HTTP Error: {e.response.status_code} - {e.response.text}")
+    except requests.exceptions.ConnectionError:
+        print("Connection error. Check your internet connection and the API endpoint.")
+    except requests.exceptions.Timeout:
+        print(
+            "The request timed out. Consider trying again or increasing the timeout value."
+        )
+    except requests.exceptions.RequestException as e:
+        # Handle any other requests exceptions
+        print(f"An error occurred: {e}")
+    return None
 
 
 #       Response Grouping
@@ -263,7 +261,6 @@ def getPath(response, path):
         elif isinstance(value, list) and key.isdigit():
             value = value[int(key)]  # Access specific index if key is a digit
         else:
-            # If encountering a list without a digit key, return the list as is
             # print(f"!!! '{path}' not found")
             break
     # Convert boolean to bit if the final resolved value is a boolean
@@ -357,7 +354,6 @@ def group_data(response):
 
 
 # Testing and setup
-import pandas as pd
 
 
 def define_sql_table(df, table_name=None, primary_key=None, non_nullable_fields=None):
@@ -409,14 +405,13 @@ def main():
     eso_query = construct_query()
     eso_data = get_eso(eso_query)
 
-    group_dfs = group_data(eso_data)
+    if eso_data:
+        group_dfs = group_data(eso_data)
+        # if group_dfs:
+        #     show(**group_dfs)
 
-    # if group_dfs:
-    #     show(**group_dfs)
-
-    # define_sql_table(group_dfs["Basic"], "Basic", "IncidentId")
-
-    store_dfs(group_dfs)
+        # define_sql_table(group_dfs["Basic"], "Basic", "IncidentId")
+        store_dfs(group_dfs)
 
 
 if __name__ == "__main__":
