@@ -50,16 +50,34 @@ def get_sftp_settings(connection_name):
     }
 
 
-def setup_logging(filename, base="..\\logs\\"):
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.FileHandler(base + filename),
-            logging.StreamHandler(),
-        ],
-    )
-    logging.info("Script started")
+def setup_logging(filename="default.log", base="..\\logs\\"):
+    """Setup logging configuration."""
+    full_log_path = os.path.abspath(os.path.join(base, filename))
+    if not logging.getLogger().hasHandlers():  # Check if handlers already exist
+        os.makedirs(base, exist_ok=True)
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s - %(levelname)s - %(message)s",
+            handlers=[
+                logging.FileHandler(full_log_path),
+                logging.StreamHandler(),  # Optionally add console output
+            ],
+        )
+    logging.info(f"Logging initialized: {full_log_path}")
+    return logging.getLogger(filename)
+
+
+# def setup_logging(filename, base="..\\logs\\"):
+#     full_log_path = os.path.join(base, filename)
+#     logging.basicConfig(
+#         level=logging.INFO,
+#         format="%(asctime)s - %(levelname)s - %(message)s",
+#         handlers=[
+#             logging.FileHandler(full_log_path),
+#             logging.StreamHandler(),
+#         ],
+#     )
+#     logging.info(f"Log file enabled at {full_log_path}")
 
 
 def load_config():
