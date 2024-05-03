@@ -1,13 +1,3 @@
-# import logging
-
-# # Setup logging to capture all messages from the start
-# log_file_path = "C:\\Temp\\service.log"  # Ensure the Temp directory exists
-# logging.basicConfig(
-#     level=logging.DEBUG,
-#     format="%(asctime)s - %(levelname)s - %(message)s",
-#     filename=log_file_path,
-#     filemode="a",
-# )
 from ServerFiles import setup_logging
 
 logger = setup_logging("service.log", "C:\\Temp")
@@ -19,6 +9,7 @@ import win32event
 import servicemanager
 from eso_update_schedule import main as scheduler_main
 import sys
+from threading import Event
 
 logger.debug("Modules imported successfully.")
 
@@ -33,13 +24,13 @@ class ESOService(win32serviceutil.ServiceFramework):
         win32serviceutil.ServiceFramework.__init__(self, args)
         self.hWaitStop = win32event.CreateEvent(None, 0, 0, None)
         logger.info("Service initialized.")
-        self.is_running = True
+        self.stop_event = Event()
 
     def SvcStop(self):
+        logger.info("The ESO Data Update Service is stopping.")
         self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
         win32event.SetEvent(self.hWaitStop)
-        self.is_running = False
-        logger.info("The ESO Data Update Service is stopping.")
+        self.stop_event.set()
 
     def SvcDoRun(self):
         logger.info("The ESO Data Update Service has started.")
@@ -59,9 +50,8 @@ class ESOService(win32serviceutil.ServiceFramework):
     #     while self.is_running:
     #         win32event.WaitForSingleObject(self.hWaitStop, win32event.INFINITE)
     def main(self):
-        logger.info("Main function started.")
         try:
-            scheduler_main()
+            scheduler_main(self.stop_event)
         except Exception as e:
             logger.error("Failed in scheduler_main: %s", str(e))
             raise

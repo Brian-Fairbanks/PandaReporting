@@ -1,4 +1,5 @@
 import time
+import threading
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from eso import construct_query, get_eso, group_data, store_dfs
@@ -77,29 +78,47 @@ def fetch_and_process_data():
         store_dfs(group_dfs)
 
 
-def main():
+def main(stop_event):
     logger.info("Starting Main")
     catch_up_data()  # Perform catch-up first
 
     logger.info("Completed catch up")
-    # Start regular scheduling
     try:
-        scheduler = BackgroundScheduler(timezone=tz)
+        scheduler = BackgroundScheduler(
+            timezone="UTC"
+        )  # Ensure you define 'tz' or replace with a literal
         scheduler.add_job(
             fetch_and_process_data, "interval", seconds=process_interval_in_seconds
         )
         scheduler.start()
-    except Exception as e:
-        logger.error("Failed to add to scheduler: %s", str(e))
-        raise
 
-    # Keep the script running
-    try:
-        while True:
-            time.sleep(2)
-    except (KeyboardInterrupt, SystemExit):
+        # Wait indefinitely until the event is set.
+        stop_event.wait()
         scheduler.shutdown()
+        logger.info("Scheduler shutdown completed")
+
+    except Exception as e:
+        logger.error(f"Failed to add to scheduler: {e}")
+        raise
 
 
 if __name__ == "__main__":
-    main()
+    stop_event = threading.Event()
+
+    def run_scheduler():
+        main(stop_event)
+
+    # Run the main function in a separate thread
+    scheduler_thread = threading.Thread(target=run_scheduler)
+    scheduler_thread.start()
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        stop_event.set()
+        logger.info("Stopping scheduler...")
+
+    # Wait for the scheduler thread to finish
+    scheduler_thread.join()
+    logger.info("Scheduler stopped.")
