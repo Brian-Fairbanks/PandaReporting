@@ -1,13 +1,16 @@
 import requests
 from datetime import datetime
 from dotenv import load_dotenv, find_dotenv
-import ServerFiles as sf
+from ServerFiles import setup_logging
+from Database import SQLDatabase
 import os
 import pandas as pd
-from pandasgui import show
+
+# from pandasgui import show
 
 
 testing = False
+logger = setup_logging("ESO Pull.log")
 
 
 #       ESO API Data Gathering
@@ -17,8 +20,15 @@ def construct_query(
 ):
     try:
         # Your ESO Subscription ID
-        load_dotenv(find_dotenv())
+        dotenv_path = find_dotenv()
+        load_dotenv(dotenv_path)
+        logger.info(f".env found and loaded from {dotenv_path}")
+
         subscription_id = os.getenv("ESO_API_KEY")
+        if subscription_id:
+            logger.info("Subscription key loaded successfully.")
+        else:
+            logger.error("Failed to load subscription key from environment.")
         # API endpoint
         url = "https://esoapis.net/incidents/v0/byLastModified"
 
@@ -29,7 +39,7 @@ def construct_query(
             "subscription-key": subscription_id,
         }
     except Exception as e:
-        print(f"Failed to Contruct ESO Query: {e}")
+        logger.error(f"Failed to Contruct ESO Query: {e}")
         return None
     return {"url": url, "params": params}
 
@@ -42,22 +52,24 @@ def get_eso(eso_query):
 
         # Check if 'lastModifiedDate' exists and has a value
         if "lastModifiedDate" not in json_data or json_data["lastModifiedDate"] is None:
-            print("No incidents found for the selected date.")
+            logger.info(" - No incidents found for the selected time range.")
             return None
 
         return json_data
     except requests.exceptions.HTTPError as e:
         # Log HTTP errors and include response content for better context
-        print(f"HTTP Error: {e.response.status_code} - {e.response.text}")
+        logger.error(f"HTTP Error: {e.response.status_code} - {e.response.text}")
     except requests.exceptions.ConnectionError:
-        print("Connection error. Check your internet connection and the API endpoint.")
+        logger.error(
+            "Connection error. Check your internet connection and the API endpoint."
+        )
     except requests.exceptions.Timeout:
-        print(
+        logger.error(
             "The request timed out. Consider trying again or increasing the timeout value."
         )
     except requests.exceptions.RequestException as e:
         # Handle any other requests exceptions
-        print(f"An error occurred: {e}")
+        logger.error(f"An error occurred: {e}")
     return None
 
 
@@ -392,15 +404,11 @@ def define_sql_table(df, table_name=None, primary_key=None, non_nullable_fields=
 
 
 def store_dfs(group_dfs):
-    from Database import SQLDatabase
-
     db = SQLDatabase("DBESO")
     db.insertESOBasic(group_dfs["Basic"])
 
 
 def main():
-    sf.setup_logging("..\\logs\\ESO Pull.log")
-
     # eso_query = construct_query(datetime(2024, 3, 8), datetime(2024, 3, 10, 0))
     eso_query = construct_query()
     eso_data = get_eso(eso_query)
