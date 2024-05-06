@@ -9,6 +9,7 @@ import win32event
 import servicemanager
 from eso_update_schedule import main as scheduler_main
 import sys
+import os
 from threading import Event
 
 logger.debug("Modules imported successfully.")
@@ -23,8 +24,8 @@ class ESOService(win32serviceutil.ServiceFramework):
         logger.info("Attempting to initialize...")
         win32serviceutil.ServiceFramework.__init__(self, args)
         self.hWaitStop = win32event.CreateEvent(None, 0, 0, None)
-        logger.info("Service initialized.")
         self.stop_event = Event()
+        logger.info("Service initialized.")
 
     def SvcStop(self):
         logger.info("The ESO Data Update Service is stopping.")
@@ -40,31 +41,21 @@ class ESOService(win32serviceutil.ServiceFramework):
                 servicemanager.PYS_SERVICE_STARTED,
                 (self._svc_name_, ""),
             )
+            service_dir = os.path.dirname(sys.executable)
+            os.chdir(service_dir)
+            logger.info(f"Changed working directory to {service_dir}")
+
             self.main()
         except Exception as e:
             logger.error("Exception during service start: %s", str(e))
             self.SvcStop()
 
-    # def main(self):
-    #     scheduler_main()  # Call the main function from eso_update_schedule.py
-    #     while self.is_running:
-    #         win32event.WaitForSingleObject(self.hWaitStop, win32event.INFINITE)
     def main(self):
         try:
             scheduler_main(self.stop_event)
         except Exception as e:
             logger.error("Failed in scheduler_main: %s", str(e))
             raise
-
-    def install(self):
-        # Call the base class install to do the initial installation tasks
-        service_path = (
-            sys.executable
-        )  # Path to the Python executable running the service
-        print("Installing service with path:", service_path)
-        logger.info(f"Installing the service, executable path: {service_path}")
-        win32serviceutil.ServiceFramework.install(self)
-        logger.info("Service installed successfully.")
 
 
 if __name__ == "__main__":

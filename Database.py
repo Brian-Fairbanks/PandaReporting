@@ -1,4 +1,3 @@
-import pyodbc
 import sqlalchemy
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker
@@ -8,6 +7,7 @@ import numpy as np
 import json
 from sys import exit
 import re
+from ServerFiles import setup_logging
 
 # from pandasgui import show
 from tqdm import tqdm
@@ -17,10 +17,8 @@ from os import getenv
 
 
 from datetime import datetime
-import logging
 
-logger = logging.getLogger(__name__)
-print = logger.info
+logger = setup_logging("Database.log")
 
 
 class SQLDatabase:
@@ -31,12 +29,15 @@ class SQLDatabase:
         # Test Database is a JSON object with 2 fields:
         #     "use_test_database": true,
         #     "test_database_name":"UnitRunDataTest"
-        with open(config_file_location, "r") as file:
-            config = json.load(file)
+        try:
+            with open(config_file_location, "r") as file:
+                config = json.load(file)
 
-        if config["use_test_database"]:
-            print(f"Testing Database is Enabled ({config_file_location})")
-            return config["test_database_name"]
+            if config["use_test_database"]:
+                print(f"Testing Database is Enabled ({config_file_location})")
+                return config["test_database_name"]
+        except Exception as e:
+            logger.warning("Test Database Config not found at: {config_file_location}")
 
         # Use specific database if one was passed
         if dtbs != "":
@@ -439,7 +440,7 @@ class SQLDatabase:
                 if item.size == 1:
                     item = item[0]  # Convert single-element arrays to scalars
                 else:
-                    logging.error(
+                    logger.error(
                         "Item is an array with more than one element. Only single-element arrays are handled."
                     )
                     continue
@@ -508,16 +509,14 @@ class SQLDatabase:
             except Exception as e:
                 simple_error = self.check_simple_errors(e)
                 if simple_error:
-                    logging.error(f"Simple Error for row {index}: {simple_error}")
+                    logger.error(f"Simple Error for row {index}: {simple_error}")
                 else:
-                    logging.error(f"Failed to insert/update row {index}: {e}")
-                    logging.error(
-                        f"SQL Statement: {stmt}"
-                    )  # Log the full SQL statement
+                    logger.error(f"Failed to insert/update row {index}: {e}")
+                    logger.error(f"SQL Statement: {stmt}")  # Log the full SQL statement
                 failed_rows.append(index)
 
         if failed_rows:
-            logging.info(f"Failed rows are logged. Row indices: {failed_rows}")
+            logger.info(f"Failed rows are logged. Row indices: {failed_rows}")
         session.close()
 
     def insertESOBasic(self, df):
@@ -586,11 +585,11 @@ class SQLDatabase:
     # ======================================================================================
     # Google Form Insertions
     # ======================================================================================
-    def insertForm(self, json):
-        from pandasgui import show
+    # def insertForm(self, json):
+    #     from pandasgui import show
 
-        df = pd.json_normalize(json["responses"])
-        show(df)
+    #     df = pd.json_normalize(json["responses"])
+    #     show(df)
 
 
 # =================================================================

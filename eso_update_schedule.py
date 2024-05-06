@@ -14,7 +14,15 @@ process_interval_in_seconds = 15
 catch_up_max_day_increment = 10
 
 # Log file for last update time
-last_update_log = "eso_last_update_time.txt"
+import os
+
+# Define an absolute path for the log file
+base_dir = os.path.dirname(
+    os.path.abspath(__file__)
+)  # Directory where the script is located
+last_update_log = os.path.join(base_dir, "eso_last_update_time.txt")
+
+# set timezone
 tz = timezone("America/Chicago")
 
 
@@ -24,10 +32,18 @@ tz = timezone("America/Chicago")
 def get_last_update():
     try:
         with open(last_update_log, "r") as f:
-            last_update_time = datetime.fromisoformat(f.read().strip())
+            content = f.read().strip()
+            if content:
+                last_update_time = datetime.fromisoformat(content)
+                logger.info(f"Read last update time: {last_update_time}")
+            else:
+                raise ValueError("No data found in the update time file")
     except FileNotFoundError:
-        # If no log file exists, assume we're starting fresh from 10 days ago
         last_update_time = datetime.now() - timedelta(days=10)
+        logger.warning("Update time file not found, assuming start time 10 days ago")
+    except Exception as e:
+        last_update_time = datetime.now() - timedelta(days=10)
+        logger.error(f"Error reading last update time, defaulting to 10 days ago: {e}")
     return last_update_time
 
 

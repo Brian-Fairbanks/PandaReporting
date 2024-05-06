@@ -6,7 +6,9 @@ block_cipher = None
 
 # Add missing custom modules explicitly if they are not being detected.
 hidden_imports = [
-    'win32timezone'
+    'win32timezone',
+    'pyodbc',
+    'sqlalchemy'
 ]
 
 a = Analysis(['eso_windows_service_wrapper.py'],
