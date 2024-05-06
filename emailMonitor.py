@@ -1,5 +1,4 @@
-from datetime import datetime
-import logging
+from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv, find_dotenv
 import imaplib
@@ -65,22 +64,51 @@ def transfer_file_via_sftp(sftp_client, local_path, remote_path):
         logger.error(f"Failed to transfer {local_path} to {remote_path}: {e}")
 
 
-def find_first_matching_email(mail, rule):
-    criteria = '(FROM "{}" SUBJECT "{}")'.format(
-        rule["sender"], rule["subject_keyword"]
-    )
-    if "excludes" in rule:
-        excludes = " ".join(['NOT SUBJECT "{}"'.format(ex) for ex in rule["excludes"]])
-        criteria = f"({criteria} {excludes})"
+# def find_first_matching_email(mail, rule):
+#     criteria = '(FROM "{}" SUBJECT "{}")'.format(
+#         rule["sender"], rule["subject_keyword"]
+#     )
+#     if "excludes" in rule:
+#         excludes = " ".join(['NOT SUBJECT "{}"'.format(ex) for ex in rule["excludes"]])
+#         criteria = f"({criteria} {excludes})"
 
+#     status, messages = mail.search(None, criteria)
+#     if status == "OK" and messages[0]:  # Check if there's at least one match
+#         message_ids = messages[0].split()
+#         message_ids.sort(reverse=True)  # Sort so the most recent message is first
+#         return message_ids[0]  # Return only the first (most recent) message ID
+#     else:
+#         logger.warning(f"No messages found for {criteria}")
+#         return None
+    
+def find_matching_emails(mail, rule, date_range=None, get_most_recent=False):
+    criteria = f'FROM "{rule["sender"]}" SUBJECT "{rule["subject_keyword"]}"'
+    
+    # Handle exclusions if provided
+    if "excludes" in rule:
+        for ex in rule["excludes"]:
+            criteria += f' NOT SUBJECT "{ex}"'
+
+    # Add date range criteria
+    if date_range:
+        start_date, end_date = date_range
+        date_criteria = f'SINCE "{start_date.strftime("%d-%b-%Y")}" BEFORE "{end_date.strftime("%d-%b-%Y")}"'
+        criteria = f'({criteria} {date_criteria})'  # Combine all parts with AND implicitly
+
+    logger.debug(f"Final search criteria: {criteria}")
+
+    # Execute search
     status, messages = mail.search(None, criteria)
-    if status == "OK" and messages[0]:  # Check if there's at least one match
+    if status == "OK" and messages[0]:
         message_ids = messages[0].split()
-        message_ids.sort(reverse=True)  # Sort so the most recent message is first
-        return message_ids[0]  # Return only the first (most recent) message ID
+        if get_most_recent:
+            message_ids.sort(reverse=True)  # Sort to get the most recent first
+            return message_ids[0]  # Return only the most recent if specified
+        return message_ids
     else:
         logger.warning(f"No messages found for {criteria}")
-        return None
+        return []
+
 
 
 def process_single_email(mail, message_id, rule, sftp):
@@ -175,8 +203,14 @@ def main():
         try:
             print(f'\n--  {rule["subject_keyword"]}  --\n')
             sftp = open_sftp_client(rule)
-            message_id = find_first_matching_email(mail, rule)
-            process_single_email(mail, message_id, rule, sftp)
+            # message_id = find_first_matching_email(mail, rule)
+            # process_single_email(mail, message_id, rule, sftp)
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=14)
+            message_ids = find_matching_emails(mail, rule, date_range=(start_date, end_date))
+
+            for message_id in message_ids:
+                process_single_email(mail, message_id, rule, sftp)
             if sftp:
                 sftp.close()
         except Exception as e:
