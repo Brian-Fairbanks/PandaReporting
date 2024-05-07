@@ -50,13 +50,17 @@ def get_sftp_settings(connection_name):
     }
 
 
-def setup_logging(filename="default.log", base="..\\logs\\"):
+def setup_logging(filename="default.log", base="..\\logs\\", debug=False):
     """Setup logging configuration."""
+    if debug:
+        loglevel=logging.DEBUG
+    else:
+        loglevel=logging.INFO
     full_log_path = os.path.abspath(os.path.join(base, filename))
     if not logging.getLogger().hasHandlers():  # Check if handlers already exist
         os.makedirs(base, exist_ok=True)
         logging.basicConfig(
-            level=logging.INFO,
+            level=loglevel,
             format="%(asctime)s - %(levelname)s - %(message)s",
             handlers=[
                 logging.FileHandler(full_log_path),
