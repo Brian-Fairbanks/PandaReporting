@@ -224,7 +224,7 @@ def apply_compared_corrections_to_database(df, operation_type):
         logger.info(f'Update into to database!')
         show(analyzed_df) 
 
-    logger.inf(f"Completed processing {operation_type} DataFrame")
+    logger.info(f"Completed processing {operation_type} DataFrame")
 
 def main():
     config = sf.load_config_for_process("WeeklyComparison")
