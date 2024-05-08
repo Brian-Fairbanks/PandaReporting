@@ -8,7 +8,9 @@ import analyzefire as af
 from Database import SQLDatabase
 from datetime import timedelta
 import gui
-from datetime import datetime
+from pandasgui import show
+import traceback
+
 
 
 def get_time_frame(df, data_source):
@@ -104,23 +106,24 @@ def compare_file(from_file_df, from_db_df, data_source):
     }
     from_db_df.rename(columns=renames, errors="ignore", inplace=True)
 
+    compare_df = from_file_df.copy()
     round_datetime_columns(from_db_df)
-    round_datetime_columns(from_file_df)
+    round_datetime_columns(compare_df)
 
-    from_file_df.fillna("null", inplace=True)
+    compare_df.fillna("null", inplace=True)
     from_db_df.fillna("null", inplace=True)
 
-    from_file_df[compare_keys] = from_file_df[compare_keys].astype(str)
+    compare_df[compare_keys] = compare_df[compare_keys].astype(str)
     from_db_df[compare_keys] = from_db_df[compare_keys].astype(str)
 
     if data_source == "ems":
-        from_file_df["Zip"] = from_file_df["Zip"].astype(str).str.replace(".0", "", regex=False)
-        from_file_df["Destination_Zip"] = from_file_df["Destination_Zip"].astype(str).str.replace(".0", "", regex=False)
+        compare_df["Zip"] = compare_df["Zip"].astype(str).str.replace(".0", "", regex=False)
+        compare_df["Destination_Zip"] = compare_df["Destination_Zip"].astype(str).str.replace(".0", "", regex=False)
         
     # Prepare columns for update check (non-key columns)
     non_key_columns = [
         col
-        for col in from_file_df.columns
+        for col in compare_df.columns
         if col not in compare_keys
         and col not in ["index", "Master Incident Without First Two Digits"]
     ]
@@ -133,27 +136,25 @@ def compare_file(from_file_df, from_db_df, data_source):
     update = []
     insert = []
 
-    for _, new_row in from_file_df.iterrows():
+    for _, new_row in compare_df.iterrows():
         new_record_key = tuple(new_row[k] for k in compare_keys)
         if new_record_key in db_records:
             existing_record = db_records[new_record_key]
-            # Identify changed columns and capture differing values
+            # Identify changed columns
             changed_cols = {
                 col: f"{new_row[col]} != {existing_record[col]}"
                 for col in non_key_columns
-                if new_row[col] != existing_record[col]# and not times_within_tolerance(new_row[col], existing_record[col])
+                if new_row[col] != existing_record[col]
             }
             if changed_cols:
-                update.append({"data": dict(new_row), "changed_columns": changed_cols})
+                update.append(new_row.name)  # Store index of row to update
+                logger.info(f"changed_columns: {changed_cols}:")
         else:
-            insert.append(dict(new_row))
+            insert.append(new_row.name)  # Store index of row to insert
 
-    # Convert lists to DataFrames
-    update_df = pd.DataFrame([u["data"] for u in update])
-    update_df["changed_columns"] = [
-        u["changed_columns"] for u in update
-    ]  # Add as a separate column
-    insert_df = pd.DataFrame(insert)
+    # Filter original DataFrame 
+    update_df = from_file_df.loc[update].copy()
+    insert_df = from_file_df.loc[insert].copy()
 
     return {"update": update_df, "insert": insert_df}
 
@@ -163,13 +164,20 @@ def process_comparison(file_path):
     time_frame = get_time_frame(df, data_source)
     database_df = get_from_database(time_frame, data_source)
 
-    # from pandasgui import show
+    # Optionally visualize the initial and database dataframes
     # dfs = [df, database_df]
-    # show(*dfs)
+    # show(*dfs)  # Uncomment to use pandasgui for visualization if available
 
+    # Compare the file's DataFrame with the database's DataFrame
     dfs = compare_file(df, database_df, data_source)
-    # show(**dfs)
     
+    # Optionally visualize the comparison results
+    # show(**dfs)
+
+    # Apply corrections to the database based on comparison results
+    for dftype, df_to_apply in dfs.items():
+        apply_compared_corrections_to_database(df_to_apply, dftype)
+
 
 
 def process_directory(directory, file_types, move_on_success, move_on_failure):
@@ -180,6 +188,43 @@ def process_directory(directory, file_types, move_on_success, move_on_failure):
         logger.debug(f"Beginning Processing for file: {file_path}")
         process_comparison(file_path)
 
+
+
+def apply_compared_corrections_to_database(df, operation_type):
+    """
+    Process a DataFrame either for insert or update.
+    Args:
+        df (pd.DataFrame): The DataFrame to process.
+        operation_type (str): Type of operation ('insert' or 'update').
+    """
+    print(f"Processing {operation_type} DataFrame")
+    import preprocess as pp
+    try:
+        ppdf = pp.preprocess(df)
+    except Exception as e:
+        tb = traceback.format_exc()  # This captures the entire traceback as a string
+        logger.error(f"Error Preprocessing Data: {e}\nTraceback: {tb}")
+        exit()
+    logger.debug("Finished Pre-Processing Data")
+    try:
+        analyzed_df = af.analyzeFire(ppdf)
+    except Exception as e:
+        # Log the error along with the traceback
+        tb = traceback.format_exc()  # This captures the entire traceback as a string
+        logger.error(f"Error applying data corrections: {e}\nTraceback: {tb}")
+        exit()
+
+    # Assuming a different function or additional steps are needed for insert vs. update
+    if operation_type == 'insert':
+        # db.insertDF(analyzed_df)  # Your method to insert data into the database
+        logger.info(f'Insert this to database!')
+        show(analyzed_df) 
+    elif operation_type == 'update':
+        # db.updateDF(analyzed_df)  # Your method to update data in the database
+        logger.info(f'Update into to database!')
+        show(analyzed_df) 
+
+    logger.inf(f"Completed processing {operation_type} DataFrame")
 
 def main():
     config = sf.load_config_for_process("WeeklyComparison")

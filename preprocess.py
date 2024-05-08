@@ -1,3 +1,5 @@
+from ServerFiles import setup_logging
+logger = setup_logging()
 import numpy as np
 import pandas as pd
 from datetime import datetime as dt
@@ -13,7 +15,7 @@ def preprocess(df, start=None, end=None):
     else:
         fileType = "fire"
 
-    print("Preparing for Analysis")
+    logger.debug("Preparing for Analysis")
     # =================================================================
     # Get Date Range
     # =================================================================
@@ -54,7 +56,7 @@ def preprocess(df, start=None, end=None):
         "Ph PU to UnitArrive": "Ph_PU_to_UnitArrive",
     }
     df = df.rename(columns=prepreprocess, errors="ignore")
-
+    logger.debug("Renamed")
     # ##########################################################################################
     # TODO: correct this: add better calculations
     # ##########################################################################################
@@ -249,10 +251,15 @@ def preprocess(df, start=None, end=None):
         "Time First Real Unit Arrived",
         "Incident Time Call Closed",
         "Last Real Unit Clear Incident",
+        "Unit Time Assigned",
+        "Unit Time Call Cleared"
     ]
 
-    for index, colName in enumerate(time_columns_to_convert):
-        pd.to_datetime(df[colName], errors="raise", unit="s")
+    for col in time_columns_to_convert:
+        try:
+            df[col] = pd.to_datetime(df[col], errors='coerce')  # 'coerce' will convert problematic data to NaT
+        except Exception as e:
+            logger.error(f"Error converting {col} to datetime: {e}")
 
     # =================================================================
     # now that we have actual times... Filter to date range (if dates are supplied)
