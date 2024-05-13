@@ -61,7 +61,9 @@ class SQLDatabase:
         )
         self.engine = sqlalchemy.create_engine(connection_url)
 
-    # write the DataFrame to a table in the sql database
+    def close(self):
+        if self.engine:
+            self.engine.dispose()
 
     def insertToRawEMS(self, df):
         self.insertToTable(df, "RawEMS")
@@ -461,69 +463,6 @@ class SQLDatabase:
 
         return ", ".join(formatted)
 
-    def insert_dataframe(self, df, table_name, primary_keys):
-        """
-        Upserts a DataFrame into the specified table with error handling and logging failures.
-
-        Parameters:
-            df (pandas.DataFrame): DataFrame to upsert.
-            table_name (str): Table name to upsert into.
-            primary_keys (list): List of column names to be used as primary keys.
-        """
-        # Converting boolean columns to 1/0 for SQL Server BIT type compatibility
-        bool_columns = [col for col, dtype in df.dtypes.items() if dtype == "bool"]
-        for col in bool_columns:
-            df[col] = df[col].astype(int)
-
-        Session = sessionmaker(bind=self.engine)
-        session = Session()
-
-        failed_rows = []
-        for index, row in tqdm(df.iterrows(), total=len(df), desc="Upserting rows"):
-            values = self.format_sql_values(row.values)
-            primary_key_condition = " AND ".join(
-                [f"target.{pk} = source.{pk}" for pk in primary_keys]
-            )
-            update_set = ", ".join(
-                [
-                    f"target.{col} = source.{col}"
-                    for col in df.columns
-                    if col not in primary_keys
-                ]
-            )
-            insert_cols = ", ".join([f"[{col}]" for col in df.columns])
-            insert_vals = values
-
-            stmt = f"""
-            MERGE INTO {table_name} AS target
-            USING (SELECT * FROM (VALUES ({insert_vals})) AS s ({insert_cols}))
-            AS source ON {primary_key_condition}
-            WHEN MATCHED THEN
-                UPDATE SET {update_set}
-            WHEN NOT MATCHED THEN
-                INSERT ({insert_cols}) VALUES ({insert_vals});
-            """
-            try:
-                session.execute(stmt)
-                session.commit()
-            except Exception as e:
-                simple_error = self.check_simple_errors(e)
-                if simple_error:
-                    logger.error(f"Simple Error for row {index}: {simple_error}")
-                else:
-                    logger.error(f"Failed to insert/update row {index}: {e}")
-                    logger.error(f"SQL Statement: {stmt}")  # Log the full SQL statement
-                failed_rows.append(index)
-
-        if failed_rows:
-            logger.info(f"Failed rows are logged. Row indices: {failed_rows}")
-        session.close()
-
-    def insertESOBasic(self, df):
-        """
-        Inserts or updates entries into the 'Basic' table using 'IncidentId' as the primary key.
-        """
-        self.insert_dataframe(df, "Basic", ["IncidentId"])
 
     # main reason for this... run all included functions
     def insertDF(self, df):
@@ -581,6 +520,343 @@ class SQLDatabase:
         with self.engine.connect().execution_options(autocommit=True) as connection:
             connection.execute(concurrency_procedure)
         return None
+
+
+
+    # REWRITES
+    #==========================================================================================================================================
+        def insert_dataframe(self, df, table_name, primary_keys):
+        """
+        Upserts a DataFrame into the specified table with error handling and logging failures.
+
+        Parameters:
+            df (pandas.DataFrame): DataFrame to upsert.
+            table_name (str): Table name to upsert into.
+            primary_keys (list): List of column names to be used as primary keys.
+        """
+        # Converting boolean columns to 1/0 for SQL Server BIT type compatibility
+        bool_columns = [col for col, dtype in df.dtypes.items() if dtype == "bool"]
+        for col in bool_columns:
+            df[col] = df[col].astype(int)
+
+        Session = sessionmaker(bind=self.engine)
+        session = Session()
+
+        failed_rows = []
+        for index, row in tqdm(df.iterrows(), total=len(df), desc="Upserting rows"):
+            values = self.format_sql_values(row.values)
+            primary_key_condition = " AND ".join(
+                [f"target.[{pk}] = source.[{pk}]" for pk in primary_keys]
+            )
+            update_set = ", ".join(
+                [
+                    f"target.[{col}] = source.[{col}]"
+                    for col in df.columns
+                    if col not in primary_keys
+                ]
+            )
+            insert_cols = ", ".join([f"[{col}]" for col in df.columns])
+            insert_vals = values
+
+            stmt = f"""
+            MERGE INTO {table_name} AS target
+            USING (SELECT * FROM (VALUES ({insert_vals})) AS s ({insert_cols}))
+            AS source ON {primary_key_condition}
+            WHEN MATCHED THEN
+                UPDATE SET {update_set}
+            WHEN NOT MATCHED THEN
+                INSERT ({insert_cols}) VALUES ({insert_vals});
+            """
+            try:
+                session.execute(stmt)
+                session.commit()
+            except Exception as e:
+                simple_error = self.check_simple_errors(e)
+                if simple_error:
+                    logger.error(f"Simple Error for row {index}: {simple_error}")
+                else:
+                    logger.error(f"Failed to insert/update row {index}: {e}")
+                    # logger.error(f"SQL Statement: {stmt}")  # Log the full SQL statement
+                failed_rows.append(index)
+
+        if failed_rows:
+            logger.info(f"Failed rows are logged. Row indices: {failed_rows}")
+        session.close()
+
+    def insertESOBasic(self, df):
+        """
+        Inserts or updates entries into the 'Basic' table using 'IncidentId' as the primary key.
+        """
+        self.insert_dataframe(df, "Basic", ["IncidentId"])
+
+    def UpsertRaw(self, df, type):
+        if type == "ems":
+            # DONT manipulate the DF - keep the function pure!
+            temp = df
+            temp["PandasIndex"] = temp.index
+            self.insert_dataframe(df, "RawEMS", ["Incident", "Unit", "Assigned"])
+        else:
+            self.insert_dataframe(df, "RawFire", ["Master_Incident_Number", "Radio_Name", "Unit Time Assigned"])
+
+    
+    def new_inset_tDF(self, df, data_source):
+        if data_source == "ems":
+            self.new_insertToEMSIncident(df)
+            self.new_insertToEMSUnits(df)
+        else:
+            self.new_insertToFireIncident(df)
+            self.new_insertToFireUnits(df)
+
+        return None
+
+    def new_insertToFireIncident(self, df):
+        # get array of unique incident numbers
+        uniqueIncidents = df[
+            [
+                "Incident_Number",
+                "Calltaker_Agency",
+                "Address_of_Incident",
+                "City",
+                "Jurisdiction",
+                # "Response_Area",
+                "AFD_Response_Box",
+                "Problem",
+                "Incident_Type",
+                "Response_Plan",
+                "Priority_Description",
+                "Alarm_Level",
+                "Map_Info",
+                "X_Long",
+                "Y_Lat",
+                "ESD02_Shift",
+                "call_delayed",
+                "INC_Staged_As_Arrived",
+                "Phone_Pickup_Time",
+                "Call_Entered_in_Queue",
+                "First_Unit_Assigned",
+                "First_Unit_Enroute",
+                "First_Unit_Staged",
+                "First_Unit_Arrived",
+                "Call_Closed",
+                "Last_Unit_Cleared",
+                "Incident_Call_Disposition",
+                "Incident_Call_Reason",
+                "EMS_Incident_Numbers",
+                "IsESD17",
+                "isETJ",
+                "isCOP",
+                "People_Per_Mile",
+                "Population_Classification",
+                "Closest_Station",
+                "Distance_to_S01_in_miles",
+                "Distance_to_S02_in_miles",
+                "Distance_to_S03_in_miles",
+                "Distance_to_S04_in_miles",
+                "Distance_to_S05_in_miles",
+                "Distance_to_S06_in_miles",
+                "Distance_to_S07_in_miles",
+                "Distance_to_S08_in_miles",
+                "Distance_to_S09_in_miles",
+                "is_walkup",
+                "Incident_Call_Count",
+                "Incident_ERF_Time",
+                "Force_At_ERF_Time_of_Close",
+                "Block_ID",
+            ]
+        ]
+        uniqueIncidents = uniqueIncidents.drop_duplicates(subset=["Incident_Number"])
+        # show(uniqueIncidents)
+
+        # will not work, as pandas cannot upsert over primary keys
+        # uniqueIncidents.to_sql(
+        #     "FireIncidents", self.engine, if_exists="append", index=False
+        # )
+
+        # self.insertToTable(uniqueIncidents, "FireIncidents")
+        self.insert_dataframe(uniqueIncidents, "FireIncidents", ["Incident_Number"])
+
+    def new_insertToEMSIncident(self, df):
+        # get array of unique incident numbers
+        uniqueIncidents = df[
+            [
+                "Incident_Number",
+                "Incident_Status",
+                "Calltaker_Agency",
+                "Address_of_Incident",
+                "Location_Name",
+                "Apartment",
+                "City",
+                "State",
+                "Zip",
+                "County",
+                "Jurisdiction",
+                "Response_Area",
+                "AFD_Response_Box",
+                "Problem",
+                "Incident_Type",
+                "Response_Plan",
+                "Base_Response#",
+                "Priority",
+                "Priority_Description",
+                "Priority_Description_Orig",
+                "Map_Info",
+                "X_Long",
+                "Y_Lat",
+                "ESD02_Shift",
+                "call_delayed",
+                "INC_Staged_As_Arrived",
+                "Phone_Pickup_Time",
+                "Ph_PU_Date",
+                "Call_Entered_in_Queue",
+                "First_Unit_Assigned",
+                "First_Unit_Enroute",
+                "First_Unit_Staged",
+                "First_Unit_Arrived",
+                "Call_Closed",
+                "Last_Unit_Cleared",
+                "Incident_Call_Disposition",
+                "EMD_Code",
+                "IsESD17",
+                "isETJ",
+                "isCOP",
+                "People_Per_Mile",
+                "Population_Classification",
+                "Closest_Station",
+                "Distance_to_S01_in_miles",
+                "Distance_to_S02_in_miles",
+                "Distance_to_S03_in_miles",
+                "Distance_to_S04_in_miles",
+                "Distance_to_S05_in_miles",
+                "Distance_to_S06_in_miles",
+                "Distance_to_S07_in_miles",
+                "Distance_to_S08_in_miles",
+                "Distance_to_S09_in_miles",
+                "is_walkup",
+                "Incident_Call_Count",
+                "Incident_ERF_Time",
+                "Force_At_ERF_Time_of_Close",
+                "Block_ID",
+            ]
+        ]
+        uniqueIncidents = uniqueIncidents.drop_duplicates(subset=["Incident_Number"])
+        # show(uniqueIncidents)
+
+        # self.insertToTable(uniqueIncidents, "EMSIncidents")
+        self.insert_dataframe(uniqueIncidents, "EMSIncidents", ["Incident_Number"])
+
+    def new_insertToFireUnits(self, df):
+        # get array of unique incident numbers
+        unitCalls = df[
+            [
+                "Incident_Number",
+                "Unit",
+                "Station",
+                "Status",
+                "Response_Status",
+                "Department",
+                "Frontline_Status",
+                "Location_At_Assign_Time",
+                "First_Assign",
+                "FirstArrived",
+                "First_Arrived_Esri",
+                "UNIT_Staged_As_Arrived",
+                "Unit_Assigned",
+                "Unit_Enroute",
+                "Unit_Staged",
+                "Unit_Arrived",
+                "Unit_Cleared",
+                "Unit_Disposition",
+                "Unit_Cancel_Reason",
+                "Unit_Type",
+                "Bucket_Type",
+                "Assigned_at_Station",
+                "Is_Closest_Station",
+                "Unit_Usage_At_Time_of_Alarm",
+                "Time_0_Active",
+                "Time_1_Active",
+                "Time_2_Active",
+                "Time_3_Active",
+                "Time_4_Active",
+                "Time_5_Active",
+                "Time_6_Active",
+                "Time_7_Active",
+                "Time_8_Active",
+                "Time_9_Active",
+                "Single_vs_Multi_Units_ONSC",
+            ]
+        ]
+        # replace all instances of "yes" and "no" with "0,1"
+        unitCalls.replace("Yes", 1, inplace=True)
+        unitCalls.replace("No", 0, inplace=True)
+
+        # show(unitCalls)
+        # self.insertToTable(unitCalls, "FireUnits")
+        self.insert_dataframe(unitCalls, "FireUnits", ["Incident_Number","Unit","Unit_Assigned"])
+
+    def new_insertToEMSUnits(self, df):
+        # get array of unique incident numbers
+        unitCalls = df[
+            [
+                "Station",
+                "Status",
+                "Response_Status",
+                "Incident_Number",
+                "Unit",
+                "Department",
+                "Frontline_Status",
+                "Location_At_Assign_Time",
+                "Longitude_at_Assign",
+                "Latitude_at_Assign",
+                "Primary_Flag",
+                "FirstArrived",
+                "First_Arrived_Esri",
+                "UNIT_Staged_As_Arrived",
+                "Unit_Assigned",
+                "Unit_Enroute",
+                "Unit_Staged",
+                "Unit_Arrived",
+                "At_Patient",
+                "Delay_Avail",
+                "Unit_Cleared",
+                "Unit_Disposition",
+                "Unit_Type",
+                "Bucket_Type",
+                "Assigned_at_Station",
+                "Is_Closest_Station",
+                "Unit_Usage_At_Time_of_Alarm",
+                "Time_0_Active",
+                "Time_1_Active",
+                "Time_2_Active",
+                "Time_3_Active",
+                "Time_4_Active",
+                "Time_5_Active",
+                "Time_6_Active",
+                "Time_7_Active",
+                "Time_8_Active",
+                "Time_9_Active",
+                "Transport_Count",
+                "Destination_Name",
+                "Destination_Address",
+                "Destination_City",
+                "Destination_State",
+                "Destination_Zip",
+                "Time_Depart_Scene",
+                "Time_At_Destination",
+                "Time_Cleared_Destination",
+                "Transport_Mode",
+                "Transport_Protocol",
+                "Single_vs_Multi_Units_ONSC",
+            ]
+        ]
+        # replace all instances of "yes" and "no" with "0,1"
+        unitCalls.replace("Yes", 1, inplace=True)
+        unitCalls.replace("No", 0, inplace=True)
+        # unitCalls = unitCalls.drop_duplicates(subset=["Incident_Number"])
+        # unitCalls["First_Assign"] = unitCalls["First_Assign"] == "Yes"
+        # unitCalls["FirstArrived"] = unitCalls["FirstArrived"] == "Yes"
+        # show(unitCalls)
+        # self.insertToTable(unitCalls, "EMSUnits")
+        self.insert_dataframe(unitCalls, "EMSUnits", ["Incident_Number","Unit","Unit_Assigned"])
 
     # ======================================================================================
     # Google Form Insertions
