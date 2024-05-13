@@ -525,7 +525,7 @@ class SQLDatabase:
 
     # REWRITES
     #==========================================================================================================================================
-        def insert_dataframe(self, df, table_name, primary_keys):
+    def insert_dataframe(self, df, table_name, primary_keys):
         """
         Upserts a DataFrame into the specified table with error handling and logging failures.
 
@@ -599,7 +599,7 @@ class SQLDatabase:
             self.insert_dataframe(df, "RawFire", ["Master_Incident_Number", "Radio_Name", "Unit Time Assigned"])
 
     
-    def new_inset_tDF(self, df, data_source):
+    def new_insert_DF(self, df, data_source):
         if data_source == "ems":
             self.new_insertToEMSIncident(df)
             self.new_insertToEMSUnits(df)
