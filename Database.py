@@ -8,6 +8,7 @@ import json
 from sys import exit
 import re
 from ServerFiles import setup_logging
+import traceback
 
 # from pandasgui import show
 from tqdm import tqdm
@@ -426,9 +427,8 @@ class SQLDatabase:
     def format_sql_values(self, row):
         formatted = []
         for item in row:
-            # print(
-            #     f"Processing item with type {type(item)} and value {item}"
-            # )  # Debug output
+            if isinstance(item, bool):
+                formatted.append('1' if item else '0')
 
             # Check if the item is list or dict and handle as JSON
             if isinstance(item, (list, dict)):
@@ -601,148 +601,180 @@ class SQLDatabase:
     
     def new_insert_DF(self, df, data_source):
         if data_source == "ems":
-            self.new_insertToEMSIncident(df)
-            self.new_insertToEMSUnits(df)
+            try: self.new_insertToEMSIncident(df)
+            except Exception as e:
+                tb = traceback.format_exc()  # This captures the entire traceback as a string
+                logger.error(f"Failed: to insert into EMS Incidents: {tb}")
+
+            try: self.new_insertToEMSUnits(df)
+            except Exception as e:
+                tb = traceback.format_exc()  # This captures the entire traceback as a string
+                logger.error(f"Failed: to insert into EMS Units: {tb}")
+            
         else:
-            self.new_insertToFireIncident(df)
-            self.new_insertToFireUnits(df)
+            try: self.new_insertToFireIncident(df)
+            except Exception as e:
+                tb = traceback.format_exc()  # This captures the entire traceback as a string
+                logger.error(f"Failed: to insert into Fire Incidents: {tb}")
+
+            try: self.new_insertToFireUnits(df)
+            except Exception as e:
+                tb = traceback.format_exc()  # This captures the entire traceback as a string
+                logger.error(f"Failed: to insert into Fire Units: {tb}")
+            
+            
 
         return None
 
     def new_insertToFireIncident(self, df):
         # get array of unique incident numbers
-        uniqueIncidents = df[
-            [
-                "Incident_Number",
-                "Calltaker_Agency",
-                "Address_of_Incident",
-                "City",
-                "Jurisdiction",
-                # "Response_Area",
-                "AFD_Response_Box",
-                "Problem",
-                "Incident_Type",
-                "Response_Plan",
-                "Priority_Description",
-                "Alarm_Level",
-                "Map_Info",
-                "X_Long",
-                "Y_Lat",
-                "ESD02_Shift",
-                "call_delayed",
-                "INC_Staged_As_Arrived",
-                "Phone_Pickup_Time",
-                "Call_Entered_in_Queue",
-                "First_Unit_Assigned",
-                "First_Unit_Enroute",
-                "First_Unit_Staged",
-                "First_Unit_Arrived",
-                "Call_Closed",
-                "Last_Unit_Cleared",
-                "Incident_Call_Disposition",
-                "Incident_Call_Reason",
-                "EMS_Incident_Numbers",
-                "IsESD17",
-                "isETJ",
-                "isCOP",
-                "People_Per_Mile",
-                "Population_Classification",
-                "Closest_Station",
-                "Distance_to_S01_in_miles",
-                "Distance_to_S02_in_miles",
-                "Distance_to_S03_in_miles",
-                "Distance_to_S04_in_miles",
-                "Distance_to_S05_in_miles",
-                "Distance_to_S06_in_miles",
-                "Distance_to_S07_in_miles",
-                "Distance_to_S08_in_miles",
-                "Distance_to_S09_in_miles",
-                "is_walkup",
-                "Incident_Call_Count",
-                "Incident_ERF_Time",
-                "Force_At_ERF_Time_of_Close",
-                "Block_ID",
-            ]
+        required_columns = [
+            "Incident_Number",
+            "Calltaker_Agency",
+            "Address_of_Incident",
+            "City",
+            "Jurisdiction",
+            # "Response_Area",
+            "AFD_Response_Box",
+            "Problem",
+            "Incident_Type",
+            "Response_Plan",
+            "Priority_Description",
+            "Alarm_Level",
+            "Map_Info",
+            "X_Long",
+            "Y_Lat",
+            "ESD02_Shift",
+            "call_delayed",
+            "INC_Staged_As_Arrived",
+            "Phone_Pickup_Time",
+            "Call_Entered_in_Queue",
+            "First_Unit_Assigned",
+            "First_Unit_Enroute",
+            "First_Unit_Staged",
+            "First_Unit_Arrived",
+            "Call_Closed",
+            "Last_Unit_Cleared",
+            "Incident_Call_Disposition",
+            "Incident_Call_Reason",
+            "EMS_Incident_Numbers",
+            "IsESD17",
+            "isETJ",
+            "isCOP",
+            "People_Per_Mile",
+            "Population_Classification",
+            "Closest_Station",
+            "Distance_to_S01_in_miles",
+            "Distance_to_S02_in_miles",
+            "Distance_to_S03_in_miles",
+            "Distance_to_S04_in_miles",
+            "Distance_to_S05_in_miles",
+            "Distance_to_S06_in_miles",
+            "Distance_to_S07_in_miles",
+            "Distance_to_S08_in_miles",
+            "Distance_to_S09_in_miles",
+            "is_walkup",
+            "Incident_Call_Count",
+            "Incident_ERF_Time",
+            "Force_At_ERF_Time_of_Close",
+            "Block_ID",
         ]
+
+        logger.info("Checking against column list")
+
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            logger.error(f"Missing columns in DataFrame: {missing_columns}")
+            return  # Optionally return here or handle the missing columns differently
+
+        logger.info("Constructing Incident List")
+        uniqueIncidents = df[required_columns]
         uniqueIncidents = uniqueIncidents.drop_duplicates(subset=["Incident_Number"])
-        # show(uniqueIncidents)
 
-        # will not work, as pandas cannot upsert over primary keys
-        # uniqueIncidents.to_sql(
-        #     "FireIncidents", self.engine, if_exists="append", index=False
-        # )
-
-        # self.insertToTable(uniqueIncidents, "FireIncidents")
+        logger.info("Inserting Unique incidents")
         self.insert_dataframe(uniqueIncidents, "FireIncidents", ["Incident_Number"])
 
     def new_insertToEMSIncident(self, df):
         # get array of unique incident numbers
-        uniqueIncidents = df[
-            [
-                "Incident_Number",
-                "Incident_Status",
-                "Calltaker_Agency",
-                "Address_of_Incident",
-                "Location_Name",
-                "Apartment",
-                "City",
-                "State",
-                "Zip",
-                "County",
-                "Jurisdiction",
-                "Response_Area",
-                "AFD_Response_Box",
-                "Problem",
-                "Incident_Type",
-                "Response_Plan",
-                "Base_Response#",
-                "Priority",
-                "Priority_Description",
-                "Priority_Description_Orig",
-                "Map_Info",
-                "X_Long",
-                "Y_Lat",
-                "ESD02_Shift",
-                "call_delayed",
-                "INC_Staged_As_Arrived",
-                "Phone_Pickup_Time",
-                "Ph_PU_Date",
-                "Call_Entered_in_Queue",
-                "First_Unit_Assigned",
-                "First_Unit_Enroute",
-                "First_Unit_Staged",
-                "First_Unit_Arrived",
-                "Call_Closed",
-                "Last_Unit_Cleared",
-                "Incident_Call_Disposition",
-                "EMD_Code",
-                "IsESD17",
-                "isETJ",
-                "isCOP",
-                "People_Per_Mile",
-                "Population_Classification",
-                "Closest_Station",
-                "Distance_to_S01_in_miles",
-                "Distance_to_S02_in_miles",
-                "Distance_to_S03_in_miles",
-                "Distance_to_S04_in_miles",
-                "Distance_to_S05_in_miles",
-                "Distance_to_S06_in_miles",
-                "Distance_to_S07_in_miles",
-                "Distance_to_S08_in_miles",
-                "Distance_to_S09_in_miles",
-                "is_walkup",
-                "Incident_Call_Count",
-                "Incident_ERF_Time",
-                "Force_At_ERF_Time_of_Close",
-                "Block_ID",
-            ]
+        required_columns = [
+            "Incident_Number",
+            "Incident_Status",
+            "Calltaker_Agency",
+            "Address_of_Incident",
+            "Location_Name",
+            "Apartment",
+            "City",
+            "State",
+            "Zip",
+            "County",
+            "Jurisdiction",
+            "Response_Area",
+            "AFD_Response_Box",
+            "Problem",
+            "Incident_Type",
+            "Response_Plan",
+            "Base_Response#",
+            "Priority",
+            "Priority_Description",
+            "Priority_Description_Orig",
+            "Map_Info",
+            "X_Long",
+            "Y_Lat",
+            "ESD02_Shift",
+            "call_delayed",
+            "INC_Staged_As_Arrived",
+            "Phone_Pickup_Time",
+            "Ph_PU_Date",
+            "Call_Entered_in_Queue",
+            "First_Unit_Assigned",
+            "First_Unit_Enroute",
+            "First_Unit_Staged",
+            "First_Unit_Arrived",
+            "Call_Closed",
+            "Last_Unit_Cleared",
+            "Incident_Call_Disposition",
+            "EMD_Code",
+            "IsESD17",
+            "isETJ",
+            "isCOP",
+            "People_Per_Mile",
+            "Population_Classification",
+            "Closest_Station",
+            "Distance_to_S01_in_miles",
+            "Distance_to_S02_in_miles",
+            "Distance_to_S03_in_miles",
+            "Distance_to_S04_in_miles",
+            "Distance_to_S05_in_miles",
+            "Distance_to_S06_in_miles",
+            "Distance_to_S07_in_miles",
+            "Distance_to_S08_in_miles",
+            "Distance_to_S09_in_miles",
+            "is_walkup",
+            "Incident_Call_Count",
+            "Incident_ERF_Time",
+            "Force_At_ERF_Time_of_Close",
+            "Block_ID",
         ]
+        logger.info("checking against column list")
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            logger.error(f"Missing columns in DataFrame: {missing_columns}")
+            return  # Optionally return here or handle the missing columns differently
+
+        logger.info("Constructing Incident List")
+        uniqueIncidents = df[required_columns]
         uniqueIncidents = uniqueIncidents.drop_duplicates(subset=["Incident_Number"])
         # show(uniqueIncidents)
 
+        logger.info("Inserting unique incident list")
         # self.insertToTable(uniqueIncidents, "EMSIncidents")
         self.insert_dataframe(uniqueIncidents, "EMSIncidents", ["Incident_Number"])
+
+    def special_conversions(self, df):
+        # Special handling for 'Is_Closest_Station' if it exists in DataFrame
+        if 'Is_Closest_Station' in df.columns:
+            df['Is_Closest_Station'] = df['Is_Closest_Station'].replace({True: 1, False: 0})
+        return(df)
 
     def new_insertToFireUnits(self, df):
         # get array of unique incident numbers
@@ -791,6 +823,7 @@ class SQLDatabase:
 
         # show(unitCalls)
         # self.insertToTable(unitCalls, "FireUnits")
+        unitCalls = self.special_conversions(unitCalls)
         self.insert_dataframe(unitCalls, "FireUnits", ["Incident_Number","Unit","Unit_Assigned"])
 
     def new_insertToEMSUnits(self, df):
@@ -856,6 +889,7 @@ class SQLDatabase:
         # unitCalls["FirstArrived"] = unitCalls["FirstArrived"] == "Yes"
         # show(unitCalls)
         # self.insertToTable(unitCalls, "EMSUnits")
+        unitCalls = self.special_conversions(unitCalls)
         self.insert_dataframe(unitCalls, "EMSUnits", ["Incident_Number","Unit","Unit_Assigned"])
 
     # ======================================================================================
