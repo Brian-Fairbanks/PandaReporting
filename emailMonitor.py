@@ -92,7 +92,7 @@ def find_matching_emails(mail, rule, date_range=None, get_most_recent=False):
     # Add date range criteria
     if date_range:
         start_date, end_date = date_range
-        date_criteria = f'SINCE "{start_date.strftime("%d-%b-%Y")}" BEFORE "{end_date.strftime("%d-%b-%Y")}"'
+        date_criteria = f'SINCE "{start_date.strftime("%d-%b-%Y")}"'
         criteria = f'({criteria} {date_criteria})'  # Combine all parts with AND implicitly
 
     logger.debug(f"Final search criteria: {criteria}")

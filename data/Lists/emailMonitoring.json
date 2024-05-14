@@ -25,8 +25,8 @@
       "excludes":["daily"],
       "attachment_type": ".xlsx",
       "folder_path": "c:\\temp\\Fire Data\\weekly",
-      "move_on_success":"c:\\temp\\Fire Data\\archive",
-      "move_on_failure":"c:\\temp\\Fire Data\\failed"
+      "move_on_success":"c:\\temp\\Fire Data\\weekly\\archive",
+      "move_on_failure":"c:\\temp\\Fire Data\\weekly\\failed"
     }
     ,    {
       "processing":"WeeklyComparison",
@@ -35,8 +35,8 @@
       "excludes":["daily"],
       "attachment_type": ".xlsx",
       "folder_path": "c:\\temp\\EMS Data\\weekly",
-      "move_on_success":"c:\\temp\\EMS Data\\archive",
-      "move_on_failure":"c:\\temp\\EMS Data\\failed"
+      "move_on_success":"c:\\temp\\EMS Data\\weekly\\archive",
+      "move_on_failure":"c:\\temp\\EMS Data\\weekly\\failed"
     }
   ]
 }
