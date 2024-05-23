@@ -1,36 +1,13 @@
-from datetime import datetime
-import json
-import logging
+from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv, find_dotenv
 import imaplib
 import email
 from email.policy import default
+import ServerFiles as sf
 
-
-def setup_logging():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.FileHandler("..\\logs\\email_monitoring.log"),
-            logging.StreamHandler(),
-        ],
-    )
-    logging.info("Script started")
-
-
-def load_config():
-    try:
-        config_file_location = ".\\data\\Lists\\emailMonitoring.json"
-        with open(config_file_location, "r") as file:
-            config = json.load(file)
-        logging.info("Email monitoring configuration loaded")
-        return config["email_rules"]
-    except Exception as e:
-        logging.error(f"Error loading email configuration: {e}")
-        exit(1)
-
+testing = True
+logger = sf.setup_logging("EmailMonitor")
 
 def login_to_email():
     load_dotenv(find_dotenv())
@@ -41,10 +18,10 @@ def login_to_email():
         mail.login(email_account, password)
         mail.select('"[Gmail]/All Mail"')
         # mail.select('"Inbox"')
-        logging.info("Logged into email account")
+        logger.info("Logged into email account")
         return mail
     except imaplib.IMAP4.error as e:
-        logging.error(f"Email login failed: {e}")
+        logger.error(f"Email login failed: {e}")
         exit(1)
 
 
@@ -57,10 +34,10 @@ def login_to_email():
 #     criteria = '(FROM "{}" SUBJECT "{}")'.format(rule["sender"], rule["subject_keyword"])
 #     status, messages = mail.search(None, criteria)
 #     if status == "OK":
-#         logging.info(f"Found {len(messages[0].split())} messages with criteria: {criteria}")
+#         logger.info(f"Found {len(messages[0].split())} messages with criteria: {criteria}")
 #         return messages[0].split()  # Return a list of message IDs
 #     else:
-#         logging.warning(f"No messages found for {criteria}")
+#         logger.warning(f"No messages found for {criteria}")
 #         return []
 
 # def process_matched_emails(mail, message_ids, rule):
@@ -70,28 +47,82 @@ def login_to_email():
 #         save_attachments(email_msg, rule)
 
 
-def find_first_matching_email(mail, rule):
-    criteria = '(FROM "{}" SUBJECT "{}")'.format(
-        rule["sender"], rule["subject_keyword"]
-    )
-    status, messages = mail.search(None, criteria)
-    if status == "OK" and messages[0]:  # Check if there's at least one match
-        message_ids = messages[0].split()
-        message_ids.sort(reverse=True)  # Sort so the most recent message is first
-        return message_ids[0]  # Return only the first (most recent) message ID
-    else:
-        logging.warning(f"No messages found for {criteria}")
+def open_sftp_client(rule):
+    if testing:
         return None
+    sftp_client = None
+    if "sftp_copy" in rule:
+        sftp_client = sf.create_sftp_client(rule["sftp_copy"])
+    return sftp_client
 
 
-def process_first_email(mail, message_id, rule):
+def transfer_file_via_sftp(sftp_client, local_path, remote_path):
+    try:
+        sftp_client.put(local_path, remote_path)
+        logger.info(f"Successfully transferred {local_path} to {remote_path}")
+    except Exception as e:
+        logger.error(f"Failed to transfer {local_path} to {remote_path}: {e}")
+
+
+# def find_first_matching_email(mail, rule):
+#     criteria = '(FROM "{}" SUBJECT "{}")'.format(
+#         rule["sender"], rule["subject_keyword"]
+#     )
+#     if "excludes" in rule:
+#         excludes = " ".join(['NOT SUBJECT "{}"'.format(ex) for ex in rule["excludes"]])
+#         criteria = f"({criteria} {excludes})"
+
+#     status, messages = mail.search(None, criteria)
+#     if status == "OK" and messages[0]:  # Check if there's at least one match
+#         message_ids = messages[0].split()
+#         message_ids.sort(reverse=True)  # Sort so the most recent message is first
+#         return message_ids[0]  # Return only the first (most recent) message ID
+#     else:
+#         logger.warning(f"No messages found for {criteria}")
+#         return None
+    
+def find_matching_emails(mail, rule, date_range=None, get_most_recent=False):
+    criteria = f'FROM "{rule["sender"]}" SUBJECT "{rule["subject_keyword"]}"'
+    
+    # Handle exclusions if provided
+    if "excludes" in rule:
+        for ex in rule["excludes"]:
+            criteria += f' NOT SUBJECT "{ex}"'
+
+    # Add date range criteria
+    if date_range:
+        start_date, end_date = date_range
+        date_criteria = f'SINCE "{start_date.strftime("%d-%b-%Y")}"'
+        criteria = f'({criteria} {date_criteria})'  # Combine all parts with AND implicitly
+
+    logger.debug(f"Final search criteria: {criteria}")
+
+    # Execute search
+    status, messages = mail.search(None, criteria)
+    if status == "OK" and messages[0]:
+        message_ids = messages[0].split()
+        if get_most_recent:
+            message_ids.sort(reverse=True)  # Sort to get the most recent first
+            return message_ids[0]  # Return only the most recent if specified
+        return message_ids
+    else:
+        logger.warning(f"No messages found for {criteria}")
+        return []
+
+
+
+def process_single_email(mail, message_id, rule, sftp):
     if message_id is None:
-        logging.info("No matching email to process.")
+        logger.info("No matching email to process.")
         return
 
     _, data = mail.fetch(message_id, "(RFC822)")
     email_msg = email.message_from_bytes(data[0][1], policy=default)
-    save_attachments(email_msg, rule)
+    file_data = save_attachments(email_msg, rule)
+    if file_data and sftp:
+        transfer_file_via_sftp(
+            sftp, file_data["file_path"], f".\\{file_data['file_name']}"
+        )
 
 
 def format_email_date(date_string):
@@ -104,6 +135,10 @@ def format_email_date(date_string):
 
 
 def save_attachments(email_msg, rule):
+    """
+    Collects files if they have not already been collected, and saves them.
+    Returns a dictionary of {file_path, file_name} if the file was saved, and None if the file skipped
+    """
     log_file = ".\\data\\downloaded_files_log.txt"  # Define the log file path
     sender = email_msg["From"]
     date_str = format_email_date(email_msg["Date"])
@@ -130,10 +165,12 @@ def save_attachments(email_msg, rule):
             if not is_file_logged(log_file, new_filename, sender, email_msg["Date"]):
                 with open(filepath, "wb") as f:
                     f.write(part.get_payload(decode=True))
-                logging.info(f"Saved file to {filepath}")
+                logger.info(f"Saved file to {filepath}")
                 log_downloaded_file(log_file, new_filename, sender, email_msg["Date"])
             else:
-                logging.info(f"Skipped {new_filename}, already processed.")
+                logger.info(f"Skipped {new_filename}, already processed.")
+                return None
+        return {"file_path": filepath, "file_name": new_filename}
 
 
 def log_downloaded_file(log_file, filename, sender, date):
@@ -159,16 +196,25 @@ def is_file_logged(log_file, filename, sender, date):
 
 
 def main():
-    setup_logging()
-    email_rules = load_config()
+    email_rules = sf.load_config()
     mail = login_to_email()
-
+    print(f"Beginning rule creation")
     for rule in email_rules:
         try:
-            message_id = find_first_matching_email(mail, rule)
-            process_first_email(mail, message_id, rule)
+            print(f'\n--  {rule["subject_keyword"]}  --\n')
+            sftp = open_sftp_client(rule)
+            # message_id = find_first_matching_email(mail, rule)
+            # process_single_email(mail, message_id, rule, sftp)
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=14)
+            message_ids = find_matching_emails(mail, rule, date_range=(start_date, end_date))
+
+            for message_id in message_ids:
+                process_single_email(mail, message_id, rule, sftp)
+            if sftp:
+                sftp.close()
         except Exception as e:
-            logging.error(f"Error processing email for rule {rule}: {e}")
+            logger.error(f"Error processing email for rule {rule}: {e}")
 
 
 if __name__ == "__main__":

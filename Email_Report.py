@@ -55,7 +55,7 @@ def getFormattedTable(query, times):
 
     try:
         db = SQLDatabase()
-        df = db.retreiveDF(
+        df = db.retrieve_df(
             query,
             times,
         )
@@ -99,6 +99,41 @@ def send_email_with_attachment(file_path, email_config):
         smtp_server = smtplib.SMTP(
             email_config["smtp_server"], email_config["smtp_port"]
         )
+        smtp_server.starttls()
+        smtp_server.login(email_config["sender_email"], email_config["sender_password"])
+        smtp_server.sendmail(
+            email_config["sender_email"],
+            email_config["recipient_emails"].split(","),
+            msg.as_string(),
+        )
+        smtp_server.quit()
+        print("Email sent successfully.")
+    except Exception as e:
+        print("Error sending email:", e)
+
+
+
+def send_email_with_dataframes(dataframes, email_config):
+    msg = MIMEMultipart()
+    msg["From"] = email_config["sender_email"]
+    msg["To"] = email_config["recipient_emails"]
+    msg["CC"] = email_config["cc_emails"]
+    msg["Subject"] = email_config["subject"]
+
+    # Add the email body
+    body_text = email_config.get("Email_Body", "The comparison was successful. Please find the dataframes attached.")
+    body = MIMEText(body_text, "plain")
+    msg.attach(body)
+
+    # Attach each dataframe in the dictionary
+    for name, df in dataframes.items():
+        attachment = MIMEText(df.to_csv(index=False), 'csv')
+        attachment.add_header('Content-Disposition', 'attachment', filename=f'{name}.csv')
+        msg.attach(attachment)
+
+    # Connect to the SMTP server and send the email
+    try:
+        smtp_server = smtplib.SMTP(email_config["smtp_server"], email_config["smtp_port"])
         smtp_server.starttls()
         smtp_server.login(email_config["sender_email"], email_config["sender_password"])
         smtp_server.sendmail(

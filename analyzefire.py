@@ -970,7 +970,7 @@ def analyzeFire(fileDF):
     )
     fileDF = utils.putColAfter(fileDF, ["Response_Status"], "Status")
 
-    export_to_xlsx("output", fileDF)
+    # export_to_xlsx("output", fileDF)
 
     # ----------------
     # Write to Esri Directly

@@ -51,7 +51,7 @@ executables_info = {
     "emailMonitor": {
         "script": "emailMonitor.py",
         "additional_data": added_files,
-        "hidden_imports": ["dotenv"],
+        "hidden_imports": ["dotenv","paramiko"],
     },
 }
 
