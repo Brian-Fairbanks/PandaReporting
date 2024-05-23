@@ -4,12 +4,14 @@ logger = sf.setup_logging("Comparison.log", debug=False)
 import pandas as pd
 import analyzefire as af
 from Database import SQLDatabase
-from datetime import timedelta
+import Email_Report as er
+from datetime import timedelta, datetime
 import gui
 from pandasgui import show
 import preprocess as pp
 import os
 import traceback
+import copy
 
 def get_time_frame(df, data_source):
     """
@@ -70,8 +72,10 @@ def compare_file(from_file_df, from_db_df, data_source):
     """
     if data_source == "ems":
         compare_keys = ["Incident", "Unit", "Assigned"]
+        closed_time_column = "Closed_Time"
     elif data_source == "fire":
         compare_keys = ["Master_Incident_Number", "Radio_Name", "Unit Time Assigned"]
+        closed_time_column = "Incident Time Call Closed"
     else:
         raise ValueError(f"Unknown data_source: {data_source}")
 
@@ -105,6 +109,7 @@ def compare_file(from_file_df, from_db_df, data_source):
 
     update = []
     insert = []
+    update_changes = []
 
     for _, new_row in compare_df.iterrows():
         new_record_key = tuple(new_row[k] for k in compare_keys)
@@ -117,12 +122,16 @@ def compare_file(from_file_df, from_db_df, data_source):
             }
             if changed_cols:
                 update.append(new_row.name)
-                logger.info(f"changed_columns: {changed_cols}:")
+                change_detail = ", ".join([f"{col}: {new_row[col]} != {existing_record[col]}" for col in changed_cols])
+                update_changes.append(change_detail)
         else:
             insert.append(new_row.name)
 
-    update_df = from_file_df.loc[update].copy()
-    insert_df = from_file_df.loc[insert].copy()
+    update_df = from_file_df.loc[update, compare_keys].copy()
+    update_df["Changes"] = update_changes
+
+    insert_columns = compare_keys + [closed_time_column]
+    insert_df = from_file_df.loc[insert, insert_columns].copy()
 
     return {"update": update_df, "insert": insert_df}
 
@@ -138,7 +147,31 @@ def process_comparison(file_path):
     #     apply_compared_corrections_to_database(df_to_apply, dftype, data_source)
 
     # Insert the entire weekly file
-    apply_compared_corrections_to_database(df, 'insert', data_source)
+    try:
+        apply_compared_corrections_to_database(df, 'insert', data_source)
+        email_compare_results(dfs, time_frame, data_source, success=True)
+    except Exception as e:
+        logger.error(f'Error during processing: {e}')
+        email_compare_results(dfs, time_frame, data_source, success=False)
+
+def email_compare_results(dfs, time_frame, data_source, success=True):
+    logger.info("Sending DFS By Email")
+    start_date = time_frame['start'].strftime("%m/%d/%y")
+    end_date = time_frame['end'].strftime("%m/%d/%y")
+    subject_prefix = "Failed: " if not success else ""
+    subject = f"{subject_prefix}Comparison Report: {data_source.upper()} {start_date} - {end_date}"
+
+    config = copy.deepcopy(er.email_config)
+    config.update({
+        "recipient_emails": "bfairbanks@pflugervillefire.org",
+        "cc_emails": "",
+        "subject": subject,
+        "Email_Body": "The comparison was successful. Please find the dataframes attached." if success else "The comparison completed, but the insert has failed"
+    })
+
+    er.send_email_with_dataframes(dfs, config)
+
+    logger.info("Email Sent")
 
 def process_directory(directory, file_types, move_on_success, move_on_failure):
     if not os.path.isdir(directory):

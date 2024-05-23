@@ -413,15 +413,25 @@ class SQLDatabase:
 
     def check_simple_errors(self, err):
         err_str = str(err)
+        
         # Regex to catch "String or binary data would be truncated" errors
-        match = re.search(
+        truncate_match = re.search(
             r"String or binary data would be truncated in table \\'([^']+)\\', column \\'([^']+)\\'",
             err_str,
         )
-        if match:
-            table, column = match.groups()
-
+        if truncate_match:
+            table, column = truncate_match.groups()
             return f"{table}[{column}] would be truncated. Consider expanding to greater size."
+        
+        # Regex to catch "Cannot insert the value NULL into column" errors
+        null_match = re.search(
+            r"Cannot insert the value NULL into column '([^']+)', table '([^']+)'; column does not allow nulls. UPDATE fails.",
+            err_str,
+        )
+        if null_match:
+            column, table = null_match.groups()
+            return f"{table}[{column}] Cannot be NULL. Unit/Incident Skipped."
+        
         return None
 
     def format_sql_values(self, row):
