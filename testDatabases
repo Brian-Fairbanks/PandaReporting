@@ -1,0 +1,130 @@
+import ServerFiles as sf
+import pandas as pd
+from Database import SQLDatabase
+import Email_Report as er
+import copy
+
+logger = sf.setup_logging("Comparison.log", debug=False)
+
+# Initialize the database connection
+db = SQLDatabase()
+
+def get_data_from_database(table_name, date_range):
+    # Determine the filter column based on the table name
+    if "Unit" in table_name:
+        filter_col_name = "Unit_Assigned"
+    else:
+        filter_col_name = "Phone_Pickup_Time"
+
+    try:
+        date_filter = f" WHERE {filter_col_name} >= '{date_range['start']}' AND {filter_col_name} <= '{date_range['end']}'"
+        base_query = f"SELECT * FROM {table_name}" + date_filter
+        backup_query = f"SELECT * FROM {table_name}_backup" + date_filter
+
+        ems_df = db.retrieve_df(base_query, [])
+        ems_backup_df = db.retrieve_df(backup_query, [])
+
+        return ems_df, ems_backup_df
+    except Exception as e:
+        logger.error(f'Error grabbing data from database: {e}')
+        return pd.DataFrame(), pd.DataFrame()
+
+def round_datetime_columns(df):
+    for column in df.columns:
+        if pd.api.types.is_datetime64_any_dtype(df[column]):
+            df[column] = df[column].dt.round('S')
+    return df
+
+# def round_distance_columns(df):
+#     for column in df.columns:
+#         if "Distance_to" in column:
+#             df[column] = pd.to_numeric(df[column], errors='coerce').round(2)
+#     return df
+
+def compare_data(prod_df, backup_df, table_name):
+    if "Unit" in table_name:
+        compare_keys = ["Incident_Number", "Unit", "Unit_Assigned"]
+    else:
+        compare_keys = ["Incident_Number"]
+
+    round_datetime_columns(backup_df)
+    round_datetime_columns(prod_df)
+    
+    # if "incidents" in table_name.lower():
+    #     round_distance_columns(backup_df)
+    #     round_distance_columns(prod_df)
+
+        # Create exclude_cols list for columns with "distance_to" in their names
+    exclude_cols = [col for col in prod_df.columns if "Distance_to" in col]
+
+    prod_df.fillna("null", inplace=True)
+    backup_df.fillna("null", inplace=True)
+
+    prod_df[compare_keys] = prod_df[compare_keys].astype(str)
+    backup_df[compare_keys] = backup_df[compare_keys].astype(str)
+
+    non_key_columns = [col for col in prod_df.columns if col not in compare_keys and col not in exclude_cols]
+
+    db_records = {tuple(row[k] for k in compare_keys): row for _, row in backup_df.iterrows()}
+
+    changes = []
+    update_changes = []
+
+    for _, new_row in prod_df.iterrows():
+        new_record_key = tuple(new_row[k] for k in compare_keys)
+        if new_record_key in db_records:
+            existing_record = db_records[new_record_key]
+            changed_cols = {col: f"{new_row[col]} != {existing_record[col]}" for col in non_key_columns if new_row[col] != existing_record[col]}
+            if changed_cols:
+                changes.append(new_row.name)
+                change_detail = ", ".join([f"{col}: {new_row[col]} != {existing_record[col]}" for col in changed_cols])
+                update_changes.append(change_detail)
+
+    changes_df = prod_df.loc[changes, compare_keys].copy()
+    changes_df["Changes"] = update_changes
+
+    return changes_df
+
+def process_comparison(table_name, date_range):
+    ems_df, ems_backup_df = get_data_from_database(table_name, date_range)
+    if ems_df.empty or ems_backup_df.empty:
+        logger.error(f"One or both dataframes for {table_name} are empty. Exiting comparison.")
+        return pd.DataFrame()
+
+    changes_df = compare_data(ems_df, ems_backup_df, table_name)
+    return changes_df
+
+def send_compare_results(dfs, time_frame):
+    logger.info("Sending DFS By Email")
+    start_date = time_frame['start']
+    end_date = time_frame['end']
+    subject = f"Database Prod vs Backup Comparison Report: {start_date} - {end_date}"
+
+    config = copy.deepcopy(er.email_config)
+    config.update({
+        "recipient_emails": "bfairbanks@pflugervillefire.org",
+        "cc_emails": "",
+        "subject": subject,
+        "Email_Body": "Please find the attached comparison results."
+    })
+
+    er.send_email_with_dataframes(dfs, config)
+
+    logger.info("Email Sent")
+
+if __name__ == "__main__":
+    date_range = {"start": '2024-05-05', "end": '2024-05-12'}
+    
+    databases_to_compare = ["EMSIncidents", "EMSUnits", "FireIncidents", "FireUnits"]
+    dfs = {}
+    for table in databases_to_compare:
+        changes_df = process_comparison(table, date_range)
+        dfs[table] = changes_df
+
+    if dfs:
+        send_compare_results(dfs, date_range)
+    else:
+        logger.info("No changes detected in any tables.")
+        
+    db.close()
+    logger.info("Closed Database Connection")
