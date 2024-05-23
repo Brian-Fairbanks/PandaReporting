@@ -6,6 +6,9 @@ import datetime
 import pandas as pd
 import numpy as np
 
+from shapely.geometry import Point
+import geopandas as gpd
+
 # Sibling Modules
 from crf import getCRF
 import utils
@@ -15,6 +18,7 @@ import getData as data
 import timeBreakdowns as tb
 import naming as n
 import os
+import geocode
 
 # Setup Logging for the remainder of the data
 import logging
@@ -75,7 +79,6 @@ def export_to_xlsx(name, fileDF):
     print("  Complete")
 
     return file_path  # Return the file path for reference
-    # plt.savefig('saved_figure.png')
 
 
 # ##############################################################################################################################################
@@ -124,25 +127,8 @@ def addLocAtAssignToDF(df):
     return df
 
 
-#
-
-
 def stationName(department, frontline, radioName, location):
     # Helper function to be used in getStations
-    # -------------------------------------------------------------------------------------------
-    # specialUnits = {
-    #     "QNT261": "S05",
-    #     "BAT201": "S01",
-    #     "BAT202": "S01",
-    #     "BT261": "S01",
-    #     "BT271": "S07",
-    #     "SQ271": "S07",
-    #     "MED281": "S08",
-    #     "MED270": "S04",
-    #     "MED280": "S03",
-    #     "MED290": "S04",
-    #     "ENG205": "S07",
-    # }
 
     otherUnits = {
         "ESD12 - Manor": "ESD12 Manor",
@@ -189,21 +175,6 @@ def stationName(department, frontline, radioName, location):
         # If reserve units,cant be found based on location, and not special ...
         return "UNKNOWN"
 
-        # # Our department, but special units - refer to newly created file:
-        # if radioName in specialUnits.keys():
-        #     return specialUnits[radioName]
-
-        # # Our department, and not reserve - easy
-        # if not radioName in (reserveUnits):
-        #     return f"S0{radioName[-2]}"
-
-        # # If reserve units though...
-        # stationNum = getLoc(location)
-        # if stationNum != None:
-        #     return stationNum
-        # else:
-        #     return "UNKNOWN"
-
     # for all others, give department
     outsiders = department
     # Rename those that need it
@@ -242,19 +213,17 @@ def getStations(fireDF):
 
     fireDF = utils.putColAt(fireDF, ["Station", "Status"], 0)
     return fireDF
+# ===============================================================================================================
+# End of Station Selection Scripts
 
 
 def addFirstArrived(df):
-    # df["FirstArrived"] = df[
-    #     df["Unit Time Arrived At Scene"] == df["Time First Real Unit Arrived"]
-    # ]
     df["FirstArrived"] = False
     # get array of unique Incidents
     unique_incidents = df["Master Incident Number"].unique()
     # for each incident, get array of calls
     for incident in unique_incidents:
         incident_data = df[df["Master Incident Number"] == incident]
-        # show(incident_data)
         try:
             # get earliest arrival (either index of earliest, or null if not exits)
             first = incident_data[
@@ -278,7 +247,6 @@ def formatPriority(val):
     if pd.isnull(val):
         return None
     ret = "P" + "".join(c for c in str(val) if c.isdigit())
-    # print(f"{val}  :  {ret}")
     return ret
 
 
@@ -295,6 +263,10 @@ def reprocessPriority(df):
 
     return df
 
+def get_data_source(df):
+    if "FirstArrived" in df:
+        return "fire"
+    return "ems"
 
 # ##############################################################################################################################################
 #     Main Code
@@ -316,22 +288,11 @@ def analyzeFire(fileDF):
         A larger dataframe with additional information gleamed from the passed file.
     """
 
-    # =================================================================
     # Correct no GPS coord issues
     # =================================================================
-    import geocode
-
     geocode.fixCoords(fileDF)
 
-    dataSource = None
-    # =================================================================
-    #    Confirm creation of FirstArrived column
-    # =================================================================
-    # file should have this column already, ems should need it.  Log this step.
-    if "FirstArrived" in fileDF:
-        dataSource = "fire"
-    else:
-        dataSource = "ems"
+    dataSource = get_data_source(fileDF)
 
     # =================================================================
     #    Match Incident Number Format - drop anything not a number
@@ -418,29 +379,21 @@ def analyzeFire(fileDF):
     )
     fileDF = utils.putColAfter(fileDF, ["FirstArrivedEsri"], "FirstArrived")
 
-    # =================================================================
     #     Fire Data Error Checking
     # =================================================================
     from validateData import checkFile
-
     fileDF = checkFile(fileDF)
 
-    # # =================================================================
-    # #     Add unit type column to simplify analysis
-    # # =================================================================
-    # fireDF = utils.addUnitType(fireDF)
-    # fireDF = utils.addBucketType(fireDF)
-
+    #     Add unit type column to simplify analysis
     # =================================================================
+        # Moved to preprocess steps
+
     #     Calculate Concurrent Use for Each Unit
     # =================================================================
     fileDF = cu.addConcurrentUse(fileDF, "Unit Time Assigned", "Unit Time Call Cleared")
-    # =================================================================
+
     #     Set District 17 Values
     # =================================================================
-
-    from shapely.geometry import Point
-    import geopandas as gpd
 
     # Set up boundaries for ESD17
     ##############################################################
@@ -972,23 +925,6 @@ def analyzeFire(fileDF):
 
     # export_to_xlsx("output", fileDF)
 
-    # ----------------
-    # Write to Esri Directly
-    # ----------------
-    # from esriOverwrite import EsriDatabase
-
-    # esriDF = EsriDatabase.formatDFForEsri(fireDF)
-    # edb = EsriDatabase()
-    # edb.connect()
-    # edb.appendDF(fireDF)
-
-    # show(esriDF)
-
-    ######################################
-    # show in gui just after writing
-    # print("Complete")
-    # show(fireDF)
-
     return fileDF
 
 
@@ -1004,17 +940,12 @@ if __name__ == "__main__":
     import loadTestFile
 
     df = loadTestFile.get()
-    # run test file
-    from pandasgui import show
-
-    # show(df)
 
     analyzeDF = analyzeFire(df)
 
     # ----------------
     # Write to Database
     # ----------------
-    # show(fireDF)
     from Database import SQLDatabase
 
     db = SQLDatabase()
