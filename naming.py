@@ -42,6 +42,8 @@ renames = {
     "Department": "Department",
     "Frontline_Status": "Frontline_Status",
     "Location_At_Assign_Time": "Location_At_Assign_Time",
+    "Latitude_At_Assign_Time": "Latitude_at_Assign",
+    "Longitude_At_Assign_Time": "Longitude_at_Assign",
     "FirstAssign": "First_Assign",
     "FirstArrived": "FirstArrived",
     "FirstArrivedEsri": "First_Arrived_Esri",

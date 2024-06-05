@@ -111,7 +111,7 @@ def getFormattedTable():
 
     try:
         db = SQLDatabase()
-        df = db.retreiveDF(
+        df = db.retrieve_df(
             esri_Export_Query,
             [
                 "Phone_Pickup_Time",

@@ -74,6 +74,7 @@ def compare_file(from_file_df, from_db_df, data_source):
         compare_keys = ["Incident", "Unit", "Assigned"]
         closed_time_column = "Closed_Time"
     elif data_source == "fire":
+        from_file_df.drop(columns=["Latitude_At_Assign_Time", "Longitude_At_Assign_Time"], errors='ignore', inplace=True)
         compare_keys = ["Master_Incident_Number", "Radio_Name", "Unit Time Assigned"]
         closed_time_column = "Incident Time Call Closed"
     else:

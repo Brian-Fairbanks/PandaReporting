@@ -172,8 +172,8 @@ def addLocAtAssignToDF(df, data_source, locations, stationDict):
                 row["Location_At_Assign_Time"],
                 data_source,
                 locations, 
-                row.get("Longitude_at_Assign") if data_source== 'ems' else None, 
-                row.get("Latitude_at_Assign") if data_source == 'ems' else None, 
+                row.get("Longitude_at_Assign"), 
+                row.get("Latitude_at_Assign"), 
                 stationDict
             ),
             axis=1,

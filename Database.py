@@ -920,7 +920,7 @@ if __name__ == "__main__":
     # df = pd.DataFrame([["test from dataframe"], ["pandas will work"]], columns=["data"])
     exit()
     db = SQLDatabase()
-    # df = db.retreiveDF()
+    # df = db.retreive_df()
     # db.insertTest(df)
 
     # cursor = conn.cursor()
