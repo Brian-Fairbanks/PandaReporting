@@ -187,7 +187,8 @@ class EsriDatabase:
 
         df = getFormattedTable()
         print("Writing Temporary CSV file...")
-        df.to_csv(temp_CSV_file, index=False)
+        with open(temp_CSV_file, 'w', newline='') as file:
+            df.to_csv(file, index=False)
 
         # csvTimer.end()
 
@@ -229,7 +230,11 @@ class EsriDatabase:
 
         print("Removing Temporary CSV file.")
         # delete the file if it fails or finishes!
-        remove(temp_CSV_file)
+        try:
+            remove(temp_CSV_file)
+        except Exception as e:
+            logging.error(f"Failed to remove CSV: {e}")
+            pass
 
         print("publishing CSV to Feature Layer... ")
         try:
