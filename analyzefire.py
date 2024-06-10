@@ -73,7 +73,7 @@ def export_to_xlsx(name, fileDF):
         worksheet.set_column(i, i, column_len)
 
     # Save the Excel file
-    writer.save()
+    writer.close()
 
     print("  Complete")
 

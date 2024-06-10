@@ -23,6 +23,7 @@ hidden_imports = [
     "email.mime.multipart",
     "email.mime.text",
     "email.mime.application",
+    "geopy.distance",
 ]
 
 executables_info = {

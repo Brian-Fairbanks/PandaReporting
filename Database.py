@@ -401,7 +401,7 @@ class SQLDatabase:
                 date_format="mm/dd/yyyy",
             )
             df.iloc[errorRows].to_excel(writer)
-            writer.save()
+            writer.close()
 
     # testing
     def insertTest(self, df):
