@@ -3,7 +3,8 @@ import json
 import os
 import paramiko
 import shutil
-
+import sys
+from os import path
 
 def create_sftp_client(connection_name):
     """
@@ -86,7 +87,8 @@ def setup_logging(filename="default.log", base="..\\logs\\", debug=False):
 
 def load_config():
     try:
-        config_file_location = ".\\data\\Lists\\emailMonitoring.json"
+        base_dir = get_base_dir()
+        config_file_location = path.join(base_dir, "data", "Lists", "emailMonitoring.json")
         with open(config_file_location, "r") as file:
             config = json.load(file)
         logging.info("Email monitoring configuration loaded")
@@ -95,12 +97,13 @@ def load_config():
         logging.error(f"Error loading email configuration: {e}")
         exit(1)
 
-
 def load_config_for_process(
-    process, config_path=".\\data\\Lists\\emailMonitoring.json"
+    process, config_path="data\\Lists\\emailMonitoring.json"
 ):
     """Load configuration from the specified JSON file and filter for autoImportFromFTP processing."""
-    with open(config_path, "r") as config_file:
+    base_dir = get_base_dir()
+    config_file_location = path.join(base_dir, config_path)
+    with open(config_file_location, "r") as config_file:
         config = json.load(config_file)
         return [
             rule
@@ -108,16 +111,28 @@ def load_config_for_process(
             if rule.get("processing") == process
         ]
 
-
 def find_files_in_directory(directory, file_types):
     """Load all files from the specified directory that match the given file types."""
-    for filename in os.listdir(directory):
+    base_dir = get_base_dir()
+    directory_path = path.join(base_dir, directory)
+    for filename in os.listdir(directory_path):
         if filename.endswith(file_types):
-            yield os.path.join(directory, filename)
-
+            yield path.join(directory_path, filename)
 
 def move_file(file_path, target_directory):
     """Move the specified file to the target directory."""
-    if not os.path.exists(target_directory):
-        os.makedirs(target_directory)
-    shutil.move(file_path, target_directory)
+    base_dir = get_base_dir()
+    target_path = path.join(base_dir, target_directory)
+    if not os.path.exists(target_path):
+        os.makedirs(target_path)
+    shutil.move(file_path, target_path)
+
+def get_base_dir():
+    """Return the base directory for the application, whether bundled or not."""
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        # Running in a PyInstaller bundle
+        return os.path.abspath(sys._MEIPASS)
+    else:
+        # Running in a normal Python environment
+        return os.path.abspath(os.path.dirname(__file__))
+    

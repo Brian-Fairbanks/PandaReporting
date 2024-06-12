@@ -12,9 +12,12 @@ import traceback
 import numpy as np
 from geopandas import GeoDataFrame
 from timer import Timer
-
+import ServerFiles as sf
+from os import path
 from tqdm import tqdm
 
+# Setup base directory
+base_dir = sf.get_base_dir()
 
 # This really is acting more like a class than a set of functions, but I really need to look into proper class declaration for python 3 ...
 
@@ -302,7 +305,7 @@ def downloadData():
 
     # save graph to disk
     print("  Saving Downloaded Map ...")
-    ox.save_graphml(G, "./data/roads/roads.graphml")
+    ox.save_graphml(G, path.join(base_dir, "data", "roads", "roads.graphml"))
     print("  Save Complete!")
 
     # return the data
@@ -320,7 +323,7 @@ def simplifyMap(G):
     )
 
     print("  Saving Simplified Map ...")
-    ox.save_graphml(G, "./data/roads/roadsProjected.graphml")
+    ox.save_graphml(G, path.join(base_dir, "data", "roads", "roadsProjected.graphml"))
     print("  Save Complete!")
 
     return GCon
@@ -329,20 +332,21 @@ def simplifyMap(G):
 def getRoads():
     global roadMap
 
-    # Load the data if it exists, else fetch it amd process it
-    if not exists("./data/roads/roadsProjected.graphml"):
+    roads_graphml_path = path.join(base_dir, "data", "roads", "roadsProjected.graphml")
+    if not exists(roads_graphml_path):
         # final version does exists, see if partial one does.
-        if not exists("./data/roads/roads.graphml"):
+        roads_partial_path = path.join(base_dir, "data", "roads", "roads.graphml")
+        if not exists(roads_partial_path):
             print("Downloading data from the api, this may take a moment")
             G = downloadData()
         else:
             print("Found a partial file:")
-            G = ox.load_graphml("./data/roads/roads.graphml")
+            G = ox.load_graphml(roads_partial_path)
         # then prep for final data
         GCon = simplifyMap(G)
     else:
         print("Completed Map Exists, this will be quite quick")
-        G = ox.load_graphml("./data/roads/roadsProjected.graphml")
+        G = ox.load_graphml(roads_graphml_path)
         print(" projecting map...")
         GProj = ox.project_graph(G)
 
@@ -356,7 +360,7 @@ def getRoads():
 
     print("Map is ready for use!")
 
-    # store andreturn the data
+    # store and return the data
     roadMap = GFIPS
     return GFIPS
 

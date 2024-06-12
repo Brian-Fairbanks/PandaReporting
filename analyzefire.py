@@ -18,22 +18,18 @@ import getData as data
 import timeBreakdowns as tb
 import naming as n
 import os
+from os import path
 import geocode
 
 # Setup Logging for the remainder of the data
-import logging
+import ServerFiles as sf
 
 runtime = datetime.datetime.now().strftime("%Y.%m.%d %H.%M")
-
-# set up logging folder
-writePath = "../Logs"
-
-# logging setup - write to output file as well as printing visably
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger()
-logger.addHandler(logging.FileHandler(f"{writePath}/RunLog-{runtime}.log", "a"))
+logger = sf.setup_logging(f"RunLog-{runtime}.log", debug=False)
 print = logger.info
 
+# Setup base_dir as location of run-file 
+base_dir = sf.get_base_dir()
 
 # Dont warn me about potentially assigning a copy
 pd.options.mode.chained_assignment = None
@@ -486,7 +482,9 @@ def analyzeFire(fileDF):
     # Set up boundaries for ESD17
     ##############################################################
     print("loading esd shape:")
-    esd17 = gpd.read_file("Shape\\esd17.shp")
+    # esd17 = gpd.read_file("Shape\\esd17.shp")
+    shape_file_path = path.join(base_dir, "Shape", "esd17.shp")
+    esd17 = gpd.read_file(shape_file_path)
     # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
     esd17.set_crs(epsg=2277, inplace=True)
     # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
@@ -533,7 +531,9 @@ def analyzeFire(fileDF):
     # Set up boundaries for ETJ
     ##############################################################
     print("loading esd shape:")
-    etj = gpd.read_file("Shape\\ETJ.shp")
+    # etj = gpd.read_file("Shape\\ETJ.shp")
+    shape_file_path = path.join(base_dir, "Shape", "ETJ.shp")
+    etj = gpd.read_file(shape_file_path)
     # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
     etj.set_crs(epsg=2277, inplace=True)
     # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
@@ -560,7 +560,9 @@ def analyzeFire(fileDF):
     # Set up boundaries for cop
     ##############################################################
     print("loading COP shape:")
-    cop = gpd.read_file("Shape\\City_Limits.shp")
+    # cop = gpd.read_file("Shape\\City_Limits.shp")
+    shape_file_path = path.join(base_dir, "Shape", "City_Limits.shp")
+    cop = gpd.read_file(shape_file_path)
     # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
     cop.set_crs(epsg=2277, inplace=True)
     # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
@@ -585,7 +587,9 @@ def analyzeFire(fileDF):
     #     Add Fire Response Areas to EMS Data
     # =================================================================
     print("loading response areas:")
-    responseArea = gpd.read_file("Shape\\AFD_Response_Areas.shp")
+    # AFD Response Areas shape file
+    shape_file_path = path.join(base_dir, "Shape", "AFD_Response_Areas.shp")
+    responseArea = gpd.read_file(shape_file_path)
     # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
     responseArea.set_crs(epsg=2277, inplace=True)
     # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326

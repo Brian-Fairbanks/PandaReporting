@@ -1,12 +1,18 @@
 from shapely.geometry import Point
 import pandas as pd
 import geopandas as gpd
+import ServerFiles as sf
+from os import path
 
+# Setup base directory
+base_dir = sf.get_base_dir()
 
 def addPopDen(fireDF):
     print("loading population grid:")
-    # popData = gpd.read_file("Shape\\ESD2Pop.shp")
-    popData = gpd.read_file("Shape\\PopulationDensityInESD2.shp")
+    # Update file path using base_dir
+    popData_path = path.join(base_dir, "Shape", "PopulationDensityInESD2.shp")
+    popData = gpd.read_file(popData_path)
+    
     # ESD2Pop needed this, PopDenInESD2 is already in 4326
     # specify that source data is WGS 84 / Pseudo-Mercator -- Spherical Mercator, Google Maps, OpenStreetMap, Bing, ArcGIS, ESRI' - https://epsg.io/3857
     # popData.set_crs(epsg=3857, inplace=True)
@@ -16,15 +22,12 @@ def addPopDen(fireDF):
     # weird aliases... this is 'total population' / 'AreaofLAND(meters)'
     # population_name = "B01001_001"
     # area_name = "ALAND"
-
-    # popData["Pop/Mile"] = popData.apply(
-    #     lambda x: (x[population_name] / x[area_name]) * 2590000, axis=1
-    # )
     popData["Pop/Mile"] = popData.apply(lambda x: x["POP_SQMI"], axis=1)
 
-    # Also load in Block Data from
     print("loading Block Data:")
-    blockData = gpd.read_file("Shape\\BlockData.shp")
+
+    blockData_path = path.join(base_dir, "Shape", "BlockData.shp")
+    blockData = gpd.read_file(blockData_path)
     blockData.set_crs(epsg=4326, inplace=True)
 
     def getPopulationDensity(lon, lat):
