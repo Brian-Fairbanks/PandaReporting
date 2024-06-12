@@ -16,6 +16,7 @@ import ServerFiles as sf
 from os import path
 from tqdm import tqdm
 
+logger = sf.setup_logging("roads.log")
 # Setup base directory
 base_dir = sf.get_base_dir()
 
@@ -297,19 +298,24 @@ def addClosestStations(df):
 # ##############################################################################################################################################
 def downloadData():
     place_name = "Pflugerville, Texas, United States"
-    # buffer distance is area in meters outside of the city.
-    # district can extend up to 5 miles out
-    # 10000m = 6.21 miles
-    G = ox.graph_from_place(place_name, buffer_dist=distBuf)
-    # nx.set_edge_attributes(G, 100, "w3")
+    try:
+        logger.info(f"Starting download for place: {place_name} with buffer: {distBuf}")
+        # buffer distance is area in meters outside of the city.
+        # district can extend up to 5 miles out
+        # 10000m = 6.21 miles
+        G = ox.graph_from_place(place_name, buffer_dist=distBuf)
+        
+        # save graph to disk
+        logger.info("Saving Downloaded Map ...")
+        ox.save_graphml(G, path.join(base_dir, "data", "roads", "roads.graphml"))
+        logger.info("Save Complete!")
+        
+        # return the data
+        return G
+    except Exception as e:
+        logger.error(f"Error downloading data: {e}")
+        raise
 
-    # save graph to disk
-    print("  Saving Downloaded Map ...")
-    ox.save_graphml(G, path.join(base_dir, "data", "roads", "roads.graphml"))
-    print("  Save Complete!")
-
-    # return the data
-    return G
 
 
 def simplifyMap(G):

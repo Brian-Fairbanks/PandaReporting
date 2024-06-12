@@ -8,7 +8,7 @@ import ServerFiles as sf
 from os import path
 
 testing = True
-logger = sf.setup_logging("EmailMonitor")
+logger = sf.setup_logging("EmailMonitor.log")
 
 def login_to_email():
     load_dotenv(find_dotenv())
