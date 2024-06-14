@@ -7,7 +7,7 @@ from email.policy import default
 import ServerFiles as sf
 from os import path
 
-testing = True
+testing = False
 logger = sf.setup_logging("EmailMonitor.log")
 
 def login_to_email():

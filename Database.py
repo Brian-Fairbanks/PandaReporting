@@ -416,12 +416,12 @@ class SQLDatabase:
         
         # Regex to catch "String or binary data would be truncated" errors
         truncate_match = re.search(
-            r"String or binary data would be truncated in table \\'([^']+)\\', column \\'([^']+)\\'",
+            r"String or binary data would be truncated in table '([^']+)', column '([^']+)'. Truncated value: '([^']+)'",
             err_str,
         )
         if truncate_match:
-            table, column = truncate_match.groups()
-            return f"{table}[{column}] would be truncated. Consider expanding to greater size."
+            table, column, value = truncate_match.groups()
+            return f"{table}[{column}] would be truncated. Consider expanding to greater size. Truncated value: {value}"
         
         # Regex to catch "Cannot insert the value NULL into column" errors
         null_match = re.search(
@@ -432,6 +432,37 @@ class SQLDatabase:
             column, table = null_match.groups()
             return f"{table}[{column}] Cannot be NULL. Unit/Incident Skipped."
         
+        # Regex to catch "The conversion of a varchar data type to a datetime data type resulted in an out-of-range value" errors
+        datetime_conversion_match = re.search(
+            r"The conversion of a varchar data type to a datetime data type resulted in an out-of-range value",
+            err_str,
+        )
+        if datetime_conversion_match:
+            return "Datetime conversion error. Ensure all datetime fields are properly formatted."
+
+         # Regex to catch "Conversion failed" errors
+        conversion_match = re.search(
+            r"Conversion failed when converting the varchar value '([^']+)' to data type ([^ ]+).",
+            err_str,
+        )
+        if conversion_match:
+            err_val, data_type = conversion_match.groups()
+
+            # Extract the part containing columns and values
+            values_section = re.search(r"VALUES \((.*?)\) AS s \(\[(.*?)\]\)", err_str, re.DOTALL)
+            if values_section:
+                values, columns = values_section.groups()
+                value_list = [v.strip().strip("'") for v in values.split(",")]
+                column_list = [c.strip() for c in columns.split(",")]
+
+                # Construct the dictionary
+                columns_values_dict = dict(zip(column_list, value_list))
+
+                # Format dictionary style
+                formatted_columns_values = ", ".join([f"{key}: {value}" for key, value in columns_values_dict.items() if value == err_val])
+                
+                return f"Failure while converting the varchar value '{err_val}' to data type {data_type} for column(s): {formatted_columns_values}."
+        
         return None
 
     def format_sql_values(self, row):
@@ -441,14 +472,13 @@ class SQLDatabase:
                 formatted.append('1' if item else '0')
 
             # Check if the item is list or dict and handle as JSON
-            if isinstance(item, (list, dict)):
+            elif isinstance(item, (list, dict)):
                 # Serialize list or dictionary to JSON string
                 json_str = json.dumps(item).replace("'", "''")
                 formatted.append(f"'{json_str}'")
-                continue
 
             # Handle numpy arrays, if any, assuming they are not meant to be here
-            if isinstance(item, np.ndarray):
+            elif isinstance(item, np.ndarray):
                 if item.size == 1:
                     item = item[0]  # Convert single-element arrays to scalars
                 else:
@@ -458,7 +488,7 @@ class SQLDatabase:
                     continue
 
             # Normal null check and handling for scalar values
-            if pd.isnull(item):
+            elif pd.isnull(item):
                 formatted.append("NULL")
             elif isinstance(item, str):
                 # Escape single quotes and handle line breaks
@@ -468,8 +498,12 @@ class SQLDatabase:
                 formatted.append(f"'{escaped_item}'")
             elif isinstance(item, pd.Timestamp):
                 formatted.append(f"'{item.strftime('%Y-%m-%d %H:%M:%S')}'")
-            else:
+            elif isinstance(item, (int, float)):
                 formatted.append(str(item))
+            elif isinstance(item, pd.Timedelta):
+                formatted.append(f"'{str(item)}'")
+            else:
+                formatted.append(f"'{str(item)}'")
 
         return ", ".join(formatted)
 
@@ -599,14 +633,32 @@ class SQLDatabase:
         """
         self.insert_dataframe(df, "Basic", ["IncidentId"])
 
-    def UpsertRaw(self, df, type):
-        if type == "ems":
-            # DONT manipulate the DF - keep the function pure!
+    def UpsertRaw(self, df, table_type):
+        if table_type not in ["ems", "fire", "non_esd_ems", "non_esd_fire"]:
+            logger.error(f"ERROR! - No raw table for: {table_type}")
+            return
+
+        table_map = {
+            "ems": "RawEMS",
+            "fire": "RawFire",
+            "non_esd_ems": "NonESDEMS",  # Example table name
+            "non_esd_fire": "RawNonESDFire_test"
+        }
+
+        try:
+            table_name = table_map.get(table_type)
+        except Exception as e:
+            logger.error(f"Table {table_name} does not exist.")
+            return
+
+        # DONT manipulate the DF - keep the function pure!
+        if table_type == "ems":
             temp = df
             temp["PandasIndex"] = temp.index
-            self.insert_dataframe(df, "RawEMS", ["Incident", "Unit", "Assigned"])
-        else:
-            self.insert_dataframe(df, "RawFire", ["Master_Incident_Number", "Radio_Name", "Unit Time Assigned"])
+            self.insert_dataframe(df, table_name, ["Incident", "Unit", "Assigned"])
+        elif table_type in ["fire", "non_esd_fire"]:
+            self.insert_dataframe(df, table_name, ["Master_Incident_Number", "Unit_Name", "Unit_Assigned_Datetime"])
+
 
     
     def new_insert_DF(self, df, data_source):

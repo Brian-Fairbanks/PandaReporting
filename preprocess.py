@@ -8,12 +8,91 @@ import utils
 
 # from pandasgui import show
 
+def split_and_dump_non_esd2_records(df, fileType):
+    # Try to find the "esd02" and "record" column, starting with the last column
+    esd02_record_column = None
+    
+    # Check the last column first
+    if "esd02" in df.columns[-1].lower() and "record" in df.columns[-1].lower():
+        esd02_record_column = df.columns[-1]
+    else:
+        # Check the remaining columns if the last one is not the desired column
+        for col in df.columns[:-1]:
+            if "esd02" in col.lower() and "record" in col.lower():
+                esd02_record_column = col
+                break
+
+    if esd02_record_column:
+        # Split the dataframe into two based on the found column
+        df_record_1 = df[df[esd02_record_column] == 1]
+        df_record_0 = df[df[esd02_record_column] == 0]
+        
+        # Dump df_record_0 into a database (stub function for demonstration)
+        dump_to_database(df_record_0, fileType)
+    else:
+        # If the column is not found, return the entire dataframe
+        df_record_1 = df
+
+    # Return the dataframe with ESD02_record == 1
+    return df_record_1
+def clean_dataframe(df):
+    # Replace '-' with NaN (pandas' version of NULL)
+    df.replace('-', np.nan, inplace=True)
+
+    # Convert datetime columns from strings to actual datetime objects
+    datetime_columns = [
+        "Call_Closed_Datetime",
+        "Call_Entered_Queue_Datetime",
+        "Call_Taking_Complete_Datetime",
+        "First_Calltaking_Keystroke_Datetime",
+        "First_Unit_Arrived_Datetime",
+        "First_Unit_Assigned_Datetime",
+        "First_Unit_Call_Cleared_Datetime",
+        "First_Unit_Enroute_Datetime",
+        "First_Unit_Staged_Datetime",
+        "Last_Unit_Call_Cleared_Datetime",
+        "MonthYear",
+        "Phone_Pickup_Datetime",
+        "Unit_Arrived_Datetime",
+        "Unit_Assigned_Datetime",
+        "Unit_Call_Cleared_Datetime",
+        "Unit_Delayed_Availability_Datetime",
+        "Unit_Enroute_Datetime",
+        "Unit_Staged_Datetime",
+        "Earliest_Phone_Pickup_Datetime",
+        "EMS_Phone_Pickup_Datetime",
+        "ResponseDate",
+        "AssignDate",
+        "BaseDate"
+    ]
+
+    for col in datetime_columns:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors='coerce')
+
+    return df
+
+def dump_to_database(df, fileType):
+    # Dump df_record_0 into a database
+    from Database import SQLDatabase 
+    db = SQLDatabase()
+    df = clean_dataframe(df)
+    db.UpsertRaw(df, "non_esd_ems" if fileType == "ems" else "non_esd_fire")
+    db.close()
+    return None
 
 def preprocess(df, start=None, end=None):
     if "Ph_PU_Time" in df.columns or "Ph PU Time" in df.columns:
         fileType = "ems"
     else:
         fileType = "fire"
+
+    df = split_and_dump_non_esd2_records(df, fileType)
+    if len(df.index) == 0:
+        logger.info("File contains no ESD2 Records.")
+        return df
+
+    
 
     logger.debug("Preparing for Analysis")
     # =================================================================
