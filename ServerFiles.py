@@ -5,6 +5,7 @@ import paramiko
 import shutil
 import sys
 from os import path
+from datetime import datetime
 
 def create_sftp_client(connection_name):
     """
@@ -125,7 +126,29 @@ def move_file(file_path, target_directory):
     target_path = path.join(base_dir, target_directory)
     if not os.path.exists(target_path):
         os.makedirs(target_path)
-    shutil.move(file_path, target_path)
+    try:
+        shutil.move(file_path, target_path)
+    except Exception as e:
+        logging.error(f"Error moving file: {e}")
+        
+        # Handle case where a file with the same name already exists
+        if "already exists" in str(e):
+            # Extract filename and extension from the file path (corrected)
+            filename, extension = os.path.splitext(os.path.basename(file_path))
+
+            # Create a unique filename with timestamp
+            new_filename = f"{filename}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}{extension}"
+            new_target_path = os.path.join(target_path, new_filename)
+
+            logging.info(f"Renaming to {new_filename}\n original move: {target_path}\nNew Path: {new_target_path}")
+
+            # Try moving with the unique filename
+            try:
+                shutil.move(file_path, new_target_path)
+                return new_target_path
+            except Exception as e2:
+                logging.error(f"Failed to create unique filename: {e2}")
+                return None  # Indicate failure
 
 def get_base_dir():
     """Return the base directory for the application, whether bundled or not."""
