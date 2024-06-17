@@ -66,7 +66,6 @@ def createGui():
 
 
 def guiAnalyze():
-    # Merge file before had? calculate them all separately and thne merge at the end?  what do we do here?
     for file in fileArray:
         fileDF = af.analyzeFire(fileArray[file])
         # ----------------
@@ -74,9 +73,12 @@ def guiAnalyze():
         # ----------------
         # show(fireDF)
         from Database import SQLDatabase
+        
+        data_source = fileDF.loc[0, "Data_Source"]
 
         db = SQLDatabase()
-        db.insertDF(fileDF)
+        # db.insertDF(fileDF)
+        db.new_insert_DF(fileDF, data_source)
 
     return None
 
@@ -105,15 +107,23 @@ def readRaw(filePath):
     # read the file
     df = pd.read_excel(excel_filename)
 
-    renames = {"ESD02_Record_Daily": "ESD02_Record"}
-    df = df.rename(columns=renames, errors="ignore")
+    df, non_esd_records = pp.split_esd_records(df)
+    df = pp.revert_fire_format(df)
 
     df = df.replace("-", np.nan)
+
+    renames = {"ESD02_Record_Daily": "ESD02_Record"}
+    df = df.rename(columns=renames, errors="ignore")
 
     if "Ph_PU_Time" in df.columns or "Ph PU Time" in df.columns:
         fileType = "ems"
     else:
         fileType = "fire"
+
+    # Dump non_esd records if they exist
+    if len(non_esd_records.index) == 0:
+        non_esd_records = pp.clean_dataframe(non_esd_records)
+        pp.dump_to_database(non_esd_records, fileType)
 
     return df, fileType
 
@@ -122,6 +132,9 @@ def insertRaw():
     for file in fileArray.keys():  # keys should just be filepath+name
         try:
             df, filetype = readRaw(file)
+            # TEMP: FIX THIS IN SCHEMAS - remove latitude and longitude for fire
+            if filetype == "fire":
+                df = df.drop(["Longitude_At_Assign_Time","Latitude_At_Assign_Time"], axis=1, errors="ignore")
             dumpRawData(df, filetype)
 
         except ValueError:
@@ -172,7 +185,10 @@ def addFiles(files=None):
 
 def dumpRawData(df, type):
     print("Dumping Raw Data to Database")
-    db.insertRaw(df, type)
+    if type=="ems":
+        db.insertToRawEMS(df)
+    else:
+        db.insertToRawFire(df)
 
 
 def run():

@@ -38,7 +38,7 @@ class SQLDatabase:
                 print(f"Testing Database is Enabled ({config_file_location})")
                 return config["test_database_name"]
         except Exception as e:
-            logger.warning("Test Database Config not found at: {config_file_location}")
+            logger.warning(f"Test Database Config not found at: {config_file_location}")
 
         # Use specific database if one was passed
         if dtbs != "":
@@ -642,7 +642,7 @@ class SQLDatabase:
             "ems": "RawEMS",
             "fire": "RawFire",
             "non_esd_ems": "NonESDEMS",  # Example table name
-            "non_esd_fire": "RawNonESDFire_test"
+            "non_esd_fire": "RawNonESDFire"
         }
 
         try:

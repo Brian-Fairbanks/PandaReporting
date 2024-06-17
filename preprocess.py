@@ -8,7 +8,7 @@ import utils
 
 # from pandasgui import show
 
-def split_and_dump_non_esd2_records(df, fileType):
+def split_esd_records(df):
     # Try to find the "esd02" and "record" column, starting with the last column
     esd02_record_column = None
     
@@ -24,17 +24,15 @@ def split_and_dump_non_esd2_records(df, fileType):
 
     if esd02_record_column:
         # Split the dataframe into two based on the found column
-        df_record_1 = df[df[esd02_record_column] == 1]
-        df_record_0 = df[df[esd02_record_column] == 0]
-        
-        # Dump df_record_0 into a database (stub function for demonstration)
-        dump_to_database(df_record_0, fileType)
+        df_esd = df[df[esd02_record_column] == 1]
+        df_non_esd = df[df[esd02_record_column] == 0]
     else:
         # If the column is not found, return the entire dataframe
-        df_record_1 = df
+        df_esd = df
+        df_non_esd = pd.DataFrame()
 
-    # Return the dataframe with ESD02_record == 1
-    return df_record_1
+    return df_esd, df_non_esd
+
 def clean_dataframe(df):
     # Replace '-' with NaN (pandas' version of NULL)
     df.replace('-', np.nan, inplace=True)
@@ -81,20 +79,7 @@ def dump_to_database(df, fileType):
     db.close()
     return None
 
-def preprocess(df, start=None, end=None):
-    if "Ph_PU_Time" in df.columns or "Ph PU Time" in df.columns:
-        fileType = "ems"
-    else:
-        fileType = "fire"
-
-    df = split_and_dump_non_esd2_records(df, fileType)
-    if len(df.index) == 0:
-        logger.info("File contains no ESD2 Records.")
-        return df
-
-    
-
-    logger.debug("Preparing for Analysis")
+def revert_fire_format(df):
     # =================================================================
     # Get Date Range
     # =================================================================
@@ -128,20 +113,20 @@ def preprocess(df, start=None, end=None):
         "Call_Entered_Queue_Datetime": "Incident Time Call Entered in Queue",
         "First_Unit_Assigned_Datetime": "Time First Real Unit Assigned",
         "First_Unit_Enroute_Datetime":"Time First Real Unit Enroute",
-        "First_Unit_Staged_Datetime": "Time First Unit Staged",
+        "First_Unit_Staged_Datetime": "Incident Time First Staged",
         "First_Unit_Arrived_Datetime": "Time First Real Unit Arrived",
         "Call_Closed_Datetime": "Incident Time Call Closed",
         "Last_Unit_Call_Cleared_Datetime": "Last Unit Clear Incident",
         # "Earliest Time Phone Pickup to In Queue" not found
         "Dispatch2Enroute_Second": "In Queue to 1st Real Unit Assigned",
-        "Enroute2Onscene_Second": "Earliest Time Phone Pickup to 1st Unit Assigned",
+        "Enroute2Onscene_Second": "Earliest Time Phone Pickup to 1st Real Unit Assigned",
         # Incident Turnout - 1st Real Unit Assigned to 1st Real Unit Enroute" not found
         # Incident Travel Time - 1st Real Unit Enroute to 1st Real Unit Arrived" not found
         # Incident First Unit Response - 1st Real Unit Assigned to 1st Real Unit Arrived" not found
         # Time Spent OnScene - 1st Real Unit Arrived to Last Real Unit Call Cleared" not found
         # Earliest Time Phone Pickup to 1st Real Unit Arrived" not found
         "Onscene2Close_Second": "IncidentDuration - Earliest Time Phone Pickup to Last Real Unit Call Cleared",
-        "Unit_Call_Disposition": "Incident Call Disposition",
+        "Call_Disposition": "Incident Call Disposition",
         "CallCancel_Reason": "Incident Call Reason",
         "EMSNumberCombo": "EMS Incident Number/s",
         "Unit_Name": "Radio_Name",
@@ -258,9 +243,21 @@ def preprocess(df, start=None, end=None):
         "Year"
     ]
     df = df.drop(unused_new_columns_list, axis=1, errors="ignore")
+    return df
 
-    
-    # show(df)
+def preprocess(df, start=None, end=None):
+    if "Ph_PU_Time" in df.columns or "Ph PU Time" in df.columns:
+        fileType = "ems"
+    else:
+        fileType = "fire"
+
+    df, _ = split_esd_records(df)
+    if len(df.index) == 0:
+        logger.info("File contains no ESD2 Records.")
+        return df
+    df = revert_fire_format(df)
+
+    logger.debug("Preparing for Analysis")
 
 
 
