@@ -137,7 +137,7 @@ def move_file(file_path, target_directory):
             filename, extension = os.path.splitext(os.path.basename(file_path))
 
             # Create a unique filename with timestamp
-            new_filename = f"{filename}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}{extension}"
+            new_filename = f"{filename}({datetime.now().strftime('%y-%m-%d_%H.%M.%S')}){extension}"
             new_target_path = os.path.join(target_path, new_filename)
 
             logging.info(f"Renaming to {new_filename}\n original move: {target_path}\nNew Path: {new_target_path}")
