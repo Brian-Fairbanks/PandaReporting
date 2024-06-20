@@ -251,11 +251,12 @@ def preprocess(df, start=None, end=None):
     else:
         fileType = "fire"
 
-    df, _ = split_esd_records(df)
-    if len(df.index) == 0:
-        logger.info("File contains no ESD2 Records.")
+    if fileType == "fire":
+        df, _ = split_esd_records(df)
+        df = revert_fire_format(df)
+        if len(df.index) == 0:
+            logger.info("File contains no ESD2 Records.")
         return df
-    df = revert_fire_format(df)
 
     logger.debug("Preparing for Analysis")
 

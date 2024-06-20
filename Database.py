@@ -7,7 +7,8 @@ import numpy as np
 import json
 from sys import exit
 import re
-from ServerFiles import setup_logging
+from ServerFiles import setup_logging, get_base_dir
+from os import path
 import traceback
 
 # from pandasgui import show
@@ -26,7 +27,8 @@ class SQLDatabase:
     """a connection to a SQL Database, and associated functions for insertion of required data"""
 
     def which_database_to_use(self, dtbs):
-        config_file_location = ".\\data\\Lists\\TestDatabase.json"
+        base_dir = get_base_dir()
+        config_file_location = path.join(base_dir, "data", "Lists", "TestDatabase.json")
         # Test Database is a JSON object with 2 fields:
         #     "use_test_database": true,
         #     "test_database_name":"UnitRunDataTest"
@@ -463,7 +465,27 @@ class SQLDatabase:
                 
                 return f"Failure while converting the varchar value '{err_val}' to data type {data_type} for column(s): {formatted_columns_values}."
         
+        # Regex to catch "Arithmetic overflow error converting numeric to data type varchar" errors
+        overflow_match = re.search(
+            r"Arithmetic overflow error converting numeric to data type varchar. \((\d+)\) \(([^)]+)\)",
+            err_str,
+        )
+        if overflow_match:
+            error_number, error_state = overflow_match.groups()
+            return f"Arithmetic overflow error converting numeric to data type varchar. Error number: {error_number}, State: {error_state}.  Last time this happened, Alarm_level was a float.  3 digits was too long for varchar(2)"
+
+        # Regex to catch "Violation of PRIMARY KEY constraint" errors
+        pk_violation_match = re.search(
+            r"Violation of PRIMARY KEY constraint '([^']+)'. Cannot insert duplicate key in object '([^']+)'. The duplicate key value is \(([^)]+)\).",
+            err_str,
+        )
+        if pk_violation_match:
+            constraint, table, key_value = pk_violation_match.groups()
+            return f"Primary key constraint '{constraint}' violated in table '{table}'. Duplicate key value: {key_value}. Row cannot be inserted/updated."
+
+        # Generic error message for other cases
         return None
+
 
     def format_sql_values(self, row):
         formatted = []
@@ -499,13 +521,17 @@ class SQLDatabase:
             elif isinstance(item, pd.Timestamp):
                 formatted.append(f"'{item.strftime('%Y-%m-%d %H:%M:%S')}'")
             elif isinstance(item, (int, float)):
-                formatted.append(str(item))
+                formatted.append(item)  # Directly append numeric values
             elif isinstance(item, pd.Timedelta):
                 formatted.append(f"'{str(item)}'")
             else:
                 formatted.append(f"'{str(item)}'")
 
-        return ", ".join(formatted)
+        # Log the formatted values for debugging
+        formatted_str = ", ".join(map(str, formatted))
+        logger.debug(f"Formatted SQL Values: {formatted_str}")
+        
+        return formatted_str
 
 
     # main reason for this... run all included functions
@@ -656,10 +682,25 @@ class SQLDatabase:
             temp = df
             temp["PandasIndex"] = temp.index
             self.insert_dataframe(df, table_name, ["Incident", "Unit", "Assigned"])
-        elif table_type in ["fire", "non_esd_fire"]:
+        elif table_type in ["non_esd_fire"]:
             self.insert_dataframe(df, table_name, ["Master_Incident_Number", "Unit_Name", "Unit_Assigned_Datetime"])
+        elif table_type in ["fire"]:
+            prepreprocess = {
+            # Aug 28 2023, dispatch renamed a column.  Fixing that here.
+            "Alarm_Level": "Alarm Level",
+            }
+            df = df.rename(columns=prepreprocess, errors="ignore")
+            self.insert_dataframe(df, table_name, ["Master_Incident_Number", "Radio_Name", "Unit Time Assigned"])
 
-
+    def fire_data_corrections(self, df):
+        # force format:
+        try:
+            df['Alarm_Level'] = df['Alarm_Level'].astype('Int64')
+        except Exception as e:
+            import traceback
+            tb = traceback.format_exc()  # This captures the entire traceback as a string
+            logger.error(f"Failed: to insert into EMS Incidents: {tb}")
+        return df
     
     def new_insert_DF(self, df, data_source):
         if data_source == "ems":
@@ -674,6 +715,7 @@ class SQLDatabase:
                 logger.error(f"Failed: to insert into EMS Units: {tb}")
             
         else:
+            df = self.fire_data_corrections(df)
             try: self.new_insertToFireIncident(df)
             except Exception as e:
                 tb = traceback.format_exc()  # This captures the entire traceback as a string

@@ -71,7 +71,6 @@ def guiAnalyze():
         # ----------------
         # Write to Database
         # ----------------
-        # show(fireDF)
         from Database import SQLDatabase
         
         data_source = fileDF.loc[0, "Data_Source"]
@@ -107,23 +106,22 @@ def readRaw(filePath):
     # read the file
     df = pd.read_excel(excel_filename)
 
-    df, non_esd_records = pp.split_esd_records(df)
-    df = pp.revert_fire_format(df)
+    if "Ph_PU_Time" in df.columns or "Ph PU Time" in df.columns:
+        fileType = "ems" 
+    else:
+        fileType = "fire"
+
+        df, non_esd_records = pp.split_esd_records(df)
+        df = pp.revert_fire_format(df)
+        # Dump non_esd records if they exist
+        if non_esd_records and len(non_esd_records.index) == 0:
+            non_esd_records = pp.clean_dataframe(non_esd_records)
+            pp.dump_to_database(non_esd_records, fileType)
 
     df = df.replace("-", np.nan)
 
     renames = {"ESD02_Record_Daily": "ESD02_Record"}
     df = df.rename(columns=renames, errors="ignore")
-
-    if "Ph_PU_Time" in df.columns or "Ph PU Time" in df.columns:
-        fileType = "ems"
-    else:
-        fileType = "fire"
-
-    # Dump non_esd records if they exist
-    if len(non_esd_records.index) == 0:
-        non_esd_records = pp.clean_dataframe(non_esd_records)
-        pp.dump_to_database(non_esd_records, fileType)
 
     return df, fileType
 
@@ -185,10 +183,7 @@ def addFiles(files=None):
 
 def dumpRawData(df, type):
     print("Dumping Raw Data to Database")
-    if type=="ems":
-        db.insertToRawEMS(df)
-    else:
-        db.insertToRawFire(df)
+    db.UpsertRaw(df, type)
 
 
 def run():
