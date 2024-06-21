@@ -33,6 +33,27 @@ def split_esd_records(df):
 
     return df_esd, df_non_esd
 
+def round_datetime_columns(df):
+    for column in df.columns:
+        if pd.api.types.is_datetime64_any_dtype(df[column]):
+            df[column] = df[column].dt.round('S')
+    return df
+
+def scrub_raw_ems(df):
+    # df["Zip"] = df["Zip"].astype(str).str.replace(".0", "", regex=False).replace("nan", None, regex=False)
+    # df["Destination_Zip"] = df["Destination_Zip"].astype(str).str.replace(".0", "", regex=False).replace("nan", None, regex=False)
+    try:
+        df['Zip'] = df['Zip'].astype('Int64')
+        df['Destination_Zip'] = df['Destination_Zip'].astype('Int64')
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        logger.warning(tb)
+        exit(0)
+
+    round_datetime_columns(df)
+    return df
+
 def clean_dataframe(df):
     # Replace '-' with NaN (pandas' version of NULL)
     df.replace('-', np.nan, inplace=True)
@@ -254,9 +275,6 @@ def preprocess(df, start=None, end=None):
     if fileType == "fire":
         df, _ = split_esd_records(df)
         df = revert_fire_format(df)
-        if len(df.index) == 0:
-            logger.info("File contains no ESD2 Records.")
-        return df
 
     logger.debug("Preparing for Analysis")
 

@@ -108,15 +108,21 @@ def readRaw(filePath):
 
     if "Ph_PU_Time" in df.columns or "Ph PU Time" in df.columns:
         fileType = "ems" 
+        pp.scrub_raw_ems(df) 
     else:
         fileType = "fire"
 
         df, non_esd_records = pp.split_esd_records(df)
         df = pp.revert_fire_format(df)
         # Dump non_esd records if they exist
-        if non_esd_records and len(non_esd_records.index) == 0:
-            non_esd_records = pp.clean_dataframe(non_esd_records)
-            pp.dump_to_database(non_esd_records, fileType)
+        try:
+            if len(non_esd_records.index) == 0:
+                pp.dump_to_database(non_esd_records, fileType)
+        except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
+            print(f"Error Dumping Raw Data: {e}\nTraceback: {tb}")
+            exit()
 
     df = df.replace("-", np.nan)
 

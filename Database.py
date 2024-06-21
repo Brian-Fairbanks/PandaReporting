@@ -613,7 +613,7 @@ class SQLDatabase:
         session = Session()
 
         failed_rows = []
-        for index, row in tqdm(df.iterrows(), total=len(df), desc="Upserting rows"):
+        for index, row in tqdm(df.iterrows(), total=len(df), desc=f"Upserting to {table_name}"):
             values = self.format_sql_values(row.values)
             primary_key_condition = " AND ".join(
                 [f"target.[{pk}] = source.[{pk}]" for pk in primary_keys]

@@ -54,12 +54,6 @@ def get_from_database(time_frame, data_source):
         df = pd.DataFrame()  # Return an empty DataFrame if there's an error
     return df
 
-def round_datetime_columns(df):
-    for column in df.columns:
-        if pd.api.types.is_datetime64_any_dtype(df[column]):
-            df[column] = df[column].dt.round('S')
-    return df
-
 def compare_file(from_file_df, from_db_df, data_source):
     """
     Compare our data from the raw weekly file against the data that already exists in the database.
@@ -84,16 +78,16 @@ def compare_file(from_file_df, from_db_df, data_source):
     from_file_df.rename(columns=renames, errors="ignore", inplace=True)
 
     if data_source == "ems":
-        from_file_df["Zip"] = from_file_df["Zip"].astype(str).str.replace(".0", "", regex=False).replace("nan", None, regex=False)
-        from_file_df["Destination_Zip"] = from_file_df["Destination_Zip"].astype(str).str.replace(".0", "", regex=False).replace("nan", None, regex=False)
-
-    round_datetime_columns(from_db_df)
-    round_datetime_columns(from_file_df)
+        pp.round_datetime_columns(from_db_df)
+        pp.scrub_raw_ems(from_file_df)
+        from_file_df["Zip"] = from_file_df["Zip"].astype(str).replace("<NA>", None, regex=False)
+        from_file_df["Destination_Zip"] = from_file_df["Destination_Zip"].astype(str).replace("<NA>", None, regex=False)
 
     compare_df = from_file_df.copy()
 
     compare_df.fillna("null", inplace=True)
     from_db_df.fillna("null", inplace=True)
+
 
     compare_df[compare_keys] = compare_df[compare_keys].astype(str)
     from_db_df[compare_keys] = from_db_df[compare_keys].astype(str)
@@ -192,7 +186,8 @@ def process_directory(directory, file_types, move_on_success, move_on_failure):
             except Exception as e:
                 logger.error(f"Failed to move file {file_path} to success directory: {e}")
         except Exception as e:
-            logger.error(f"Processing failed for file {file_path}, error: {e}")
+            tb = traceback.format_exc()
+            logger.error(f"Processing failed for file {file_path}, error: {e}:\n\t {tb}\n")
             try:
                 sf.move_file(file_path, move_on_failure)
                 logger.info(f"File moved to failure directory: {file_path}")
@@ -259,7 +254,7 @@ def main():
             except Exception as e:
                 logger.error(f"Error processing email for rule: {rule}\n: {e}")
     except Exception as e:
-        logger.error(f"An error has occurred in CompareL: {e}", exc_info=True)
+        logger.error(f"An error has occurred in Compare: {e}", exc_info=True)
     finally:
         if db is not None:
             db.close()
