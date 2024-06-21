@@ -13,7 +13,7 @@ def create_sftp_client(connection_name):
     """
     try:
         connection = get_sftp_settings(connection_name)
-        print(f"Found sftp data: {connection}")
+        logging.info(f"Found sftp data: {connection}")
         # Initialize an SSH client
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -93,10 +93,12 @@ def load_config():
         with open(config_file_location, "r") as file:
             config = json.load(file)
         logging.info("Email monitoring configuration loaded")
+        if "email_rules" not in config:
+            raise ValueError("Invalid configuration: 'email_rules' key not found")
         return config["email_rules"]
     except Exception as e:
         logging.error(f"Error loading email configuration: {e}")
-        exit(1)
+        sys.exit(1)
 
 def load_config_for_process(
     process, config_path="data\\Lists\\emailMonitoring.json"

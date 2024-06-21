@@ -116,7 +116,7 @@ def readRaw(filePath):
         df = pp.revert_fire_format(df)
         # Dump non_esd records if they exist
         try:
-            if len(non_esd_records.index) == 0:
+            if len(non_esd_records.index) != 0:
                 pp.dump_to_database(non_esd_records, fileType)
         except Exception as e:
             import traceback
