@@ -31,6 +31,9 @@ def split_esd_records(df):
         df_esd = df
         df_non_esd = pd.DataFrame()
 
+    # Correct the naming slip-up in sql creation
+    df_non_esd.rename(columns={esd02_record_column: "ESD02_Record"}, inplace=True)
+
     return df_esd, df_non_esd
 
 def round_datetime_columns(df):
@@ -43,8 +46,14 @@ def scrub_raw_ems(df):
     # df["Zip"] = df["Zip"].astype(str).str.replace(".0", "", regex=False).replace("nan", None, regex=False)
     # df["Destination_Zip"] = df["Destination_Zip"].astype(str).str.replace(".0", "", regex=False).replace("nan", None, regex=False)
     try:
+        # Clean the 'Zip' column
+        df['Zip'] = pd.to_numeric(df['Zip'], errors='coerce')
         df['Zip'] = df['Zip'].astype('Int64')
+
+        # Clean the 'Destination_Zip' column
+        df['Destination_Zip'] = pd.to_numeric(df['Destination_Zip'], errors='coerce')
         df['Destination_Zip'] = df['Destination_Zip'].astype('Int64')
+
     except Exception as e:
         import traceback
         tb = traceback.format_exc()
