@@ -12,9 +12,13 @@ import traceback
 import numpy as np
 from geopandas import GeoDataFrame
 from timer import Timer
-
+import ServerFiles as sf
+from os import path
 from tqdm import tqdm
 
+logger = sf.setup_logging("roads.log")
+# Setup base directory
+base_dir = sf.get_base_dir()
 
 # This really is acting more like a class than a set of functions, but I really need to look into proper class declaration for python 3 ...
 
@@ -294,19 +298,24 @@ def addClosestStations(df):
 # ##############################################################################################################################################
 def downloadData():
     place_name = "Pflugerville, Texas, United States"
-    # buffer distance is area in meters outside of the city.
-    # district can extend up to 5 miles out
-    # 10000m = 6.21 miles
-    G = ox.graph_from_place(place_name, buffer_dist=distBuf)
-    # nx.set_edge_attributes(G, 100, "w3")
+    try:
+        logger.info(f"Starting download for place: {place_name} with buffer: {distBuf}")
+        # buffer distance is area in meters outside of the city.
+        # district can extend up to 5 miles out
+        # 10000m = 6.21 miles
+        G = ox.graph_from_place(place_name, buffer_dist=distBuf)
+        
+        # save graph to disk
+        logger.info("Saving Downloaded Map ...")
+        ox.save_graphml(G, path.join(base_dir, "data", "roads", "roads.graphml"))
+        logger.info("Save Complete!")
+        
+        # return the data
+        return G
+    except Exception as e:
+        logger.error(f"Error downloading data: {e}")
+        raise
 
-    # save graph to disk
-    print("  Saving Downloaded Map ...")
-    ox.save_graphml(G, "./data/roads/roads.graphml")
-    print("  Save Complete!")
-
-    # return the data
-    return G
 
 
 def simplifyMap(G):
@@ -320,7 +329,7 @@ def simplifyMap(G):
     )
 
     print("  Saving Simplified Map ...")
-    ox.save_graphml(G, "./data/roads/roadsProjected.graphml")
+    ox.save_graphml(G, path.join(base_dir, "data", "roads", "roadsProjected.graphml"))
     print("  Save Complete!")
 
     return GCon
@@ -329,20 +338,21 @@ def simplifyMap(G):
 def getRoads():
     global roadMap
 
-    # Load the data if it exists, else fetch it amd process it
-    if not exists("./data/roads/roadsProjected.graphml"):
+    roads_graphml_path = path.join(base_dir, "data", "roads", "roadsProjected.graphml")
+    if not exists(roads_graphml_path):
         # final version does exists, see if partial one does.
-        if not exists("./data/roads/roads.graphml"):
+        roads_partial_path = path.join(base_dir, "data", "roads", "roads.graphml")
+        if not exists(roads_partial_path):
             print("Downloading data from the api, this may take a moment")
             G = downloadData()
         else:
             print("Found a partial file:")
-            G = ox.load_graphml("./data/roads/roads.graphml")
+            G = ox.load_graphml(roads_partial_path)
         # then prep for final data
         GCon = simplifyMap(G)
     else:
         print("Completed Map Exists, this will be quite quick")
-        G = ox.load_graphml("./data/roads/roadsProjected.graphml")
+        G = ox.load_graphml(roads_graphml_path)
         print(" projecting map...")
         GProj = ox.project_graph(G)
 
@@ -356,7 +366,7 @@ def getRoads():
 
     print("Map is ready for use!")
 
-    # store andreturn the data
+    # store and return the data
     roadMap = GFIPS
     return GFIPS
 

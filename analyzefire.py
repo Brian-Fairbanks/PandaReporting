@@ -2,9 +2,12 @@
 import datetime
 
 # Dependancies
-# from pandasgui import show
 import pandas as pd
 import numpy as np
+
+from shapely.geometry import Point
+import geopandas as gpd
+import geopy.distance
 
 # Sibling Modules
 from crf import getCRF
@@ -15,32 +18,28 @@ import getData as data
 import timeBreakdowns as tb
 import naming as n
 import os
+from os import path
+import geocode
 
 # Setup Logging for the remainder of the data
-import logging
+import ServerFiles as sf
 
 runtime = datetime.datetime.now().strftime("%Y.%m.%d %H.%M")
-
-# set up logging folder
-writePath = "../Logs"
-
-# logging setup - write to output file as well as printing visably
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger()
-logger.addHandler(logging.FileHandler(f"{writePath}/RunLog-{runtime}.log", "a"))
+logger = sf.setup_logging(f"RunLog-{runtime}.log", debug=False)
 print = logger.info
 
+# Setup base_dir as location of run-file 
+base_dir = sf.get_base_dir()
 
 # Dont warn me about potentially assigning a copy
 pd.options.mode.chained_assignment = None
 
 # import global additional/updatable json data
+stationDict = data.getStations()
+ourNames = ["AUSTIN-TRAVIS COUNTY EMS", "ESD02 - Pflugerville", "ESD02"]
 locations = data.getLocations()
 reserveUnits = data.getReserves()
-stationDict = data.getStations()
 specialUnits = data.getSpecialUnits()
-ourNames = ["AUSTIN-TRAVIS COUNTY EMS", "ESD02 - Pflugerville", "ESD02"]
-
 
 # ----------------
 # Exporting and completion
@@ -70,12 +69,11 @@ def export_to_xlsx(name, fileDF):
         worksheet.set_column(i, i, column_len)
 
     # Save the Excel file
-    writer.save()
+    writer.close()
 
     print("  Complete")
 
     return file_path  # Return the file path for reference
-    # plt.savefig('saved_figure.png')
 
 
 # ##############################################################################################################################################
@@ -95,28 +93,85 @@ def addIsClosestStation(df):
     return df
 
 
-def getLoc(address):
-    current_location = str(address).lower()
+def getLoc(unit_location, data_source, locations, x_long=None, y_lat=None, stationDict=None):
+    """
+    Determine the station based on location description or GPS coordinates.
+
+    Parameters:
+    - unit_location: The location of the unit at assign.
+    - data_source: 'fire' or 'ems'
+    - x_long: Longitude coordinate of GPS at unit assign (optional).
+    - y_lat: Latitude coordinate of GPS at unit assign (optional).
+    - locations: a dict of street names, and their associated stations
+    - stationDict: Dictionary of station details including GPS coordinates (optional).
+
+    Returns:
+    - The determined station or None if no match is found.
+    """
+    # print(f"{unit_location}, {data_source}, ({x_long}, {y_lat})")
+    if x_long is not None and y_lat is not None and stationDict is not None:
+        # print(f"debug: checking GPS of EMS Units: {y_lat} , {x_long}")
+        for station, data in stationDict.items():
+            if is_near_station((y_lat, x_long), data["gps"]):
+                # print(f"Debug: Location match found for station {station}")
+                return station
+
+    current_location = str(unit_location).lower()
     stationNum = None
     if "fs020" in current_location or "esd2 - station 2" in current_location:
         stationNum = "S" + current_location[-2:]
-    # else check it against known street names (specified at the top of the file)
-    else:
+    elif data_source == 'fire':
         for street in locations.keys():
             if street.lower() in current_location:
                 stationNum = locations[street]
                 break
+    # print(f"Debug: Location match not found for station")
     return stationNum
 
 
-def getLocAtAssign(station, address):
-    return station == getLoc(address)
+def getLocAtAssign(station, unit_location, data_source, locations, x_long=None, y_lat=None, stationDict=None):
+    """
+    Check if the unit was assigned at its station.
 
+    Parameters:
+    - station: The station to check.
+    - unit_location: The location of the unit at assign.
+    - data_source: 'fire' or 'ems'
+    - locations: a dict of street names, and their associated stations
+    - x_long: Longitude coordinate of GPS at unit assign (optional).
+    - y_lat: Latitude coordinate of GPS at unit assign (optional).
+    - stationDict: Dictionary of station details including GPS coordinates (optional).
 
-def addLocAtAssignToDF(df):
+    Returns:
+    - True if the unit was assigned at its station, False otherwise.
+    """
+    assigned_station = getLoc(unit_location, data_source, locations, x_long, y_lat, stationDict)
+    return station == assigned_station
+
+def addLocAtAssignToDF(df, data_source, locations, stationDict):
+    """
+    Add a column indicating if the unit was assigned at its station.
+
+    Parameters:
+    - df: DataFrame containing unit data.
+    - locations: a dict of street names, and their associated stations
+    - stationDict: Dictionary of station details including GPS coordinates.
+
+    Returns:
+    - DataFrame with an additional column 'Assigned at Station'.
+    """
+    print("Begin Analyzing Location Assigned:\n================================================")
     if "Location_At_Assign_Time" in df.columns:
         df["Assigned at Station"] = df.apply(
-            lambda row: getLocAtAssign(row["Station"], row["Location_At_Assign_Time"]),
+            lambda row: getLocAtAssign(
+                row["Station"], 
+                row["Location_At_Assign_Time"],
+                data_source,
+                locations, 
+                row.get("Longitude_at_Assign"), 
+                row.get("Latitude_at_Assign"), 
+                stationDict
+            ),
             axis=1,
         )
     else:
@@ -124,93 +179,90 @@ def addLocAtAssignToDF(df):
     return df
 
 
-#
+def assign_reserve_to_station(row, dataSource, stationDict, specialUnits, locations):
+    """
+    Assigns a reserve unit to a station based on GPS coordinates, location, special units, and response box.
 
+    Parameters:
+    - row: The DataFrame row containing incident details.
+    - stationDict: Dictionary of station details including GPS coordinates.
+    - specialUnits: Dictionary of special units and their corresponding stations.
+    - locations: a dict of street names, and their associated stations
 
-def stationName(department, frontline, radioName, location):
-    # Helper function to be used in getStations
-    # -------------------------------------------------------------------------------------------
-    # specialUnits = {
-    #     "QNT261": "S05",
-    #     "BAT201": "S01",
-    #     "BAT202": "S01",
-    #     "BT261": "S01",
-    #     "BT271": "S07",
-    #     "SQ271": "S07",
-    #     "MED281": "S08",
-    #     "MED270": "S04",
-    #     "MED280": "S03",
-    #     "MED290": "S04",
-    #     "ENG205": "S07",
-    # }
+    Returns:
+    - The assigned station or 'UNKNOWN' if no match is found.
+    """
+    radioName = row["Radio_Name"]
+    afd_response_box = row.get("AFD Response Box")
+    x_long = row.get("Longitude_at_Assign")
+    y_lat = row.get("Latitude_at_Assign")
+    unit_location = row["Location_At_Assign_Time"]
 
-    otherUnits = {
-        "ESD12 - Manor": "ESD12 Manor",
-        "WC - Round Rock": "RRFD",
-    }
+    # Use getLoc to determine the station based on GPS or address
+    stationNum = getLoc(unit_location, dataSource, locations, x_long, y_lat, stationDict)
+    if stationNum:
+        return stationNum
 
-    # rule out units that are not frontline
-    if frontline in [
+    # Check if unit is listed in special units
+    if radioName in specialUnits:
+        return specialUnits[radioName]
+
+    # Check the AFD response box
+    if afd_response_box:
+        # Parse the AFD response box to extract station information
+        parts = afd_response_box.split("-")
+        if len(parts) == 2:
+            _, first_station = parts
+            return f"S{first_station[:2].zfill(2)}"
+
+    return "UNKNOWN"
+
+def stationName(row, dataSource, ourNames, stationDict, locations, reserveUnits, specialUnits):
+    
+    department = row["Department"]
+    radioName = row["Radio_Name"]
+
+    # Exclude non-unit frontline statuses
+    notUnits = [
         "Not a unit",
         "Rescue Talk Group 1",
         "Rescue Talk Group 2",
         "Rescue Talk Group 3",
         "Rescue Talk Group 4",
         "MCOT",
-        "",
-    ]:
+        ""
+    ]
+    if row["Frontline_Status"] in notUnits:
         return "Not a unit"
 
-    # note all private ambulance services as private
-    if frontline == "Private Ambulance Provider" or "ALG" in str(radioName):
+    otherUnits = {
+        "ESD12 - Manor": "ESD12 Manor",
+        "WC - Round Rock": "RRFD",
+    }
+    # Handle private ambulance providers
+    if row["Frontline_Status"] == "Private Ambulance Provider" or "ALG" in str(radioName):
         return "Private"
 
-    # Account for our own units
-    if department in (ourNames):
-        # If frontline status is not Frontline...
-        if frontline in (["Other", "Command"]):
+    # Handle our own units
+    if department in ourNames:
+        # Handle non-frontline units
+        if row["Frontline_Status"] in ["Other", "Command"]:
             return "Admin"
 
-        # check if unit is reserve, and find station based on location
-        if radioName in (reserveUnits):
-            stationNum = getLoc(location)
-            if stationNum != None:
-                return stationNum
+        # Check reserve units
+        if radioName in reserveUnits:
+            return assign_reserve_to_station(row, dataSource, stationDict, specialUnits, locations)
 
-        # if not reserve, or reserve but no location found, use "Special Units" list
-        # TODO - Can we find a better way to maintain this?
-        if radioName in specialUnits.keys():
+        # Check special units
+        if radioName in specialUnits:
             return specialUnits[radioName]
 
-        # Our department, not reserve, and not special - easy
-        if not radioName in (reserveUnits):
-            return f"S0{radioName[-2]}"
+        # Default for our own frontline units
+        return f"S0{radioName[-2]}"
 
-        # If reserve units,cant be found based on location, and not special ...
-        return "UNKNOWN"
-
-        # # Our department, but special units - refer to newly created file:
-        # if radioName in specialUnits.keys():
-        #     return specialUnits[radioName]
-
-        # # Our department, and not reserve - easy
-        # if not radioName in (reserveUnits):
-        #     return f"S0{radioName[-2]}"
-
-        # # If reserve units though...
-        # stationNum = getLoc(location)
-        # if stationNum != None:
-        #     return stationNum
-        # else:
-        #     return "UNKNOWN"
-
-    # for all others, give department
-    outsiders = department
-    # Rename those that need it
-    if outsiders in otherUnits.keys():
-        outsiders = otherUnits[outsiders]
-    # and for good measure, append 'OTHER' when needed
-    if frontline in [
+    # Handle other units
+    outsiders = otherUnits.get(department, department)
+    nonFrontline = [
         "Command",
         "Other",
         "Support",
@@ -221,40 +273,41 @@ def stationName(department, frontline, radioName, location):
         "Aid Unit",
         "Administrative Support",
         "Administrative Staff",
-    ]:
+    ]
+    if row["Frontline_Status"] in nonFrontline:
         outsiders += " Other"
+
     return outsiders
 
 
-def getStations(fireDF):
-    # Add a new Stations Column
-    # -------------------------------------------------------------------------------------------
+def is_near_station(unit_coords, station_coords, threshold=0.1):
+    """
+    Check if the unit's coordinates are within a certain distance of the station coordinates.
+    """
+    if pd.isnull(unit_coords[0]) or pd.isnull(unit_coords[1]):
+        return False
+    distance = geopy.distance.distance(unit_coords, station_coords).miles
+    return distance < threshold
 
-    fireDF["Station"] = fireDF.apply(
-        lambda row: stationName(
-            row["Department"],
-            row["Frontline_Status"],
-            row["Radio_Name"],
-            row["Location_At_Assign_Time"],
-        ),
-        axis=1,
-    )
-
+def getStations(fireDF, dataSource, ourNames, stationDict, locations, reserveUnits, specialUnits):
+    def apply_station_name(row):
+        return stationName(row, dataSource, ourNames, stationDict, locations, reserveUnits, specialUnits)
+    
+    fireDF["Station"] = fireDF.apply(apply_station_name, axis=1)
     fireDF = utils.putColAt(fireDF, ["Station", "Status"], 0)
     return fireDF
 
+# ===============================================================================================================
+# End of Station Selection Scripts
+
 
 def addFirstArrived(df):
-    # df["FirstArrived"] = df[
-    #     df["Unit Time Arrived At Scene"] == df["Time First Real Unit Arrived"]
-    # ]
     df["FirstArrived"] = False
     # get array of unique Incidents
     unique_incidents = df["Master Incident Number"].unique()
     # for each incident, get array of calls
     for incident in unique_incidents:
         incident_data = df[df["Master Incident Number"] == incident]
-        # show(incident_data)
         try:
             # get earliest arrival (either index of earliest, or null if not exits)
             first = incident_data[
@@ -278,7 +331,6 @@ def formatPriority(val):
     if pd.isnull(val):
         return None
     ret = "P" + "".join(c for c in str(val) if c.isdigit())
-    # print(f"{val}  :  {ret}")
     return ret
 
 
@@ -295,6 +347,10 @@ def reprocessPriority(df):
 
     return df
 
+def get_data_source(df):
+    if "FirstArrived" in df:
+        return "fire"
+    return "ems"
 
 # ##############################################################################################################################################
 #     Main Code
@@ -316,22 +372,11 @@ def analyzeFire(fileDF):
         A larger dataframe with additional information gleamed from the passed file.
     """
 
-    # =================================================================
     # Correct no GPS coord issues
     # =================================================================
-    import geocode
-
     geocode.fixCoords(fileDF)
 
-    dataSource = None
-    # =================================================================
-    #    Confirm creation of FirstArrived column
-    # =================================================================
-    # file should have this column already, ems should need it.  Log this step.
-    if "FirstArrived" in fileDF:
-        dataSource = "fire"
-    else:
-        dataSource = "ems"
+    dataSource = get_data_source(fileDF)
 
     # =================================================================
     #    Match Incident Number Format - drop anything not a number
@@ -418,34 +463,28 @@ def analyzeFire(fileDF):
     )
     fileDF = utils.putColAfter(fileDF, ["FirstArrivedEsri"], "FirstArrived")
 
-    # =================================================================
     #     Fire Data Error Checking
     # =================================================================
     from validateData import checkFile
-
     fileDF = checkFile(fileDF)
 
-    # # =================================================================
-    # #     Add unit type column to simplify analysis
-    # # =================================================================
-    # fireDF = utils.addUnitType(fireDF)
-    # fireDF = utils.addBucketType(fireDF)
-
+    #     Add unit type column to simplify analysis
     # =================================================================
+        # Moved to preprocess steps
+
     #     Calculate Concurrent Use for Each Unit
     # =================================================================
     fileDF = cu.addConcurrentUse(fileDF, "Unit Time Assigned", "Unit Time Call Cleared")
-    # =================================================================
+
     #     Set District 17 Values
     # =================================================================
-
-    from shapely.geometry import Point
-    import geopandas as gpd
 
     # Set up boundaries for ESD17
     ##############################################################
     print("loading esd shape:")
-    esd17 = gpd.read_file("Shape\\esd17.shp")
+    # esd17 = gpd.read_file("Shape\\esd17.shp")
+    shape_file_path = path.join(base_dir, "Shape", "esd17.shp")
+    esd17 = gpd.read_file(shape_file_path)
     # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
     esd17.set_crs(epsg=2277, inplace=True)
     # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
@@ -492,7 +531,9 @@ def analyzeFire(fileDF):
     # Set up boundaries for ETJ
     ##############################################################
     print("loading esd shape:")
-    etj = gpd.read_file("Shape\\ETJ.shp")
+    # etj = gpd.read_file("Shape\\ETJ.shp")
+    shape_file_path = path.join(base_dir, "Shape", "ETJ.shp")
+    etj = gpd.read_file(shape_file_path)
     # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
     etj.set_crs(epsg=2277, inplace=True)
     # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
@@ -519,7 +560,9 @@ def analyzeFire(fileDF):
     # Set up boundaries for cop
     ##############################################################
     print("loading COP shape:")
-    cop = gpd.read_file("Shape\\City_Limits.shp")
+    # cop = gpd.read_file("Shape\\City_Limits.shp")
+    shape_file_path = path.join(base_dir, "Shape", "City_Limits.shp")
+    cop = gpd.read_file(shape_file_path)
     # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
     cop.set_crs(epsg=2277, inplace=True)
     # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
@@ -544,7 +587,9 @@ def analyzeFire(fileDF):
     #     Add Fire Response Areas to EMS Data
     # =================================================================
     print("loading response areas:")
-    responseArea = gpd.read_file("Shape\\AFD_Response_Areas.shp")
+    # AFD Response Areas shape file
+    shape_file_path = path.join(base_dir, "Shape", "AFD_Response_Areas.shp")
+    responseArea = gpd.read_file(shape_file_path)
     # specify that source data is 'NAD 1983 StatePlane Texas Central FIPS 4203 (US Feet)' - https://epsg.io/2277
     responseArea.set_crs(epsg=2277, inplace=True)
     # and convert to 'World Geodetic System 1984' (used in GPS) - https://epsg.io/4326
@@ -639,12 +684,12 @@ def analyzeFire(fileDF):
     # =================================================================
     #     Add a new Stations (Origin) Column
     # =================================================================
-    fileDF = getStations(fileDF)
+    fileDF = getStations(fileDF, dataSource, ourNames, stationDict, locations, reserveUnits, specialUnits)
 
     # =================================================================
     #     Add a new Column for if Unit was at its Station Address when Assigned
     # =================================================================
-    fileDF = addLocAtAssignToDF(fileDF)
+    fileDF = addLocAtAssignToDF(fileDF, dataSource, locations, stationDict)
 
     # =================================================================
     #     Calculate Station Distances
@@ -972,23 +1017,6 @@ def analyzeFire(fileDF):
 
     # export_to_xlsx("output", fileDF)
 
-    # ----------------
-    # Write to Esri Directly
-    # ----------------
-    # from esriOverwrite import EsriDatabase
-
-    # esriDF = EsriDatabase.formatDFForEsri(fireDF)
-    # edb = EsriDatabase()
-    # edb.connect()
-    # edb.appendDF(fireDF)
-
-    # show(esriDF)
-
-    ######################################
-    # show in gui just after writing
-    # print("Complete")
-    # show(fireDF)
-
     return fileDF
 
 
@@ -1004,18 +1032,13 @@ if __name__ == "__main__":
     import loadTestFile
 
     df = loadTestFile.get()
-    # run test file
-    from pandasgui import show
-
-    # show(df)
 
     analyzeDF = analyzeFire(df)
 
     # ----------------
     # Write to Database
     # ----------------
-    # show(fireDF)
     from Database import SQLDatabase
 
     db = SQLDatabase()
-    db.insertDF(analyzeDF)
+    db.new_insert_DF(analyzeDF, 'ems')

@@ -5,9 +5,10 @@ import imaplib
 import email
 from email.policy import default
 import ServerFiles as sf
+from os import path
 
-testing = True
-logger = sf.setup_logging("EmailMonitor")
+testing = False
+logger = sf.setup_logging("EmailMonitor.log")
 
 def login_to_email():
     load_dotenv(find_dotenv())
@@ -62,24 +63,6 @@ def transfer_file_via_sftp(sftp_client, local_path, remote_path):
         logger.info(f"Successfully transferred {local_path} to {remote_path}")
     except Exception as e:
         logger.error(f"Failed to transfer {local_path} to {remote_path}: {e}")
-
-
-# def find_first_matching_email(mail, rule):
-#     criteria = '(FROM "{}" SUBJECT "{}")'.format(
-#         rule["sender"], rule["subject_keyword"]
-#     )
-#     if "excludes" in rule:
-#         excludes = " ".join(['NOT SUBJECT "{}"'.format(ex) for ex in rule["excludes"]])
-#         criteria = f"({criteria} {excludes})"
-
-#     status, messages = mail.search(None, criteria)
-#     if status == "OK" and messages[0]:  # Check if there's at least one match
-#         message_ids = messages[0].split()
-#         message_ids.sort(reverse=True)  # Sort so the most recent message is first
-#         return message_ids[0]  # Return only the first (most recent) message ID
-#     else:
-#         logger.warning(f"No messages found for {criteria}")
-#         return None
     
 def find_matching_emails(mail, rule, date_range=None, get_most_recent=False):
     criteria = f'FROM "{rule["sender"]}" SUBJECT "{rule["subject_keyword"]}"'
@@ -110,7 +93,6 @@ def find_matching_emails(mail, rule, date_range=None, get_most_recent=False):
         return []
 
 
-
 def process_single_email(mail, message_id, rule, sftp):
     if message_id is None:
         logger.info("No matching email to process.")
@@ -139,7 +121,8 @@ def save_attachments(email_msg, rule):
     Collects files if they have not already been collected, and saves them.
     Returns a dictionary of {file_path, file_name} if the file was saved, and None if the file skipped
     """
-    log_file = ".\\data\\downloaded_files_log.txt"  # Define the log file path
+    base_dir = sf.get_base_dir()
+    log_file = path.join(base_dir, "data", "downloaded_files_log.txt")  # Define the log file path
     sender = email_msg["From"]
     date_str = format_email_date(email_msg["Date"])
 
@@ -160,7 +143,7 @@ def save_attachments(email_msg, rule):
             if not os.path.exists(folder_path):
                 os.makedirs(folder_path)
 
-            filepath = os.path.join(folder_path, new_filename)
+            filepath = path.join(folder_path, new_filename)
 
             if not is_file_logged(log_file, new_filename, sender, email_msg["Date"]):
                 with open(filepath, "wb") as f:
@@ -203,8 +186,6 @@ def main():
         try:
             print(f'\n--  {rule["subject_keyword"]}  --\n')
             sftp = open_sftp_client(rule)
-            # message_id = find_first_matching_email(mail, rule)
-            # process_single_email(mail, message_id, rule, sftp)
             end_date = datetime.now()
             start_date = end_date - timedelta(days=14)
             message_ids = find_matching_emails(mail, rule, date_range=(start_date, end_date))

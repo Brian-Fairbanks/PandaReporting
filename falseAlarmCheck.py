@@ -20,7 +20,7 @@ def getFormattedTable(query):
 
     try:
         db = SQLDatabase()
-        df = db.retreiveDF(
+        df = db.retrieve_df(
             query,
             [
                 "Phone_Pickup_Time",

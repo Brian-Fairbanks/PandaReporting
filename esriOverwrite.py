@@ -1,36 +1,19 @@
+import time
 from arcgis import GIS
 from dotenv import load_dotenv
-from os import getenv, remove
+from os import getenv, remove, path
 import datetime
-
+from ServerFiles import setup_logging, get_base_dir
 import logging
 
-# set up logging folder
-writePath = "../Logs"
+logName = f"Esri_Export-{(datetime.datetime.now()).strftime('%y-%m-%d_%H-%M')}.log"
+logger = setup_logging(logName)
 
-# logging setup - write to output file as well as printing visably
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger()
-logger.addHandler(
-    logging.FileHandler(
-        f"{writePath}/Esri_Export-{(datetime.datetime.now()).strftime('%y-%m-%d_%H-%M')}.log",
-        "a",
-    )
-)
-print = logger.info
-
-# LOG_FILENAME = (
-#     "../Logs/Esri_{(datetime.datetime.now()).strftime('%y-%m-%d_%H-%M')}.txt"
-# )
-# logging.basicConfig(filename=LOG_FILENAME, level=logging.DEBUG)
-
-# from pandasgui import show
+base_dir = get_base_dir()
 
 arc_gis_csv_id = "620a5cd3ccdd4b39908158b3cb87e3b5"
-# arc_gis_csv_id = "0549a85434524c20bdc195765480b5a7"
 
-temp_CSV_file = r".\\EMSFireRunData.csv"
-# temp_CSV_file = r".\\UnitRunData.csv"
+temp_CSV_file = path.join(base_dir, "EMSFireRunData.csv")
 
 esri_Export_Query = "SELECT * FROM [dbo].[v_esri_export-Query-Filtered] where [Phone_Pickup_Time] >= '01/01/2020'"
 
@@ -111,7 +94,7 @@ def getFormattedTable():
 
     try:
         db = SQLDatabase()
-        df = db.retreiveDF(
+        df = db.retrieve_df(
             esri_Export_Query,
             [
                 "Phone_Pickup_Time",
@@ -119,7 +102,7 @@ def getFormattedTable():
         )
 
         # BIT auto converted to BOOLEAN, but exists in ESRI as INTEGER
-        print("Converting boolean to INTS for ESRI")
+        logger.info("Converting boolean to INTS for ESRI")
         for col in [
             "IsESD17",
             "isETJ",
@@ -132,16 +115,13 @@ def getFormattedTable():
         ]:
             df[col] = df[col].astype(int)
         return df
-    except:
-        print(
-            "  - Process Failed!  - Error in Database Extraction - Please check the logs."
-        )
+    except Exception as e:
+        logger.info("  - Process Failed!  - Error in Database Extraction - Please check the logs.")
         logging.exception("Exception found in Database Extraction")
         exit(1)
 
-
 class EsriDatabase:
-    """a connection to a SQL Database, and associated functions for insertion of required data"""
+    """A connection to a SQL Database, and associated functions for insertion of required data"""
 
     def __init__(self):
         pass
@@ -154,24 +134,17 @@ class EsriDatabase:
         password = getenv("AGPASSWORD")
 
         self.gis = GIS(your_org_url, username, password)
-        # table_url = "https://services9.arcgis.com/dcfjRs7Bq0KG7jYq/arcgis/rest/services/Esri_Auto_Import_from_Python_Test/FeatureServer/0"        #Test Table URL
-        # table_url = "https://services9.arcgis.com/dcfjRs7Bq0KG7jYq/arcgis/rest/services/Fire_EMS_Run_Data/FeatureServer/0"
-        # table_url = "https://services9.arcgis.com/dcfjRs7Bq0KG7jYq/arcgis/rest/services/EMS_Fire_Run_Data/FeatureServer/0"
-        # self.tbl = FeatureLayer(table_url, gis=self.gis)  # works for tables
 
     def empty(self):
         self.tbl.manager.truncate()  # truncate table
 
     def appendDF(self, df):
-        # df = formatDFForEsri(df)
-        # show(df)
         adds = df.spatial.to_featureset()
         self.tbl.edit_features(adds=adds)
 
     def overwriteDF(self, df):
         self.empty()
         self.appendDF(df)
-
     # ===============================================================================================================
     #  this is the data provided by ESRI
     #  It will upload a CSV file drectly to ARCGIS online
@@ -179,23 +152,17 @@ class EsriDatabase:
     #  overwriting the previous one and retaining dashboards created from it.
     # ===============================================================================================================
     def publishCSV(self):
-        # Create CSV File from Database
-        # from timer import Timer
-
-        # csvTimer = Timer("Timing query request to CSV write")
-        # csvTimer.start()
-
         df = getFormattedTable()
-        print("Writing Temporary CSV file...")
-        df.to_csv(temp_CSV_file, index=False)
+        logger.info("Writing Temporary CSV file...")
 
-        # csvTimer.end()
+        with open(temp_CSV_file, 'w', newline='') as file:
+            df.to_csv(file, index=False)
+            file.close
 
-        # Send the file to ESRI
-        print("Sending to ESRI")
+        logger.info("Sending to ESRI")
 
         try:
-            print("  - Finding Existing file")
+            logger.info("  - Finding Existing file")
             csv_item = self.gis.content.get(arc_gis_csv_id)
 
             item_props = {
@@ -205,38 +172,31 @@ class EsriDatabase:
                 "typeKeywords": csv_item.typeKeywords,
                 "title": csv_item.title,
             }
-        except:
-            print("  - Process Failed!  - Could not get current item from ESRI")
+        except Exception as e:
+            logger.error("  - Process Failed!  - Could not get current item from ESRI")
             remove(temp_CSV_file)
             logging.exception("Exception from CSV File Upload")
             exit(1)
 
         try:
-            print("  - Pushing File to Esri")
+            logger.info("  - Pushing File to Esri")
             csv_item.update(
                 item_props,
                 data=temp_CSV_file,
             )
 
-            print("  - Complete!")
-        except:
-            print(
-                "  - Process Failed!  - Error uploading CSV file to ESRI.  Removing Temporary CSV file"
-            )
+            logger.info("  - Complete!")
+        except Exception as e:
+            logger.error("  - Process Failed!  - Error uploading CSV file to ESRI. Removing Temporary CSV file")
             remove(temp_CSV_file)
             logging.exception("Exception from CSV File Upload")
             exit(1)
 
-        print("Removing Temporary CSV file.")
-        # delete the file if it fails or finishes!
-        remove(temp_CSV_file)
-
-        print("publishing CSV to Feature Layer... ")
+        logger.info("Publishing CSV to Feature Layer...")
         try:
             analyze_csv = self.gis.content.analyze(item=csv_item)
             pp = analyze_csv["publishParameters"]
 
-            # Overwrite some of these parameters to force coordinate selections
             pp["type"] = csv_item.type
             pp["name"] = csv_item.title
             pp["locationType"] = "coordinates"
@@ -246,37 +206,37 @@ class EsriDatabase:
 
             csv_item.publish(publish_parameters=pp, overwrite=True)
         except Exception as e:
-            print(f"  - Process Failed!  - Error Publishing CSV on ESRI Portal")
-            print(e)
+            logger.error(f"  - Process Failed!  - Error Publishing CSV on ESRI Portal\n{e}")
             logging.exception("Exception in ESRI CSV Publishing")
+            remove_with_retry(temp_CSV_file)
             exit(1)
 
-        print("Feature Layer Succesfully Updated")
+        logger.info("Feature Layer Successfully Updated - releasing Connection to ARCGIS")
+        del csv_item
 
-    # end publishCSV
+        logger.info("Removing Temporary CSV file.")
+        remove_with_retry(temp_CSV_file)
 
 
-# End Class
-
-
-# ===============================================================================================================
-#  this is the data mostly put together myself
-#  It will create a Dataframe, pulled from our database
-#  then overwrite and push this data directly to a particular feature layer
-# ===============================================================================================================
-
+def remove_with_retry(file_path, retries=3, delay=1):
+    """Attempt to remove a file, with retries if it is being used by another process."""
+    try:
+        for _ in range(retries):
+            try:
+                remove(file_path)
+                return
+            except Exception as e:
+                logging.error(f"Attempt to remove file failed: {e}")
+                time.sleep(delay)
+        # Final attempt without catching exception to propagate if all retries failed
+        remove(file_path)
+    except Exception as e:
+        logging.error(f"Failed to remove CSV: {e}")
+        pass
 
 def appendFeatureLayer():
-    # csv_file = r"C:\\Users\\bfairbanks\\Desktop\\esriDF.csv"
-    # df = GeoAccessor.from_table(csv_file)
-
     df = getFormattedTable()
-    # show(df)
     esriDF.appendDF(df)
-
-
-# end of class
-
 
 def formatDFForEsri(df):
     emsOnlyCols = [
@@ -292,31 +252,15 @@ def formatDFForEsri(df):
     df = df[EsriTableArray]
     return df
 
-
-# read from CSV file
-# =============================================================
-# casos_csv = r"C:\\Users\\bfairbanks\\Desktop\\test.csv"
-# df = GeoAccessor.from_table(casos_csv)
-
-# using existing dataframe
-# ==============================================================
-# d = {
-#     "name": ["test3", "test4", "test5"],
-#     "type": ["int", "int", "bool"],
-#     "val": ["32", "64", "False"],
-#     "inc": ["94481", "34643", "39103"],
-# }
-# df = pd.DataFrame(data=d)
-# df = GeoAccessor.from_df(odf)
-
-# using analyzeFire
-# ==============================================================
-# adds = df.spatial.to_featureset()
-# tbl.edit_features(adds=adds)
-
 if __name__ == "__main__":
+    # Remove the file at the start if it exists
+    if path.exists(temp_CSV_file):
+        try:
+            remove(temp_CSV_file)
+            logger.info(f"Removed existing file {temp_CSV_file} at the start")
+        except Exception as e:
+            logger.error(f"Failed to remove existing file {temp_CSV_file} at the start: {e}")
+            exit(1)
     esriDF = EsriDatabase()
     esriDF.connect()
-
-    # esriDF.appendFeatureLayer()
     esriDF.publishCSV()

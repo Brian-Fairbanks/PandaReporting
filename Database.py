@@ -7,7 +7,8 @@ import numpy as np
 import json
 from sys import exit
 import re
-from ServerFiles import setup_logging
+from ServerFiles import setup_logging, get_base_dir
+from os import path
 import traceback
 
 # from pandasgui import show
@@ -26,7 +27,8 @@ class SQLDatabase:
     """a connection to a SQL Database, and associated functions for insertion of required data"""
 
     def which_database_to_use(self, dtbs):
-        config_file_location = ".\\data\\Lists\\TestDatabase.json"
+        base_dir = get_base_dir()
+        config_file_location = path.join(base_dir, "data", "Lists", "TestDatabase.json")
         # Test Database is a JSON object with 2 fields:
         #     "use_test_database": true,
         #     "test_database_name":"UnitRunDataTest"
@@ -38,7 +40,7 @@ class SQLDatabase:
                 print(f"Testing Database is Enabled ({config_file_location})")
                 return config["test_database_name"]
         except Exception as e:
-            logger.warning("Test Database Config not found at: {config_file_location}")
+            logger.warning(f"Test Database Config not found at: {config_file_location}")
 
         # Use specific database if one was passed
         if dtbs != "":
@@ -401,7 +403,7 @@ class SQLDatabase:
                 date_format="mm/dd/yyyy",
             )
             df.iloc[errorRows].to_excel(writer)
-            writer.save()
+            writer.close()
 
     # testing
     def insertTest(self, df):
@@ -416,12 +418,12 @@ class SQLDatabase:
         
         # Regex to catch "String or binary data would be truncated" errors
         truncate_match = re.search(
-            r"String or binary data would be truncated in table \\'([^']+)\\', column \\'([^']+)\\'",
+            r"String or binary data would be truncated in table '([^']+)', column '([^']+)'. Truncated value: '([^']+)'",
             err_str,
         )
         if truncate_match:
-            table, column = truncate_match.groups()
-            return f"{table}[{column}] would be truncated. Consider expanding to greater size."
+            table, column, value = truncate_match.groups()
+            return f"{table}[{column}] would be truncated. Consider expanding to greater size. Truncated value: {value}"
         
         # Regex to catch "Cannot insert the value NULL into column" errors
         null_match = re.search(
@@ -432,7 +434,58 @@ class SQLDatabase:
             column, table = null_match.groups()
             return f"{table}[{column}] Cannot be NULL. Unit/Incident Skipped."
         
+        # Regex to catch "The conversion of a varchar data type to a datetime data type resulted in an out-of-range value" errors
+        datetime_conversion_match = re.search(
+            r"The conversion of a varchar data type to a datetime data type resulted in an out-of-range value",
+            err_str,
+        )
+        if datetime_conversion_match:
+            return "Datetime conversion error. Ensure all datetime fields are properly formatted."
+
+         # Regex to catch "Conversion failed" errors
+        conversion_match = re.search(
+            r"Conversion failed when converting the varchar value '([^']+)' to data type ([^ ]+).",
+            err_str,
+        )
+        if conversion_match:
+            err_val, data_type = conversion_match.groups()
+
+            # Extract the part containing columns and values
+            values_section = re.search(r"VALUES \((.*?)\) AS s \(\[(.*?)\]\)", err_str, re.DOTALL)
+            if values_section:
+                values, columns = values_section.groups()
+                value_list = [v.strip().strip("'") for v in values.split(",")]
+                column_list = [c.strip() for c in columns.split(",")]
+
+                # Construct the dictionary
+                columns_values_dict = dict(zip(column_list, value_list))
+
+                # Format dictionary style
+                formatted_columns_values = ", ".join([f"{key}: {value}" for key, value in columns_values_dict.items() if value == err_val])
+                
+                return f"Failure while converting the varchar value '{err_val}' to data type {data_type} for column(s): {formatted_columns_values}."
+        
+        # Regex to catch "Arithmetic overflow error converting numeric to data type varchar" errors
+        overflow_match = re.search(
+            r"Arithmetic overflow error converting numeric to data type varchar. \((\d+)\) \(([^)]+)\)",
+            err_str,
+        )
+        if overflow_match:
+            error_number, error_state = overflow_match.groups()
+            return f"Arithmetic overflow error converting numeric to data type varchar. Error number: {error_number}, State: {error_state}.  Last time this happened, Alarm_level was a float.  3 digits was too long for varchar(2)"
+
+        # Regex to catch "Violation of PRIMARY KEY constraint" errors
+        pk_violation_match = re.search(
+            r"Violation of PRIMARY KEY constraint '([^']+)'. Cannot insert duplicate key in object '([^']+)'. The duplicate key value is \(([^)]+)\).",
+            err_str,
+        )
+        if pk_violation_match:
+            constraint, table, key_value = pk_violation_match.groups()
+            return f"Primary key constraint '{constraint}' violated in table '{table}'. Duplicate key value: {key_value}. Row cannot be inserted/updated."
+
+        # Generic error message for other cases
         return None
+
 
     def format_sql_values(self, row):
         formatted = []
@@ -441,14 +494,13 @@ class SQLDatabase:
                 formatted.append('1' if item else '0')
 
             # Check if the item is list or dict and handle as JSON
-            if isinstance(item, (list, dict)):
+            elif isinstance(item, (list, dict)):
                 # Serialize list or dictionary to JSON string
                 json_str = json.dumps(item).replace("'", "''")
                 formatted.append(f"'{json_str}'")
-                continue
 
             # Handle numpy arrays, if any, assuming they are not meant to be here
-            if isinstance(item, np.ndarray):
+            elif isinstance(item, np.ndarray):
                 if item.size == 1:
                     item = item[0]  # Convert single-element arrays to scalars
                 else:
@@ -458,7 +510,7 @@ class SQLDatabase:
                     continue
 
             # Normal null check and handling for scalar values
-            if pd.isnull(item):
+            elif pd.isnull(item):
                 formatted.append("NULL")
             elif isinstance(item, str):
                 # Escape single quotes and handle line breaks
@@ -468,10 +520,18 @@ class SQLDatabase:
                 formatted.append(f"'{escaped_item}'")
             elif isinstance(item, pd.Timestamp):
                 formatted.append(f"'{item.strftime('%Y-%m-%d %H:%M:%S')}'")
+            elif isinstance(item, (int, float)):
+                formatted.append(item)  # Directly append numeric values
+            elif isinstance(item, pd.Timedelta):
+                formatted.append(f"'{str(item)}'")
             else:
-                formatted.append(str(item))
+                formatted.append(f"'{str(item)}'")
 
-        return ", ".join(formatted)
+        # Log the formatted values for debugging
+        formatted_str = ", ".join(map(str, formatted))
+        logger.debug(f"Formatted SQL Values: {formatted_str}")
+        
+        return formatted_str
 
 
     # main reason for this... run all included functions
@@ -553,7 +613,7 @@ class SQLDatabase:
         session = Session()
 
         failed_rows = []
-        for index, row in tqdm(df.iterrows(), total=len(df), desc="Upserting rows"):
+        for index, row in tqdm(df.iterrows(), total=len(df), desc=f"Upserting to {table_name}"):
             values = self.format_sql_values(row.values)
             primary_key_condition = " AND ".join(
                 [f"target.[{pk}] = source.[{pk}]" for pk in primary_keys]
@@ -599,15 +659,48 @@ class SQLDatabase:
         """
         self.insert_dataframe(df, "Basic", ["IncidentId"])
 
-    def UpsertRaw(self, df, type):
-        if type == "ems":
-            # DONT manipulate the DF - keep the function pure!
+    def UpsertRaw(self, df, table_type):
+        if table_type not in ["ems", "fire", "non_esd_ems", "non_esd_fire"]:
+            logger.error(f"ERROR! - No raw table for: {table_type}")
+            return
+
+        table_map = {
+            "ems": "RawEMS",
+            "fire": "RawFire",
+            "non_esd_ems": "NonESDEMS",  # Example table name
+            "non_esd_fire": "RawNonESDFire"
+        }
+
+        try:
+            table_name = table_map.get(table_type)
+        except Exception as e:
+            logger.error(f"Table {table_name} does not exist.")
+            return
+
+        # DONT manipulate the DF - keep the function pure!
+        if table_type == "ems":
             temp = df
             temp["PandasIndex"] = temp.index
-            self.insert_dataframe(df, "RawEMS", ["Incident", "Unit", "Assigned"])
-        else:
-            self.insert_dataframe(df, "RawFire", ["Master_Incident_Number", "Radio_Name", "Unit Time Assigned"])
+            self.insert_dataframe(df, table_name, ["Incident", "Unit", "Assigned"])
+        elif table_type in ["non_esd_fire"]:
+            self.insert_dataframe(df, table_name, ["Master_Incident_Number", "Unit_Name", "Unit_Assigned_Datetime"])
+        elif table_type in ["fire"]:
+            prepreprocess = {
+            # Aug 28 2023, dispatch renamed a column.  Fixing that here.
+            "Alarm_Level": "Alarm Level",
+            }
+            df = df.rename(columns=prepreprocess, errors="ignore")
+            self.insert_dataframe(df, table_name, ["Master_Incident_Number", "Radio_Name", "Unit Time Assigned"])
 
+    def fire_data_corrections(self, df):
+        # force format:
+        try:
+            df['Alarm_Level'] = df['Alarm_Level'].astype('Int64')
+        except Exception as e:
+            import traceback
+            tb = traceback.format_exc()  # This captures the entire traceback as a string
+            logger.error(f"Failed: to insert into EMS Incidents: {tb}")
+        return df
     
     def new_insert_DF(self, df, data_source):
         if data_source == "ems":
@@ -622,6 +715,7 @@ class SQLDatabase:
                 logger.error(f"Failed: to insert into EMS Units: {tb}")
             
         else:
+            df = self.fire_data_corrections(df)
             try: self.new_insertToFireIncident(df)
             except Exception as e:
                 tb = traceback.format_exc()  # This captures the entire traceback as a string
@@ -920,7 +1014,7 @@ if __name__ == "__main__":
     # df = pd.DataFrame([["test from dataframe"], ["pandas will work"]], columns=["data"])
     exit()
     db = SQLDatabase()
-    # df = db.retreiveDF()
+    # df = db.retreive_df()
     # db.insertTest(df)
 
     # cursor = conn.cursor()

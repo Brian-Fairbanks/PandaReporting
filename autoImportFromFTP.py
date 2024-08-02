@@ -1,4 +1,5 @@
 import ServerFiles as sf
+logger = sf.setup_logging('AutoImport.log')
 import gui  # assuming gui.py is in the same directory and its functions are refactored to be used here
 
 
