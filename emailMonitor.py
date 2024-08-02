@@ -6,6 +6,7 @@ import email
 from email.policy import default
 import ServerFiles as sf
 from os import path
+import shutil  # Import shutil for file copy operations
 
 testing = False
 logger = sf.setup_logging("EmailMonitor.log")
@@ -57,6 +58,8 @@ def open_sftp_client(rule):
             logger.info("SFTP client created successfully")
         else:
             logger.error("Failed to create SFTP client")
+    else:
+        logger.info("No SFTP location found in emailMonitoring.json : sftp")
     return sftp_client
 
 
@@ -74,6 +77,17 @@ def transfer_file_via_sftp(sftp_client, local_path, remote_path):
         logger.info(f"Successfully transferred {local_path} to {remote_path}")
     except Exception as e:
         logger.error(f"Failed to transfer {local_path} to {remote_path}: {e}")
+
+def backup_file(local_path, backup_path):
+    if not path.exists(local_path):
+        logger.error(f"Local file does not exist: {local_path}")
+        return
+
+    try:
+        shutil.copy(local_path, backup_path)
+        logger.info(f"Successfully backed up {local_path} to {backup_path}")
+    except Exception as e:
+        logger.error(f"Failed to backup {local_path} to {backup_path}: {e}")
 
 def find_matching_emails(mail, rule, date_range=None, get_most_recent=False):
     criteria = f'FROM "{rule["sender"]}" SUBJECT "{rule["subject_keyword"]}"'
@@ -112,12 +126,19 @@ def process_single_email(mail, message_id, rule, sftp):
     _, data = mail.fetch(message_id, "(RFC822)")
     email_msg = email.message_from_bytes(data[0][1], policy=default)
     file_data = save_attachments(email_msg, rule)
-    if file_data and sftp:
+    if file_data:
         local_path = file_data["file_path"]
         remote_path = f".\\{file_data['file_name']}"
-        transfer_file_via_sftp(sftp, local_path, remote_path)
+        
+        # Transfer file via SFTP
+        if sftp:
+            transfer_file_via_sftp(sftp, local_path, remote_path)
+        
+        # Backup file if backup_location is specified in the rule
+        if "backup_location" in rule:
+            backup_file(local_path, path.join(rule["backup_location"], file_data['file_name']))
     else:
-        logger.error(f"No SFTP to save or no file data to transfer: {sftp}, {file_data}")
+        logger.error(f"No file data to transfer: {file_data}")
 
 def format_email_date(date_string):
     date_tuple = email.utils.parsedate_tz(date_string)
@@ -196,8 +217,9 @@ def main():
         try:
             print(f'\n--  {rule["subject_keyword"]}  --\n')
             sftp = open_sftp_client(rule)
+            logger.info(f"sftp: {sftp}")
             end_date = datetime.now()
-            start_date = end_date - timedelta(days=14)
+            start_date = end_date - timedelta(days=26)
             message_ids = find_matching_emails(mail, rule, date_range=(start_date, end_date))
 
             for message_id in message_ids:
