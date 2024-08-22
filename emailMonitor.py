@@ -53,13 +53,24 @@ def open_sftp_client(rule):
         return None
     sftp_client = None
     if "sftp_copy" in rule:
-        sftp_client = sf.create_sftp_client(rule["sftp_copy"])
-        if sftp_client:
-            logger.info("SFTP client created successfully")
+        sftp_config = rule["sftp_copy"]
+        logger.info(f"Attempting to create SFTP client with config: {sftp_config}")
+
+        # Check if all required SFTP details are provided
+        if all(k in sftp_config for k in ("hostname", "port", "username", "key_path")):
+            try:
+                sftp_client = sf.create_sftp_client(sftp_config)
+                if sftp_client:
+                    logger.info("SFTP client created successfully")
+                else:
+                    logger.error("SFTP client creation returned None")
+            except Exception as e:
+                logger.error(f"Exception occurred while creating SFTP client: {e}")
         else:
-            logger.error("Failed to create SFTP client")
+            logger.error("Missing SFTP configuration details. Check 'hostname', 'port', 'username', and 'key_path'.")
     else:
         logger.info("No SFTP location found in emailMonitoring.json : sftp")
+
     return sftp_client
 
 
@@ -219,7 +230,7 @@ def main():
             sftp = open_sftp_client(rule)
             logger.info(f"sftp: {sftp}")
             end_date = datetime.now()
-            start_date = end_date - timedelta(days=26)
+            start_date = end_date - timedelta(days=10)
             message_ids = find_matching_emails(mail, rule, date_range=(start_date, end_date))
 
             for message_id in message_ids:
