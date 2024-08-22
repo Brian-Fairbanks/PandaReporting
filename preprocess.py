@@ -608,6 +608,9 @@ def preprocess(df, start=None, end=None):
         errors="ignore",
     )
 
+    print("rounding times")
+    df = round_datetime_columns(df)
+    
     print(" -- Complete!")
     return df
 
