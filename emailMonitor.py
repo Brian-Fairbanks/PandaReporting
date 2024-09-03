@@ -51,23 +51,23 @@ def login_to_email():
 def open_sftp_client(rule):
     if testing:
         return None
-    sftp_client = None
-    if "sftp_copy" in rule:
-        sftp_config = rule["sftp_copy"]
-        logger.info(f"Attempting to create SFTP client with config: {sftp_config}")
 
-        # Check if all required SFTP details are provided
-        if all(k in sftp_config for k in ("hostname", "port", "username", "key_path")):
-            try:
-                sftp_client = sf.create_sftp_client(sftp_config)
-                if sftp_client:
-                    logger.info("SFTP client created successfully")
-                else:
-                    logger.error("SFTP client creation returned None")
-            except Exception as e:
-                logger.error(f"Exception occurred while creating SFTP client: {e}")
+    sftp_client = None
+
+    if "sftp_copy" in rule:
+        connection_name = rule["sftp_copy"]
+        logger.info(f"Attempting to create SFTP client with config: {connection_name}")
+
+        # Check if the connection name is correct
+        if not isinstance(connection_name, str):
+            logger.error(f"Invalid connection name type: {type(connection_name)}. Expected a string.")
+            return None
+
+        sftp_client = sf.create_sftp_client(connection_name)
+        if sftp_client:
+            logger.info("SFTP client created successfully")
         else:
-            logger.error("Missing SFTP configuration details. Check 'hostname', 'port', 'username', and 'key_path'.")
+            logger.error("Failed to create SFTP client")
     else:
         logger.info("No SFTP location found in emailMonitoring.json : sftp")
 
@@ -80,14 +80,14 @@ def transfer_file_via_sftp(sftp_client, local_path, remote_path):
         return
 
     if not path.exists(local_path):
-        logger.error(f"Local file does not exist: {local_path}")
+        logger.error(f"SFTP ERROR: Local file does not exist: {local_path}")
         return
 
     try:
         sftp_client.put(local_path, remote_path)
-        logger.info(f"Successfully transferred {local_path} to {remote_path}")
+        logger.info(f"SFTP Successfully transferred '{local_path}' to '[SFTP]{remote_path}'")
     except Exception as e:
-        logger.error(f"Failed to transfer {local_path} to {remote_path}: {e}")
+        logger.error(f"SFTP Failed to transfer '{local_path}' to '[SFTP]{remote_path}': {e}")
 
 def backup_file(local_path, backup_path):
     if not path.exists(local_path):
@@ -96,9 +96,9 @@ def backup_file(local_path, backup_path):
 
     try:
         shutil.copy(local_path, backup_path)
-        logger.info(f"Successfully backed up {local_path} to {backup_path}")
+        logger.info(f"Successful local back up '{local_path}' to '{backup_path}'")
     except Exception as e:
-        logger.error(f"Failed to backup {local_path} to {backup_path}: {e}")
+        logger.error(f"Failed to locally backup '{local_path}' to '{backup_path}': {e}")
 
 def find_matching_emails(mail, rule, date_range=None, get_most_recent=False):
     criteria = f'FROM "{rule["sender"]}" SUBJECT "{rule["subject_keyword"]}"'
@@ -192,7 +192,7 @@ def save_attachments(email_msg, rule):
             if not is_file_logged(log_file, new_filename, sender, email_msg["Date"]):
                 with open(filepath, "wb") as f:
                     f.write(part.get_payload(decode=True))
-                logger.info(f"Saved file to {filepath}")
+                logger.info(f"Extracted from Email to '{filepath}'")
                 log_downloaded_file(log_file, new_filename, sender, email_msg["Date"])
                 return {"file_path": filepath, "file_name": new_filename}
             else:
