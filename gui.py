@@ -126,7 +126,8 @@ def readRaw(filePath):
 
     df = df.replace("-", np.nan)
 
-    renames = {"ESD02_Record_Daily": "ESD02_Record"}
+    renames = {"ESD02_Record_Daily": "ESD02_Record",
+               "ESD02_Record_New_Daily": "ESD02_Record"}
     df = df.rename(columns=renames, errors="ignore")
 
     return df, fileType
