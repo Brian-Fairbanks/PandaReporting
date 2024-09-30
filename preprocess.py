@@ -32,7 +32,8 @@ def split_esd_records(df):
         df_non_esd = pd.DataFrame()
 
     # Correct the naming slip-up in sql creation
-    df_non_esd.rename(columns={esd02_record_column: "ESD02_Record"}, inplace=True)
+    if esd02_record_column != "ESD02_Record":
+        df_non_esd.rename(columns={esd02_record_column: "ESD02_Record"}, inplace=True)
 
     return df_esd, df_non_esd
 
