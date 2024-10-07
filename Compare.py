@@ -7,7 +7,7 @@ from Database import SQLDatabase
 import Email_Report as er
 from datetime import timedelta, datetime
 import gui
-from pandasgui import show
+# from pandasgui import show
 import preprocess as pp
 import os
 import traceback
