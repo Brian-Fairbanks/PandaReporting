@@ -11,27 +11,9 @@ from os import getenv
 
 from analyzefire import export_to_xlsx
 
-import logging
-
-# append log to end of runlog if possible, otherwise start a new file
-try:
-    logger = logging.getLogger(__name__)
-except:
-    # set up logging folder
-    writePath = "../Logs"
-
-    # logging setup - write to output file as well as printing visably
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
-    logger = logging.getLogger()
-    logger.addHandler(
-        logging.FileHandler(
-            f"{writePath}/BC_Turnout_Report{(datetime.datetime.now()).strftime('%y-%m-%d_%H-%M')}.log",
-            "a",
-        )
-    )
-
-print = logger.info
-
+import ServerFiles as sf
+logger = sf.setup_logging("EmailReports.log")
+import Email_Report as er
 # ====  Default Email Configuration  ====
 load_dotenv(find_dotenv())
 email = getenv("SNDRMAIL")
@@ -44,41 +26,31 @@ email_config = {
     "smtp_port": 587,
 }
 
-
 # =================================================================
-#      Data Aquisition
+#      Data Acquisition
 # =================================================================
-
 
 def getFormattedTable(query, times):
     from Database import SQLDatabase
 
     try:
         db = SQLDatabase()
-        df = db.retrieve_df(
-            query,
-            times,
-        )
+        df = db.retrieve_df(query, times)
         return df
-
-    except:
-        print(
-            "  - Process Failed!  - Error in Database Extraction - Please check the logs."
-        )
-        logging.exception("Exception found in Database Extraction")
+    except Exception as e:
+        print("  - Process Failed! Error in Database Extraction.")
+        logging.exception("Exception in Database Extraction")
         exit(1)
-
 
 # =================================================================
 #      Emailing
 # =================================================================
 
-
 def send_email_with_attachment(file_path, email_config):
     msg = MIMEMultipart()
     msg["From"] = email_config["sender_email"]
     msg["To"] = email_config["recipient_emails"]
-    msg["CC"] = email_config["cc_emails"]
+    msg["CC"] = email_config.get("cc_emails", "")
     msg["Subject"] = email_config["subject"]
 
     # Add the email body
@@ -89,21 +61,18 @@ def send_email_with_attachment(file_path, email_config):
     # Attach the report file
     with open(file_path, "rb") as file:
         part = MIMEApplication(file.read(), Name=os.path.basename(file_path))
-        part[
-            "Content-Disposition"
-        ] = f'attachment; filename="{os.path.basename(file_path)}"'
+        part["Content-Disposition"] = f'attachment; filename="{os.path.basename(file_path)}"'
         msg.attach(part)
 
     # Connect to the SMTP server and send the email
     try:
-        smtp_server = smtplib.SMTP(
-            email_config["smtp_server"], email_config["smtp_port"]
-        )
+        smtp_server = smtplib.SMTP(email_config["smtp_server"], email_config["smtp_port"])
         smtp_server.starttls()
         smtp_server.login(email_config["sender_email"], email_config["sender_password"])
         smtp_server.sendmail(
             email_config["sender_email"],
-            email_config["recipient_emails"].split(","),
+            email_config["recipient_emails"].split(",") +
+            email_config.get("cc_emails", "").split(","),
             msg.as_string(),
         )
         smtp_server.quit()
@@ -111,24 +80,23 @@ def send_email_with_attachment(file_path, email_config):
     except Exception as e:
         print("Error sending email:", e)
 
-
-
 def send_email_with_dataframes(dataframes, email_config):
     msg = MIMEMultipart()
     msg["From"] = email_config["sender_email"]
     msg["To"] = email_config["recipient_emails"]
-    msg["CC"] = email_config["cc_emails"]
+    msg["CC"] = email_config.get("cc_emails", "")
     msg["Subject"] = email_config["subject"]
 
     # Add the email body
-    body_text = email_config.get("Email_Body", "The comparison was successful. Please find the dataframes attached.")
+    body_text = email_config.get("Email_Body", "Please find the data attached.")
     body = MIMEText(body_text, "plain")
     msg.attach(body)
 
-    # Attach each dataframe in the dictionary
+    # Attach each dataframe as a CSV
     for name, df in dataframes.items():
         attachment = MIMEText(df.to_csv(index=False), 'csv')
-        attachment.add_header('Content-Disposition', 'attachment', filename=f'{name}.csv')
+        attachment.add_header('Content-Disposition', 'attachment',
+                              filename=f'{name}.csv')
         msg.attach(attachment)
 
     # Connect to the SMTP server and send the email
@@ -138,7 +106,8 @@ def send_email_with_dataframes(dataframes, email_config):
         smtp_server.login(email_config["sender_email"], email_config["sender_password"])
         smtp_server.sendmail(
             email_config["sender_email"],
-            email_config["recipient_emails"].split(","),
+            email_config["recipient_emails"].split(",") +
+            email_config.get("cc_emails", "").split(","),
             msg.as_string(),
         )
         smtp_server.quit()
@@ -146,36 +115,9 @@ def send_email_with_dataframes(dataframes, email_config):
     except Exception as e:
         print("Error sending email:", e)
 
-
 # =================================================================
 #      Reports
 # =================================================================
-
-
-# def send_BC_Report():
-#     # ====  Set up email configurations  ====
-#     current_date = datetime.datetime.now().strftime("%m/%d/%y")
-#     config = copy.deepcopy(email_config)
-#     config.update(
-#         {
-#             "recipient_emails": "bfairbanks@pflugervillefire.org",
-#             "cc_emails": "mnyland@pflugervillefire.org,vgonzales@pflugervillefire.org",
-#             "subject": f"Weekly Turnout Data {current_date}",
-#         }
-#     )
-
-#     # ====  Grab report from SQL  ====
-#     bc_turnout_query = "SELECT * FROM [UNIT_RUN_DATA].[dbo].[v_BC_Turnout]"
-#     times = [
-#         "Phone_Pickup_Time",
-#     ]
-
-#     turnout_report = getFormattedTable(bc_turnout_query, times)
-#     report_file = export_to_xlsx("BC_Turnout", turnout_report)
-
-#     # ====  Trigger email  ====
-#     send_email_with_attachment(report_file, config)
-
 
 def read_rpt_file(filename):
     details = {}
@@ -188,12 +130,12 @@ def read_rpt_file(filename):
             if ": " in line:
                 # Save the previous key-value pair if it exists
                 if key is not None:
-                    details[key] = value
+                    details[key] = value.strip()
                     value = ""
                 key, value = line.split(": ", 1)
             elif line.endswith(":"):  # Key with no value scenario
                 if key is not None:  # Save the previous key-value pair
-                    details[key] = value
+                    details[key] = value.strip()
                 key = line[:-1]
                 value = ""
             elif key:  # Multi-line value scenario
@@ -201,9 +143,18 @@ def read_rpt_file(filename):
             else:
                 print(f"Unexpected line format: {line}")
         if key is not None:  # For the last key-value pair in the file
-            details[key] = value
+            details[key] = value.strip()
     return details
 
+def should_run_today(days_to_run_str):
+    if not days_to_run_str:
+        return True  # If no days specified, run every day
+    # Parse the days_to_run string into a list
+    days_to_run = [day.strip().lower() for day in days_to_run_str.split(",")]
+    # Get the current day abbreviation (Mon, Tue, Wed, etc.)
+    current_day_abbr = datetime.datetime.now().strftime("%a").lower()
+    # Return True if the current day is in the days_to_run list
+    return current_day_abbr in days_to_run
 
 def send_report_from_file(filename):
     # Read the details from the .rpt file
@@ -214,22 +165,27 @@ def send_report_from_file(filename):
     config = copy.deepcopy(email_config)
     config.update(
         {
-            "recipient_emails": details["recipient_emails"],
-            "cc_emails": details["cc_emails"],
-            "subject": f"{details['subject']} {current_date}",
-            "Email_Body": details["Email_Body"],
+            "recipient_emails": details.get("recipient_emails", ""),
+            "cc_emails": details.get("cc_emails", ""),
+            "subject": f"{details.get('subject', '')} {current_date}",
+            "Email_Body": details.get("Email_Body", ""),
         }
     )
 
+    # Check if the report should run today
+    if not should_run_today(details.get("days_to_run", "")):
+        print(f"Skipping report: {filename}. Today is not a scheduled run day.")
+        return  # Skip this report
+
     # Grab report from SQL
-    turnout_report = getFormattedTable(
-        details["query"], details["date_time_columns"].split(",")
-    )
-    report_file = export_to_xlsx("Report", turnout_report)
+    date_time_columns = details.get("date_time_columns", "").split(",")
+    date_time_columns = [col.strip() for col in date_time_columns if col.strip()]
+    turnout_report = getFormattedTable(details.get("query", ""), date_time_columns)
+    report_name = os.path.splitext(os.path.basename(filename))[0]
+    report_file = export_to_xlsx(report_name, turnout_report)
 
     # Trigger email
     send_email_with_attachment(report_file, config)
-
 
 def get_and_run_reports():
     print("\n\n==================  Emailing Reports  ==================")
@@ -255,12 +211,8 @@ def get_and_run_reports():
         print(f" - Running {rpt_file} -")
         send_report_from_file(file_path)
 
-
 def main():
-    # send_BC_Report()
-    # send_report_from_file("./reports/BC_Turnout.rpt")
     get_and_run_reports()
-
 
 if __name__ == "__main__":
     main()

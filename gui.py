@@ -13,7 +13,7 @@ import numpy as np
 from Database import SQLDatabase
 
 db = SQLDatabase()
-from report_mailer import get_and_run_reports
+from Email_Report import get_and_run_reports
 
 
 fileArray = {}
