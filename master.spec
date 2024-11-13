@@ -43,16 +43,27 @@ executables_info = {
         "hidden_imports": [
             "requests_ntlm",
             "arcgis",
+            "arcgis.gis",
+            "arcgis.gis._impl._portalpy",
+            "arcgis.auth.tools._lazy",
             "pyodbc",
             "sqlalchemy",
             "dotenv",
             "tqdm",
+            "charset_normalizer",
+            "pandas",
+            "osgeo"
         ],
     },
     "emailMonitor": {
         "script": "emailMonitor.py",
         "additional_data": added_files,
-        "hidden_imports": ["dotenv","paramiko"],
+        "hidden_imports": ["dotenv", "paramiko"],
+    },
+    "compare": {
+        "script": "compare.py",
+        "additional_data": added_files,
+        "hidden_imports": hidden_imports,
     },
 }
 
@@ -69,8 +80,6 @@ for name, info in executables_info.items():
             ("./data/Lists", "data/Lists"),
             ("./Shape", "Shape"),
             ("./reports", "reports"),
-            ("./osmnx", "osmnx"),
-            ("./arcgis", "arcgis"),
         ],
         hiddenimports=info["hidden_imports"],
         cipher=block_cipher,

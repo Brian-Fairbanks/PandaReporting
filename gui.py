@@ -13,7 +13,7 @@ import numpy as np
 from Database import SQLDatabase
 
 db = SQLDatabase()
-from report_mailer import get_and_run_reports
+from Email_Report import get_and_run_reports
 
 
 fileArray = {}
@@ -126,7 +126,9 @@ def readRaw(filePath):
 
     df = df.replace("-", np.nan)
 
-    renames = {"ESD02_Record_Daily": "ESD02_Record"}
+    renames = {"ESD02_Record_Daily": "ESD02_Record",
+               "ESD02_Record_New_Daily": "ESD02_Record",
+               "ESD02_Record_New": "ESD02_Record"}
     df = df.rename(columns=renames, errors="ignore")
 
     return df, fileType

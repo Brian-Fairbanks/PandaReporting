@@ -44,6 +44,10 @@ def main():
     # # Update Dependency Tables
     gui.update_dependency_tables()
 
+    # send email
+    import Email_Report as er
+    er.get_and_run_reports()
+
 
 if __name__ == "__main__":
     main()

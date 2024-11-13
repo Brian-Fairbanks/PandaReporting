@@ -31,7 +31,7 @@ def create_sftp_client(connection_name):
         sftp = client.open_sftp()
         return sftp
     except Exception as e:
-        print(f"Failed to create SFTP client: {e}")
+        logging.error(f"Failed to create SFTP client in create_sftp_client(): {e}", exc_info=True)
         return None
 
 
@@ -44,12 +44,19 @@ def get_sftp_settings(connection_name):
         sftp_username = os.getenv(f"SFTP_{connection_name}_USERNAME")
         sftp_key = os.getenv(f"SFTP_{connection_name}_KEY_PATH")
 
-    return {
-        "hostname": sftp_host,
-        "port": sftp_port,
-        "username": sftp_username,
-        "key_path": sftp_key,
-    }
+        if not sftp_host or not sftp_username or not sftp_key:
+            logging.error(f"Missing SFTP configuration for connection: {connection_name}")
+            logging.error(f"Hostname: {sftp_host}, Username: {sftp_username}, Key Path: {sftp_key}")
+        
+        return {
+            "hostname": sftp_host,
+            "port": sftp_port,
+            "username": sftp_username,
+            "key_path": sftp_key,
+        }
+    else:
+        logging.error("Connection name is missing.")
+        return {}
 
 
 def setup_logging(filename="default.log", base="..\\logs\\", debug=False):
