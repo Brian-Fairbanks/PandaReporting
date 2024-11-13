@@ -32,17 +32,37 @@
       "move_on_success":"c:\\temp\\Fire Data\\weekly\\archive",
       "move_on_failure":"c:\\temp\\Fire Data\\weekly\\failed",
       "backup_location":"c:\\temp\\archive"
-    }
-    ,    {
-      "processing":"WeeklyComparison",
+    },
+    {
+      "processing": "WeeklyComparison",
       "sender": "ems.cognos@austintexas.gov",
       "subject_keyword": "ESD02 Dataset",
-      "excludes":["daily"],
+      "excludes": ["daily", "monthly"],
       "attachment_type": ".xlsx",
       "folder_path": "c:\\temp\\EMS Data\\weekly",
-      "move_on_success":"c:\\temp\\EMS Data\\weekly\\archive",
-      "move_on_failure":"c:\\temp\\EMS Data\\weekly\\failed",
-      "backup_location":"c:\\temp\\archive"
+      "move_on_success": "c:\\temp\\EMS Data\\weekly\\archive",
+      "move_on_failure": "c:\\temp\\EMS Data\\weekly\\failed",
+      "backup_location": "c:\\temp\\archive"
+    },
+    {
+      "processing": "WeeklyComparison",
+      "sender": "fireresearch@austintexas.gov",
+      "subject_keyword": "ESD02 Monthly Stats",
+      "attachment_type": ".xlsx",
+      "folder_path": "c:\\temp\\Fire Data\\monthly",
+      "move_on_success": "c:\\temp\\Fire Data\\monthly\\archive",
+      "move_on_failure": "c:\\temp\\Fire Data\\monthly\\failed",
+      "backup_location": "c:\\temp\\archive"
+    },
+    {
+      "processing": "WeeklyComparison",
+      "sender": "ems.cognos@austintexas.gov",
+      "subject_keyword": "ESD02 Dataset - Monthly",
+      "attachment_type": ".xlsx",
+      "folder_path": "c:\\temp\\EMS Data\\monthly",
+      "move_on_success": "c:\\temp\\EMS Data\\monthly\\archive",
+      "move_on_failure": "c:\\temp\\EMS Data\\monthly\\failed",
+      "backup_location": "c:\\temp\\archive"
     }
   ]
 }
