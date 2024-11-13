@@ -77,8 +77,11 @@ def compare_file(from_file_df, from_db_df, data_source):
     renames = {"Alarm_Level": "Alarm Level"}
     from_file_df.rename(columns=renames, errors="ignore", inplace=True)
 
+    # Apply rounding to datetime columns in both dataframes
+    pp.round_datetime_columns(from_db_df)
+    pp.round_datetime_columns(from_file_df)
+
     if data_source == "ems":
-        pp.round_datetime_columns(from_db_df)
         pp.scrub_raw_ems(from_file_df)
         from_file_df["Zip"] = from_file_df["Zip"].astype(str).replace("<NA>", None, regex=False)
         from_file_df["Destination_Zip"] = from_file_df["Destination_Zip"].astype(str).replace("<NA>", None, regex=False)
