@@ -7,7 +7,9 @@
       "attachment_type": ".xlsx",
       "folder_path": "c:\\temp\\Fire Data",
       "move_on_success":"c:\\temp\\Fire Data\\archive",
-      "move_on_failure":"c:\\temp\\Fire Data\\failed"
+      "move_on_failure":"c:\\temp\\Fire Data\\failed",
+      "sftp_copy": "FIRE",
+      "sftp_remote_path": ".\\"
     },
     {
       "processing":"autoImportFromFTP",
@@ -16,7 +18,9 @@
       "attachment_type": ".xlsx",
       "folder_path": "c:\\temp\\EMS Data",
       "move_on_success":"c:\\temp\\EMS Data\\archive",
-      "move_on_failure":"c:\\temp\\EMS Data\\failed"
+      "move_on_failure":"c:\\temp\\EMS Data\\failed",
+      "sftp_copy": "EMS",
+      "sftp_remote_path": ".\\"
     },
     {
       "processing":"WeeklyComparison",
@@ -26,7 +30,8 @@
       "attachment_type": ".xlsx",
       "folder_path": "c:\\temp\\Fire Data\\weekly",
       "move_on_success":"c:\\temp\\Fire Data\\weekly\\archive",
-      "move_on_failure":"c:\\temp\\Fire Data\\weekly\\failed"
+      "move_on_failure":"c:\\temp\\Fire Data\\weekly\\failed",
+      "backup_location":"c:\\temp\\archive"
     }
     ,    {
       "processing":"WeeklyComparison",
@@ -36,7 +41,8 @@
       "attachment_type": ".xlsx",
       "folder_path": "c:\\temp\\EMS Data\\weekly",
       "move_on_success":"c:\\temp\\EMS Data\\weekly\\archive",
-      "move_on_failure":"c:\\temp\\EMS Data\\weekly\\failed"
+      "move_on_failure":"c:\\temp\\EMS Data\\weekly\\failed",
+      "backup_location":"c:\\temp\\archive"
     }
   ]
 }
