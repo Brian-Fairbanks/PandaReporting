@@ -37,6 +37,12 @@ def split_esd_records(df):
 
     return df_esd, df_non_esd
 
+def floor_datetime_columns(df):
+    for column in df.columns:
+        if pd.api.types.is_datetime64_any_dtype(df[column]):
+            df[column] = df[column].dt.floor('S')
+    return df
+
 def round_datetime_columns(df):
     for column in df.columns:
         if pd.api.types.is_datetime64_any_dtype(df[column]):

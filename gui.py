@@ -128,6 +128,7 @@ def readRaw(filePath):
 
     renames = {"ESD02_Record_Daily": "ESD02_Record",
                "ESD02_Record_New_Daily": "ESD02_Record",
+               "ESD02_Record_New_Monthly": "ESD02_Record",
                "ESD02_Record_New": "ESD02_Record"}
     df = df.rename(columns=renames, errors="ignore")
 

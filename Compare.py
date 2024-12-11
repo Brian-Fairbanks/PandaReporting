@@ -13,6 +13,8 @@ import os
 import traceback
 import copy
 
+testing_compare_only = False
+
 def get_time_frame(df, data_source):
     """
     take the passed timeframe, and get the earliest/last incident PhonePickupTimes from them
@@ -59,10 +61,8 @@ def compare_file(from_file_df, from_db_df, data_source):
     Compare our data from the raw weekly file against the data that already exists in the database.
     Create 2 separate lists for data to update, and data that needs to be inserted
     the primary clusters should be:
-        data_source "ems":[Incident]+[unit]+[assigned], where unit and assigned can be null
-            {incident: 112233, unit: Eng201, assigned: null} != {incident: 112233, unit: Safe201, assigned: null}
-            {incident: 112233, unit: Eng201, assigned: 2024/02/01 12:30:20.01} != {incident: 112233, unit: S01, assigned: 2024/02/01 12:39:53.84}
-        data_source "fire": [Incident_Number]+[Unit]+[Unit_Assigned]
+        data_source "ems": [Incident]+[Unit]+[Assigned], where unit and assigned can be null
+        data_source "fire": [Master_Incident_Number]+[Radio_Name]+[Unit Time Assigned]
     """
     if data_source == "ems":
         compare_keys = ["Incident", "Unit", "Assigned"]
@@ -78,28 +78,34 @@ def compare_file(from_file_df, from_db_df, data_source):
     from_file_df.rename(columns=renames, errors="ignore", inplace=True)
 
     # Apply rounding to datetime columns in both dataframes
-    pp.round_datetime_columns(from_db_df)
-    pp.round_datetime_columns(from_file_df)
-
     if data_source == "ems":
         pp.scrub_raw_ems(from_file_df)
+        pp.round_datetime_columns(from_db_df)
         from_file_df["Zip"] = from_file_df["Zip"].astype(str).replace("<NA>", None, regex=False)
         from_file_df["Destination_Zip"] = from_file_df["Destination_Zip"].astype(str).replace("<NA>", None, regex=False)
+    else:
+        pp.floor_datetime_columns(from_file_df)
+        pp.floor_datetime_columns(from_db_df)
 
     compare_df = from_file_df.copy()
 
     compare_df.fillna("null", inplace=True)
     from_db_df.fillna("null", inplace=True)
 
-
     compare_df[compare_keys] = compare_df[compare_keys].astype(str)
     from_db_df[compare_keys] = from_db_df[compare_keys].astype(str)
 
     non_key_columns = [
         col for col in compare_df.columns
-        if col not in compare_keys
-        and col not in ["index", "Master Incident Without First Two Digits"]
+        if col not in compare_keys and col not in ["index", "Master Incident Without First Two Digits"]
     ]
+
+    # Identify invalid records missing any of the primary cluster columns
+    invalid_condition = compare_df[compare_keys].eq("null").any(axis=1)
+    invalid_df = compare_df[invalid_condition].copy()
+
+    # Filter out invalid records from compare_df
+    compare_df = compare_df[~invalid_condition]
 
     db_records = {
         tuple(row[k] for k in compare_keys): row for _, row in from_db_df.iterrows()
@@ -131,7 +137,8 @@ def compare_file(from_file_df, from_db_df, data_source):
     insert_columns = compare_keys + [closed_time_column]
     insert_df = from_file_df.loc[insert, insert_columns].copy()
 
-    return {"update": update_df, "insert": insert_df}
+    return {"update": update_df, "insert": insert_df, "invalid": invalid_df}
+
 
 def process_comparison(file_path):
     df, data_source = gui.readRaw(file_path)
@@ -143,6 +150,10 @@ def process_comparison(file_path):
     dfs = compare_file(df, database_df, data_source)
     # for dftype, df_to_apply in dfs.items():
     #     apply_compared_corrections_to_database(df_to_apply, dftype, data_source)
+
+    if testing_compare_only:
+        email_compare_results(dfs, time_frame, data_source, success=True)
+        exit(1)
 
     # Insert the entire weekly file
     try:
