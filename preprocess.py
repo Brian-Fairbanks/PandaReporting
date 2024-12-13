@@ -49,6 +49,53 @@ def round_datetime_columns(df):
             df[column] = df[column].dt.round('S')
     return df
 
+def auto_clip_datetime(df):
+    """
+    Detect and convert columns with potential datetime values based on their headers,
+    standardize the format, and exclude columns with 'in_seconds' in their names.
+
+    Args:
+        df (DataFrame): Input DataFrame.
+
+    Returns:
+        DataFrame: DataFrame with relevant datetime columns converted.
+    """
+    # Keywords to identify potential datetime columns
+    datetime_keywords = [
+        "date", "time", "queue", "assigned", "enroute",
+        "staged", "arrived", "at_patient", "delay_avail", "complete"
+    ]
+
+    for column in df.columns:
+        # Skip columns with "in_seconds"
+        if "in_seconds" in column.lower():
+            print(f"Skipping column (contains 'in_seconds'): {column}")
+            continue
+        
+        # Check if any keyword is in the column name (case insensitive)
+        if any(keyword in column.lower() for keyword in datetime_keywords):
+            try:
+                print(f"Processing column: {column}")
+
+                def standardize_datetime(value):
+                    if isinstance(value, str):
+                        # Remove fractional seconds if present
+                        if "." in value:
+                            value = value.split(".")[0]
+                        return value.strip()
+                    return value
+                
+                # Apply standardization
+                df[column] = df[column].apply(standardize_datetime)
+
+                # Convert to datetime
+                df[column] = pd.to_datetime(df[column], errors="coerce")
+            
+            except Exception as e:
+                print(f"Error processing column {column}: {e}")
+    
+    return df
+
 def scrub_raw_ems(df):
     # df["Zip"] = df["Zip"].astype(str).str.replace(".0", "", regex=False).replace("nan", None, regex=False)
     # df["Destination_Zip"] = df["Destination_Zip"].astype(str).str.replace(".0", "", regex=False).replace("nan", None, regex=False)

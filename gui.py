@@ -202,7 +202,7 @@ def read_file(file_path):
         DataFrame: The loaded data.
     """
     if file_path.endswith('.csv'):
-        return pd.read_csv(file_path)
+        return pp.auto_clip_datetime(pd.read_csv(file_path))
     elif file_path.endswith('.xlsx'):
         return pd.read_excel(file_path)
     else:
