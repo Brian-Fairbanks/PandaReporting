@@ -102,13 +102,14 @@ def update_dependency_tables():
 
 
 def readRaw(filePath):
-    excel_filename = r"{}".format(filePath)
-    # read the file
-    df = pd.read_excel(excel_filename)
+    """
+    Reads the file and processes it based on its type.
+    """
+    df = read_file(filePath)  # Use the new function
 
     if "Ph_PU_Time" in df.columns or "Ph PU Time" in df.columns:
-        fileType = "ems" 
-        pp.scrub_raw_ems(df) 
+        fileType = "ems"
+        pp.scrub_raw_ems(df)
     else:
         fileType = "fire"
 
@@ -125,13 +126,13 @@ def readRaw(filePath):
             exit()
 
     df = df.replace("-", np.nan)
-
-    renames = {"ESD02_Record_Daily": "ESD02_Record",
-               "ESD02_Record_New_Daily": "ESD02_Record",
-               "ESD02_Record_New_Monthly": "ESD02_Record",
-               "ESD02_Record_New": "ESD02_Record"}
+    renames = {
+        "ESD02_Record_Daily": "ESD02_Record",
+        "ESD02_Record_New_Daily": "ESD02_Record",
+        "ESD02_Record_New_Monthly": "ESD02_Record",
+        "ESD02_Record_New": "ESD02_Record",
+    }
     df = df.rename(columns=renames, errors="ignore")
-
     return df, fileType
 
 
@@ -141,14 +142,17 @@ def insertRaw():
             df, filetype = readRaw(file)
             # TEMP: FIX THIS IN SCHEMAS - remove latitude and longitude for fire
             if filetype == "fire":
-                df = df.drop(["Longitude_At_Assign_Time","Latitude_At_Assign_Time"], axis=1, errors="ignore")
+                df = df.drop([
+                    "Longitude_At_Assign_Time",
+                    "Latitude_At_Assign_Time",
+                ], axis=1, errors="ignore")
             dumpRawData(df, filetype)
 
         except ValueError:
             messagebox.showerror("Invalid File", "The loaded file is invalid")
             return None
         except FileNotFoundError:
-            messagebox.showerror("Invalid File", "No such file as {excel_filename}")
+            messagebox.showerror("Invalid File", f"No such file as {file}")
             return None
 
 
@@ -158,7 +162,7 @@ def remove_completed_files():
 
 
 def addFiles(files=None):
-    if files == None:
+    if files is None:
         files = askopenfilenames(parent=ws, title="Choose Files")
     # ensure unique items in list
     for file in files:
@@ -169,15 +173,12 @@ def addFiles(files=None):
         # then check if file is valid, read it, and hold onto its DF
         if not file in fileArray.keys():
             try:
-                excel_filename = r"{}".format(file)
-                # read the file
-                fileArray[file] = pp.preprocess(pd.read_excel(excel_filename))
-
+                fileArray[file] = pp.preprocess(read_file(file))  # Updated to use read_file
             except ValueError:
                 messagebox.showerror("Invalid File", "The loaded file is invalid")
                 return None
             except FileNotFoundError:
-                messagebox.showerror("Invalid File", "No such file as {excel_filename}")
+                messagebox.showerror("Invalid File", f"No such file as {file}")
                 return None
 
     # Silent run Gatekeeping
@@ -190,6 +191,23 @@ def addFiles(files=None):
         fileList.insert("end", file)
 
 
+def read_file(file_path):
+    """
+    Reads a file and returns a pandas DataFrame.
+
+    Args:
+        file_path (str): The full path to the file.
+
+    Returns:
+        DataFrame: The loaded data.
+    """
+    if file_path.endswith('.csv'):
+        return pd.read_csv(file_path)
+    elif file_path.endswith('.xlsx'):
+        return pd.read_excel(file_path)
+    else:
+        raise ValueError(f"Unsupported file type: {file_path}")
+    
 def dumpRawData(df, type):
     print("Dumping Raw Data to Database")
     db.UpsertRaw(df, type)
