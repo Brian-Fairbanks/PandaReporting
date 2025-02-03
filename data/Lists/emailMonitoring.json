@@ -23,6 +23,17 @@
       "sftp_remote_path": ".\\"
     },
     {
+      "processing":"autoImportFromFTP",
+      "sender": "EMSDataAnalysis@austintexas.gov",
+      "subject_keyword": "Report: Incidents - ESD02 Dataset - Daily",
+      "attachment_type": ".csv",
+      "folder_path": "c:\\temp\\EMS Data",
+      "move_on_success":"c:\\temp\\EMS Data\\archive",
+      "move_on_failure":"c:\\temp\\EMS Data\\failed",
+      "sftp_copy": "EMS",
+      "sftp_remote_path": ".\\"
+    },
+    {
       "processing":"WeeklyComparison",
       "sender": "fireresearch@austintexas.gov",
       "subject_keyword": "ESD02 Weekly Data",
@@ -44,6 +55,17 @@
       "move_on_failure": "c:\\temp\\EMS Data\\weekly\\failed",
       "backup_location": "c:\\temp\\archive"
     },
+	{
+      "processing": "WeeklyComparison",
+      "sender": "EMSDataAnalysis@austintexas.gov",
+      "subject_keyword": "ESD02 Dataset",
+      "excludes": ["daily", "monthly"],
+      "attachment_type": ".csv",
+      "folder_path": "c:\\temp\\EMS Data\\weekly",
+      "move_on_success": "c:\\temp\\EMS Data\\weekly\\archive",
+      "move_on_failure": "c:\\temp\\EMS Data\\weekly\\failed",
+      "backup_location": "c:\\temp\\archive"
+    },
     {
       "processing": "WeeklyComparison",
       "sender": "fireresearch@austintexas.gov",
@@ -59,6 +81,16 @@
       "sender": "ems.cognos@austintexas.gov",
       "subject_keyword": "ESD02 Dataset - Monthly",
       "attachment_type": ".xlsx",
+      "folder_path": "c:\\temp\\EMS Data\\monthly",
+      "move_on_success": "c:\\temp\\EMS Data\\monthly\\archive",
+      "move_on_failure": "c:\\temp\\EMS Data\\monthly\\failed",
+      "backup_location": "c:\\temp\\archive"
+    },
+    {
+      "processing": "WeeklyComparison",
+      "sender": "EMSDataAnalysis@austintexas.gov",
+      "subject_keyword": "ESD02 Dataset - Monthly",
+      "attachment_type": ".csv",
       "folder_path": "c:\\temp\\EMS Data\\monthly",
       "move_on_success": "c:\\temp\\EMS Data\\monthly\\archive",
       "move_on_failure": "c:\\temp\\EMS Data\\monthly\\failed",
