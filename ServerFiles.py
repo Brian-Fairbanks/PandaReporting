@@ -158,6 +158,46 @@ def move_file(file_path, target_directory):
             except Exception as e2:
                 logging.error(f"Failed to create unique filename: {e2}")
                 return None  # Indicate failure
+            
+def get_email_config(config_name, config_path="data\\Lists\\email_configs.json"):
+    """
+    Retrieve a specific email configuration by name from email_configs.json.
+    
+    Args:
+        config_name (str): The name of the configuration section to retrieve (e.g., "compare").
+        config_path (str): The relative path to the JSON configuration file.
+    
+    Returns:
+        dict: The configuration dictionary for the specified section.
+    
+    Raises:
+        FileNotFoundError: If the email_configs.json file is not found.
+        KeyError: If the specified configuration section is missing.
+    """
+    try:
+        # Get base directory and full path
+        base_dir = get_base_dir()
+        config_file_location = path.join(base_dir, config_path)
+
+        # Ensure file exists
+        if not path.exists(config_file_location):
+            raise FileNotFoundError(f"Email configuration file not found: {config_file_location}")
+
+        # Load JSON configuration
+        with open(config_file_location, "r") as config_file:
+            configs = json.load(config_file)
+
+        # Retrieve the specified section
+        if config_name not in configs:
+            raise KeyError(f"Configuration section '{config_name}' not found in {config_file_location}")
+
+        logging.info(f"Email configuration for '{config_name}' loaded successfully.")
+        return configs[config_name]
+
+    except Exception as e:
+        logging.error(f"Error loading email configuration for '{config_name}': {e}")
+        raise
+
 
 def get_base_dir():
     """Return the base directory for the application, whether bundled or not."""

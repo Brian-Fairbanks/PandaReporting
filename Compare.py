@@ -164,23 +164,38 @@ def process_comparison(file_path):
         email_compare_results(dfs, time_frame, data_source, success=False)
 
 def email_compare_results(dfs, time_frame, data_source, success=True):
-    logger.info("Sending DFS By Email")
+    logger.info("Sending comparison results by email")
+
+    try:
+        # Load the 'compare' email configuration
+        compare_email_config = sf.get_email_config("compare")
+    except FileNotFoundError as e:
+        logger.error(f"Configuration file missing: {e}")
+        return
+    except KeyError as e:
+        logger.error(f"Invalid configuration section: {e}")
+        return
+
+    # Generate subject and email body
     start_date = time_frame['start'].strftime("%m/%d/%y")
     end_date = time_frame['end'].strftime("%m/%d/%y")
-    subject_prefix = "Failed: " if not success else ""
-    subject = f"{subject_prefix}Comparison Report: {data_source.upper()} {start_date} - {end_date}"
+    subject_prefix = "Failed: " if not success else compare_email_config.get("subject_prefix", "Comparison Report:")
+    subject = f"{subject_prefix} {data_source.upper()} {start_date} - {end_date}"
+    email_body = compare_email_config.get("body_success" if success else "body_failure", "No email body configured.")
 
-    config = copy.deepcopy(er.email_config)
-    config.update({
-        "recipient_emails": "bfairbanks@pflugervillefire.org",
-        "cc_emails": "",
+    # Update email configuration
+    email_config = copy.deepcopy(er.email_config)
+    email_config.update({
+        "recipient_emails": compare_email_config.get("recipients", ""),
+        "cc_emails": compare_email_config.get("cc", ""),
         "subject": subject,
-        "Email_Body": "The comparison was successful. Please find the dataframes attached." if success else "The comparison completed, but the insert has failed"
+        "Email_Body": email_body
     })
 
-    er.send_email_with_dataframes(dfs, config)
+    # Send the email with dataframes
+    er.send_email_with_dataframes(dfs, email_config)
+    logger.info("Email sent successfully")
 
-    logger.info("Email Sent")
 
 def process_directory(directory, file_types, move_on_success, move_on_failure):
     if not os.path.isdir(directory):

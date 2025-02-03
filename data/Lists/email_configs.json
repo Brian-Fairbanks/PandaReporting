@@ -1,0 +1,15 @@
+{
+    "compare": {
+        "recipients": "bfairbanks@pflugervillefire.org, mnyland@pflugervillefire.org",
+        "subject_prefix": "Comparison Report:",
+        "body_success": "The comparison was successful. Please find the dataframes attached.",
+        "body_failure": "The comparison completed, but the insert has failed."
+    },
+    "alerts(EXAMPLE)": {
+        "recipients": "alerts@mailer.org",
+        "cc": "admin@mailer.org",
+        "subject_prefix": "Alert Notification:",
+        "body_success": "The alert was successfully processed.",
+        "body_failure": "The alert processing failed."
+    }
+}
