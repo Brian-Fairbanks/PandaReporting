@@ -11,5 +11,11 @@
         "subject_prefix": "Alert Notification:",
         "body_success": "The alert was successfully processed.",
         "body_failure": "The alert processing failed."
+    },
+    "GUI Fatal Error": {
+        "recipients": "bfairbanks@pflugervillefire.org",
+        "subject_prefix": "Alert Notification:",
+        "body_success": "NO SUCCESS, ONLY FAILURE.",
+        "body_failure": "The overall process has failed."
     }
 }
