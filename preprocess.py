@@ -44,10 +44,12 @@ def floor_datetime_columns(df):
     return df
 
 def round_datetime_columns(df):
-    for column in df.columns:
-        if pd.api.types.is_datetime64_any_dtype(df[column]):
-            df[column] = df[column].dt.round('S')
-    return df
+    return floor_datetime_columns(df)
+# def round_datetime_columns(df):
+#     for column in df.columns:
+#         if pd.api.types.is_datetime64_any_dtype(df[column]):
+#             df[column] = df[column].dt.round('S')
+#     return df
 
 def auto_clip_datetime(df):
     """
